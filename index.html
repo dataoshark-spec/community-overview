@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>社區總覽</title>
-<link rel="icon" type="image/png" href="icon-192.png?v=20261122E">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261122E">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261122F">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261122F">
 <link rel="manifest" id="propertyManifest">
 <script>
 (function(){
@@ -13,8 +13,8 @@
  var absolute=function(file){return new URL(file,base).href};
  var manifest={id:base.href,name:"社區總覽",short_name:"社區總覽",start_url:base.href,scope:base.href,display:"standalone",
   orientation:"portrait",background_color:"#F4F6F7",theme_color:"#AFBBC1",
-  icons:[{src:absolute("icon-192.png?v=20261122E"),sizes:"192x192",type:"image/png",purpose:"any"},
-         {src:absolute("icon-512.png?v=20261122E"),sizes:"512x512",type:"image/png",purpose:"any"}]};
+  icons:[{src:absolute("icon-192.png?v=20261122F"),sizes:"192x192",type:"image/png",purpose:"any"},
+         {src:absolute("icon-512.png?v=20261122F"),sizes:"512x512",type:"image/png",purpose:"any"}]};
  document.getElementById("propertyManifest").href="data:application/manifest+json;charset=utf-8,"+encodeURIComponent(JSON.stringify(manifest));
 })();
 </script>
@@ -2525,7 +2525,7 @@
         </div>
       </div>
 
-      <div class="set-card" id="linkSettingsCard">
+      <div class="set-card" id="linkSettingsCard" hidden inert>
         <div class="link-settings-head"><div class="set-card-title">連結名稱與顏色</div>
           <div class="link-settings-actions">
             <button class="link-action symbol" type="button" id="linkRemoveSlot" aria-label="選擇要刪除的連結欄位" aria-expanded="false" aria-controls="linkDeletePicker"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M2 8h12"/></svg><span class="cancel-label">取消</span></button>
@@ -3699,7 +3699,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.22E";
+const APP_VERSION = "2026.11.22F";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
