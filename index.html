@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>社區總覽</title>
-<link rel="icon" type="image/png" href="icon-192.png?v=20261122H">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261122H">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261122I">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261122I">
 <link rel="manifest" id="propertyManifest">
 <script>
 (function(){
@@ -13,8 +13,8 @@
  var absolute=function(file){return new URL(file,base).href};
  var manifest={id:base.href,name:"社區總覽",short_name:"社區總覽",start_url:base.href,scope:base.href,display:"standalone",
   orientation:"portrait",background_color:"#F4F6F7",theme_color:"#AFBBC1",
-  icons:[{src:absolute("icon-192.png?v=20261122H"),sizes:"192x192",type:"image/png",purpose:"any"},
-         {src:absolute("icon-512.png?v=20261122H"),sizes:"512x512",type:"image/png",purpose:"any"}]};
+  icons:[{src:absolute("icon-192.png?v=20261122I"),sizes:"192x192",type:"image/png",purpose:"any"},
+         {src:absolute("icon-512.png?v=20261122I"),sizes:"512x512",type:"image/png",purpose:"any"}]};
  document.getElementById("propertyManifest").href="data:application/manifest+json;charset=utf-8,"+encodeURIComponent(JSON.stringify(manifest));
 })();
 </script>
@@ -2416,6 +2416,7 @@ tr.history-highlight>td{box-shadow:inset 0 2px #60ae93,inset 0 -2px #60ae93!impo
  #app:not(.table-mode) #sortBtn[data-default-sort] #sortTxt::after{content:'預設';font-size:14px}
 }
 </style>
+<style>.tcell[contenteditable="false"] .area-extra{display:none}</style>
 </head>
 <body>
 <div id="app">
@@ -3941,7 +3942,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.22H";
+const APP_VERSION = "2026.11.22I";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -4116,10 +4117,45 @@ const COMMUNITY_UNITS = {
 function communityFieldLabel(field){
   return T_COLS[T_FIELDS.indexOf(field)];
 }
+function areaDisplay(field,value){
+  const raw=String(value??"");
+  if(!PropertyCore.areaRangeFields.includes(field))return raw;
+  const dot=raw.indexOf(".");
+  return dot<0?raw:raw.slice(0,dot+2);
+}
+function areaTableHTML(field,value){
+  const raw=String(value??""), shown=areaDisplay(field,raw);
+  // Keep all digits available to the existing copy and edit handlers.
+  return esc(shown)+(raw.length>shown.length?'<span class="area-extra">'+esc(raw.slice(shown.length))+'</span>':'');
+}
+function paintAreaCell(cell,field,value){
+  cell.title=String(value??"");
+  if(tCellIsEditing(cell))cell.textContent=cell.title;
+  else cell.innerHTML=areaTableHTML(field,cell.title);
+}
+function limitEditedArea(target){
+  const input=target instanceof HTMLInputElement;
+  const field=input?target.id.replace(/^f_/,""):target.dataset?.field;
+  if(!PropertyCore.areaRangeFields.includes(field)||(input?!target.id.startsWith("f_")||target.readOnly:!tCellIsEditing(target)))return;
+  const raw=input?target.value:target.textContent;
+  const next=raw.replace(/([.．][0-9０-９]{3})[0-9０-９]+/u,"$1");
+  if(raw===next)return;
+  if(input){
+    const pos=Math.min(target.selectionStart??next.length,next.length);
+    target.value=next;target.setSelectionRange(pos,pos);
+  }else{
+    const sel=window.getSelection(),r=document.createRange();r.selectNodeContents(target);
+    if(sel?.rangeCount&&target.contains(sel.focusNode))r.setEnd(sel.focusNode,sel.focusOffset);
+    const pos=Math.min(r.toString().length,next.length);
+    target.textContent=next;r.setStart(target.firstChild,pos);r.collapse(true);sel.removeAllRanges();sel.addRange(r);
+  }
+}
+document.addEventListener("input",e=>{if(!e.isComposing)limitEditedArea(e.target);},true);
+document.addEventListener("compositionend",e=>limitEditedArea(e.target),true);
 function communityFieldValue(record,field){
   const value = PropertyCore.areaValue(record,field);
   if(value == null || value === "")return "";
-  return field === "price" ? money(value) : String(value);
+  return field === "price" ? money(value) : areaDisplay(field,value);
 }
 function communityFieldUnit(field){
   return COMMUNITY_UNITS[field] || "";
@@ -4144,7 +4180,7 @@ function cardHTML(d){
   function value(field,cls=""){
     const raw = text(field), unit = communityFieldUnit(field);
     if (raw === "") return '<span class="cc-empty">—</span>';
-    return `<b class="cc-value ${cls}" data-copy="${esc(PropertyCore.areaValue(d,field))}">${esc(raw)}${unit ? `<small>${esc(unit)}</small>` : ""}</b>`;
+    return `<b class="cc-value ${cls}" ${PropertyCore.areaRangeFields.includes(field)?`title="${esc(PropertyCore.areaValue(d,field))}"`:""} data-copy="${esc(PropertyCore.areaValue(d,field))}">${esc(raw)}${unit ? `<small>${esc(unit)}</small>` : ""}</b>`;
   }
   function group(cls, contents, attrs=""){
     return contents ? `<div class="${cls}"${attrs}>${contents}</div>` : "";
@@ -5647,7 +5683,7 @@ function trowHTML(d){
     }
     const value = PropertyCore.areaValue(d,field);
     const autoSum=field==="mainPlus" && d.mainArea!=="" && d.ancillaryArea!=="" && d.mainArea!=null && d.ancillaryArea!=null;
-    const content = field === "name" && !editMode ? nameSegmentsHTML(value) : esc(value);
+    const content = field === "name" && !editMode ? nameSegmentsHTML(value) : areaTableHTML(field,value);
     const cls = field === "name" ? " tname" : TABLE_NUMBERS.has(field) ? " tnum" : "";
     const cell = `<div class="tcell${cls}" contenteditable="false"${tTab} data-field="${field}"${autoSum ? ' aria-readonly="true"' : ""} title="${esc(value)}">${content}</div>`;
     if (field === "planUnit" && tableFileNameAvailable()){
@@ -5907,7 +5943,7 @@ function updateTableAreaCell(cell,it){
  const value=sum ?? it.mainPlus ?? "";
  if(sum===null)sumCell.removeAttribute("aria-readonly");
  else sumCell.setAttribute("aria-readonly","true");
- sumCell.textContent=value;sumCell.title=value;
+ paintAreaCell(sumCell,"mainPlus",value);
 }
 function tCommitCell(cell){                       // 回傳 true=值有變更(呼叫端據此決定要不要閃「已儲存」)
   const it = tFindItem(cell); if (!it) return false;
@@ -5950,6 +5986,7 @@ function tCellExitEdit(cell, opts){
   const run = () => {
     if (!cell.isConnected) return;
     if (tCommitCell(cell) && opts.flash !== false) tFlash(cell);
+    if(PropertyCore.areaRangeFields.includes(cell.dataset.field)&&!tCellIsEditing(cell)&&!window._saveBlocked){const row=tFindItem(cell);if(row)paintAreaCell(cell,cell.dataset.field,PropertyCore.areaValue(row,cell.dataset.field));}
     if (refreshAreaFilteredRow(cell))return;
     if (currentCat && cell.dataset.field === "status" && !window._saveBlocked && !isOnSale(tFindItem(cell))) applyFilter();
   };
@@ -5995,6 +6032,7 @@ function tCellEdit(cell, x, y, opts){
   if (!cell || !cell.classList.contains("tcell") || !cell.dataset.field || !editMode) return;
   const active = document.activeElement;
   if (active && active !== cell && tCellIsEditing(active)) tCellExitEdit(active, {flash: false, defer: true});
+  if(cell.querySelector(".area-extra"))cell.textContent=cell.textContent;
   cell.setAttribute("contenteditable", "true");
   cell.focus({ preventScroll: true });
   if (x != null && y != null){
@@ -6029,6 +6067,7 @@ function tCellPastePlain(cell, text){
   if (!cell || !text || !editMode) return;
   if (!tCellIsEditing(cell)) tCellBeginType(cell);
   tCellInsertPlainText(cell, text);
+  limitEditedArea(cell);
   clearTimeout(cell._saveT);
   cell._saveT = setTimeout(function(){ if (cell.isConnected) tCommitCell(cell); }, 200);
 }
@@ -7987,7 +8026,7 @@ function renderDetailBody(d){
     if (shown !== ""){
       valueHTML = field === "tel"
         ? `<a class="dtl-v dtl-tellink" href="tel:${esc(raw)}">${esc(shown)}</a>`
-        : `<span class="dtl-v dtl-copy" data-copy="${esc(shown)}">${esc(shown)}</span>`;
+        : `<span class="dtl-v dtl-copy" data-copy="${esc(PropertyCore.areaRangeFields.includes(field)?PropertyCore.areaValue(d,field)+" "+unit:shown)}" ${PropertyCore.areaRangeFields.includes(field)?`title="${esc(PropertyCore.areaValue(d,field))}"`:""}>${esc(shown)}</span>`;
     }
     return `<div class="dtl-cell ${width}" data-community-field="${field}">${field === "tel" ? IC_TEL_S : ""}<span class="dtl-k">${esc(communityFieldLabel(field))}</span>${valueHTML}</div>`;
   }
@@ -14571,7 +14610,7 @@ function paintPropertyState(state){
  }
  const scalar={
   target(target){const el=target.closest('.tcell[data-field]');return el&&tableWrap.contains(el)&&!['planUnit','area','layout','status','name'].includes(el.dataset.field)&&el.getAttribute('aria-readonly')!=='true'?{id:tFindItem(el)?.id,field:el.dataset.field}:null;},
-  open(spec){const el=Array.from(tableWrap.querySelectorAll('.tcell[data-field]')).find(cell=>tFindItem(cell)?.id===spec.id&&cell.dataset.field===spec.field);if(!el)return null;el.dataset.quickEdit='cell';el.contentEditable='true';el.tabIndex=0;el.focus({preventScroll:true});caretEnd(el);tScrollFieldIntoView(el);return {...spec,el,kind:'cell'};},
+  open(spec){const el=Array.from(tableWrap.querySelectorAll('.tcell[data-field]')).find(cell=>tFindItem(cell)?.id===spec.id&&cell.dataset.field===spec.field);if(!el)return null;if(el.querySelector('.area-extra'))el.textContent=el.textContent;el.dataset.quickEdit='cell';el.contentEditable='true';el.tabIndex=0;el.focus({preventScroll:true});caretEnd(el);tScrollFieldIntoView(el);return {...spec,el,kind:'cell'};},
   commit(state){
    const {el,field}=state;let value=el.textContent.trim();
    if(TABLE_NUMBERS.has(field))try{value=field==='price'?PropertyCore.price(value):PropertyCore.tableDecimal(value);el.removeAttribute('aria-invalid');}catch(error){el.setAttribute('aria-invalid','true');toast(error.message.replace(/售價/g,T_COLS[T_FIELDS.indexOf(field)]));return false;}
@@ -14579,7 +14618,7 @@ function paintPropertyState(state){
    if((field==='mainArea'||field==='ancillaryArea')&&value==='')values.mainPlus=PropertyCore.areaValue(before,'mainPlus');
    const ok=patch(state,values);if(ok)updateTableAreaCell(el,items.find(item=>item.id===state.id));return ok;
   },
-  finish(state){state.el.contentEditable='false';delete state.el.dataset.quickEdit;const item=items.find(item=>item.id===state.id);if(item){state.el.textContent=String(PropertyCore.areaValue(item,state.field)??'');state.el.title=state.el.textContent;}state.el.blur();},
+  finish(state){state.el.contentEditable='false';delete state.el.dataset.quickEdit;const item=items.find(item=>item.id===state.id);if(item){paintAreaCell(state.el,state.field,PropertyCore.areaValue(item,state.field));}state.el.blur();},
   contains(state,target){return state.el.contains(target);}
  };
  const option={
