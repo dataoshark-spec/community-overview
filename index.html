@@ -4,17 +4,78 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>社區總覽</title>
-<link rel="icon" type="image/png" href="icon-192.png?v=20261122K">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261122K">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261122N">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261122N">
 <link rel="manifest" id="propertyManifest">
 <script>
+'use strict';
+// A drive path is shared by the two link editors; the actual opener is device-specific.
+function communityLocalFilePath(input) {
+  let path = String(input ?? '').trim();
+  if (path.startsWith('"') && path.endsWith('"')) path = path.slice(1, -1);
+  if (/^file:/i.test(path)) {
+    let url;
+    try {
+      url = new URL(path);
+      if (url.hostname || url.username || url.password || url.port || url.search || url.hash) return null;
+      path = decodeURIComponent(url.pathname).replace(/^\/(?=[a-z]:[\/])/i, '');
+    } catch { return null; }
+  }
+  path = path.replaceAll('/', '\\');
+  if (!/^[a-z]:\\/i.test(path) || path.length > 5000) return null;
+  const parts = path.slice(3).split('\\');
+  if (parts.some(part => !part || /[<>:"|?*\u0000-\u001f]/.test(part) || /[. ]$/.test(part))) return null;
+  return path.charAt(0).toUpperCase() + path.slice(1);
+}
+const COMMUNITY_FILE_SERVICE = "http://127.0.0.1:41783/community-files/";
+const COMMUNITY_FILE_MARK = COMMUNITY_FILE_SERVICE+"#file=";
+const COMMUNITY_FILE_PAIR = "community-windows-opener-v1";
+function localLinkPath(value){
+  const raw=String(value||"").trim();
+  if(raw.startsWith(COMMUNITY_FILE_MARK)){
+    try{return communityLocalFilePath(decodeURIComponent(raw.slice(COMMUNITY_FILE_MARK.length)));}
+    catch{return null;}
+  }
+  return communityLocalFilePath(raw);
+}
+function communityTargetHref(value){
+  const file=localLinkPath(value);
+  return file?COMMUNITY_FILE_MARK+encodeURIComponent(file):safeUrl(value);
+}
+let openingLocalFile=false;
+async function openCommunityTarget(value){
+  const file=localLinkPath(value);
+  if(!file){openExtUrl(value);return;}
+  if(openingLocalFile)return;
+  openingLocalFile=true;
+  async function request(action,token,body){
+    return fetch(COMMUNITY_FILE_SERVICE+action,{method:"POST",credentials:"omit",redirect:"error",referrerPolicy:"no-referrer",
+      headers:{"Content-Type":"text/plain;charset=UTF-8","X-Community-Opener":token},body,cache:"no-store",
+      signal:AbortSignal.timeout(action==="pair"?120000:20000)});
+  }
+  try{
+    let token=localStorage.getItem(COMMUNITY_FILE_PAIR);
+    let response=token?await request("open",token,file):null;
+    if(!response||response.status===401){
+      toast("首次使用，請在 Windows 視窗確認連接。");
+      const pair=await request("pair","pair","");
+      if(!pair.ok)throw new Error(await pair.text());
+      token=await pair.text();localStorage.setItem(COMMUNITY_FILE_PAIR,token);
+      response=await request("open",token,file);
+    }
+    toast(await response.text()||"請檢查這台電腦的開檔工具。");
+  }catch(error){toast(error instanceof TypeError||error.name==="TimeoutError"?"無法連接 Windows 開檔工具，請確認工具已啟動並允許瀏覽器連接本機。":error.message);}
+  finally{openingLocalFile=false;}
+}
+
+
 (function(){
  var base=new URL("./",document.baseURI);
  var absolute=function(file){return new URL(file,base).href};
  var manifest={id:base.href,name:"社區總覽",short_name:"社區總覽",start_url:base.href,scope:base.href,display:"standalone",
   orientation:"portrait",background_color:"#F4F6F7",theme_color:"#AFBBC1",
-  icons:[{src:absolute("icon-192.png?v=20261122K"),sizes:"192x192",type:"image/png",purpose:"any"},
-         {src:absolute("icon-512.png?v=20261122K"),sizes:"512x512",type:"image/png",purpose:"any"}]};
+  icons:[{src:absolute("icon-192.png?v=20261122N"),sizes:"192x192",type:"image/png",purpose:"any"},
+         {src:absolute("icon-512.png?v=20261122N"),sizes:"512x512",type:"image/png",purpose:"any"}]};
  document.getElementById("propertyManifest").href="data:application/manifest+json;charset=utf-8,"+encodeURIComponent(JSON.stringify(manifest));
 })();
 </script>
@@ -2331,12 +2392,12 @@
 </style>
 <style id="community-field-content-style">
 /* Table contents only: keep titles, inputs in dialogs, row heights and widths. */
-#tableWrap .tcell:is([data-field="floorPrice"],[data-field="cost"],[data-field="mainArea"],[data-field="ancillaryArea"],[data-field="status"]) {
+#tableWrap .tcell:is([data-field="floorPrice"],[data-field="cost"],[data-field="mainArea"],[data-field="ancillaryArea"],[data-field="parkingArea"],[data-field="status"]) {
   font-size:.75rem;
   font-weight:400;
   color:#65747C;
 }
-[data-theme="dark"] #tableWrap .tcell:is([data-field="floorPrice"],[data-field="cost"],[data-field="mainArea"],[data-field="ancillaryArea"],[data-field="status"]) {
+[data-theme="dark"] #tableWrap .tcell:is([data-field="floorPrice"],[data-field="cost"],[data-field="mainArea"],[data-field="ancillaryArea"],[data-field="parkingArea"],[data-field="status"]) {
   color:#A1ADB4;
 }
 </style>
@@ -2434,7 +2495,129 @@ tr.history-highlight>td{box-shadow:inset 0 2px #60ae93,inset 0 -2px #60ae93!impo
 }
 </style>
 <style>.tcell[contenteditable="false"] .area-extra{display:none}</style>
-</head>
+<style>
+#fieldOptionMenu .fo-option {user-select:none;-webkit-user-select:none;touch-action:pan-y;}
+.fo-order-list {max-height:min(52dvh,420px);overflow:auto;overscroll-behavior:contain;}
+.fo-order-row {display:grid;grid-template-columns:36px minmax(0,1fr) 36px 36px;gap:5px;align-items:center;border-bottom:1px solid var(--line);padding:4px 1px;}
+.fo-order-name {overflow-wrap:anywhere;}
+.fo-order-grip {display:grid;place-items:center;min-height:38px;border-radius:7px;color:var(--ink-soft);background:var(--surface-2);cursor:grab;touch-action:none;user-select:none;font-size:21px;}
+.fo-order-row button {min-height:34px;} .fo-order-row button:disabled {opacity:.35;}
+.fo-moving {background:var(--surface-1);} .fo-before {box-shadow:inset 0 2px var(--accent-deep);} .fo-after {box-shadow:inset 0 -2px var(--accent-deep);}
+</style><style id="community-card-density">
+#cards .cp-card .body{padding:15px 17px;min-width:0;display:grid;gap:9px}
+#cards .cp-card.compact-card .body{padding:12px 16px;gap:8px}
+.cp-head,.cp-bottom,.cp-quote,.cp-contact{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0}
+#cards .cp-card h3.name{font-size:20px;font-weight:700;line-height:1.3;margin:0;min-width:0;overflow-wrap:anywhere}
+#cards .cp-card.compact-card .name{font-size:18px}
+.cp-status,.cp-price,.cp-site,.cp-contact .tel{flex:none}.cp-status{margin-left:auto;color:var(--text-faint);font-size:13px}
+.cp-card .cc-value{font:inherit}.cp-address,.cp-company,.cp-note{font-size:13px;color:var(--ink-soft);line-height:1.5}
+.cp-bottom .cp-address{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.cp-card .cp-price .num{font-weight:700;font-size:24px;color:var(--ink)}
+.cp-card.compact-card .cp-price .num{font-size:19px}.cp-bottom .cp-price,.cp-site{margin-left:auto}
+.cp-card .unit,.cp-card small{font-size:11px;color:var(--ink-soft);margin-left:3px}
+.cp-site{font-size:13px;color:var(--accent-deep);text-decoration:underline;text-underline-offset:3px}
+.cp-meta,.cp-cost,.cp-sizes{display:flex;flex-wrap:wrap;align-items:baseline;gap:5px 8px}
+.cp-meta>span,.cp-sizes>span,.cp-cost>span{display:inline-flex;align-items:baseline;gap:4px;font-size:13px}
+.cp-meta>span{padding:3px 7px;border-radius:5px;background:var(--surface-1)}
+.cp-card i{font-style:normal;color:var(--ink-soft);font-size:11px}
+.cp-sizes{column-gap:14px}.cp-sizes .cc-value{font-weight:600}
+.cp-cost .cc-value,.cp-company{color:var(--ink-soft);font-size:12px}
+.cp-note .cc-note-text{margin:0}.cp-contact{padding-top:9px;border-top:1px dashed var(--line)}
+.cp-person{min-width:0;line-height:1.4}.cp-person>.cc-value{font-size:14px;font-weight:600}.cp-contact .tel{margin-left:auto}
+@media(max-width:360px){#cards .cp-card .body{padding:11px}.cp-meta,.cp-sizes{column-gap:6px}}
+
+#cards .rd-card .body{padding:16px 17px 12px;gap:0}
+.rd-header,.rd-location,.rd-footer,.rd-actions,.rd-note{display:flex;align-items:center;gap:10px;min-width:0}
+.rd-header{justify-content:space-between;align-items:baseline}
+#cards .rd-header h3.name{font-size:20px;line-height:1.4}
+.rd-header .cp-price{margin-inline-start:auto;white-space:nowrap}
+.rd-header .num,.rd-metrics .cc-value{font-variant-numeric:tabular-nums}
+.rd-location{color:var(--ink-soft);font-size:13px;margin-top:4px}
+.rd-status{display:inline-flex;align-items:center;gap:5px;color:var(--ink);font-weight:600}
+.rd-status:before{content:'';width:6px;height:6px;background:var(--accent-deep);border-radius:50%}
+.rd-zone{color:var(--ink-soft)}
+.rd-card .cp-address{font-size:13px;margin-top:4px;overflow-wrap:anywhere}
+.rd-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(68px,1fr));margin:12px 0 0;background:var(--surface-1);border-radius:8px;padding:9px 0}
+.rd-metrics>span{display:grid;padding:0 12px;line-height:1.45}
+.rd-metrics>span+span{border-inline-start:1px solid var(--line)}
+.rd-card .rd-metrics i{font-size:12px}
+.rd-card .rd-metrics .cc-value{font-size:17px;color:var(--ink);font-weight:600}
+.rd-parts,.rd-prices{display:flex;gap:4px 16px;flex-wrap:wrap;align-items:baseline;margin-top:7px}
+.rd-parts>span,.rd-prices>span{display:inline-flex;gap:5px;align-items:baseline;font-size:13px;color:var(--ink)}
+.rd-card .rd-parts i,.rd-card .rd-prices i,.rd-card .rd-note i{font-size:12px;white-space:nowrap}
+.rd-card .rd-prices .cc-value{color:var(--ink-soft)}
+.rd-note{align-items:baseline;margin-top:9px;line-height:1.5;font-size:13px;color:var(--ink)}
+.rd-note .cc-note-text{margin:0;overflow-wrap:anywhere}
+.rd-footer{border-top:1px solid var(--line);margin-top:11px;padding-top:9px;justify-content:space-between;flex-wrap:wrap}
+.rd-footer .cp-person{display:flex;flex-wrap:wrap;gap:3px 7px;align-items:baseline}
+.rd-actions{margin-left:auto;gap:12px;flex-wrap:wrap}
+.rd-card .rd-actions .tel{min-height:30px}
+@media(max-width:380px){#cards .rd-card .body{padding:12px}.rd-header .cp-price .num{font-size:21px}.rd-parts,.rd-prices{column-gap:10px}.rd-footer .cp-person{display:block}}
+
+.rd-card .rd-metrics > span > .cc-value[data-copy]{place-self:center start;max-width:100%;line-height:1.2}
+
+.rd-split-header{align-items:flex-start}
+.rd-split-header .rd-identity{min-width:0;overflow-wrap:anywhere}
+.rd-split-header .rd-price-stack{margin-inline-start:auto;display:grid;justify-items:end;gap:3px;text-align:end;flex-shrink:0}
+.rd-price-stack .rd-prices{display:grid;justify-items:end;gap:2px;margin:0}
+.rd-price-stack .rd-prices>span{font-size:12px;line-height:1.4;white-space:nowrap}
+
+.rd-area-emphasis .rd-status::before { content: none; }
+.rd-area-emphasis .rd-prices .cc-value small { display: none; }
+.rd-area-emphasis .body { container-type: inline-size; }
+.rd-area-emphasis .rd-metrics,
+.rd-area-emphasis .rd-parts {
+  display: grid;
+  padding-inline: clamp(6px, 2.4cqi, 10px);
+}
+.rd-area-emphasis .rd-metrics {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.55fr);
+  text-align: center;
+}
+.rd-area-emphasis .rd-metrics > span {
+  padding: 0;
+  justify-items: center;
+  align-content: start;
+  gap: 3px;
+  min-width: 0;
+}
+.rd-area-emphasis .rd-metrics [data-fact="totalArea"] { grid-column: 1; }
+.rd-area-emphasis .rd-metrics [data-fact="mainPlus"] { grid-column: 2; }
+.rd-area-emphasis .rd-metrics > span:has(.rd-parking-value) { grid-column: 3; }
+.rd-area-emphasis .rd-metrics > span > .cc-value[data-copy] { place-self: center; }
+.rd-area-emphasis .rd-metrics .cc-value { font-size: clamp(16px, 5.5cqi, 22px); line-height: 1.25; }
+.rd-area-emphasis .rd-metrics .rd-parking-value .cc-value { font-size: clamp(14px, 4.6cqi, 18px); }
+.rd-area-emphasis .rd-parking-value { display: inline-flex; align-items: baseline; justify-content: center; gap: 3px; max-width: 100%; }
+.rd-area-emphasis .rd-parking-value small { margin: 0; white-space: nowrap; }
+.rd-area-emphasis .rd-metrics .cc-value[data-copy] small { font-size: 12px; }
+.rd-area-emphasis .rd-parts {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.8fr) minmax(0, .85fr);
+  align-items: start;
+  column-gap: 4px;
+  margin-top: 8px;
+}
+.rd-area-emphasis .rd-parts > span { min-width: 0; gap: 3px; font-size: 14px; white-space: nowrap; line-height: 1.45; font-variant-numeric: tabular-nums; }
+.rd-area-emphasis .rd-parts [data-fact="mainArea"] { grid-column: 1; }
+.rd-area-emphasis .rd-parts [data-fact="ancillaryArea"] { grid-column: 2; }
+.rd-area-emphasis .rd-parts [data-fact="layout"] { grid-column: 3; }
+.rd-area-emphasis .rd-parts [data-fact="floor"] { grid-column: 4; }
+.rd-area-emphasis .rd-parts i { font-size: 12px; }
+.rd-area-emphasis .rd-parts small { margin-left: 2px; font-size: 11px; }
+.rd-area-emphasis .rd-parts [data-fact="layout"] .cc-value { white-space: normal; overflow-wrap: anywhere; min-width: 0; }
+@container (max-width: 380px) {
+  .rd-area-emphasis .rd-parts > span { flex-direction: column; align-items: flex-start; gap: 0; }
+}
+.rd-area-emphasis .rd-metrics > span { justify-content: center; }
+.rd-area-emphasis .rd-metrics > span > i { justify-self: start; text-align: start; }
+
+.rd-area-emphasis .rd-note {
+  justify-content: flex-end;
+  text-align: right;
+}
+.rd-area-emphasis .rd-note > i { flex: none; }
+.rd-area-emphasis .rd-note .cc-note-text { min-width: 0; overflow-wrap: anywhere; }
+
+</style></head>
 <body>
 <div id="app">
 
@@ -2820,7 +3003,7 @@ tr.history-highlight>td{box-shadow:inset 0 2px #60ae93,inset 0 -2px #60ae93!impo
 <div id="tableMoreLinks" class="table-more-links" role="dialog" aria-label="其他連結" hidden></div>
 <div class="linkpop" id="linkpop">
   <div class="lp-head"><span class="lp-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span><button type="button" class="lp-name" id="lpLabel" aria-label="變更此物件的連結名稱">連結</button><input id="lpNameEdit" class="lp-name-edit" aria-label="此物件的連結名稱" maxlength="20" hidden><span class="lp-kind" id="lpKind" hidden>連結</span></div>
-  <input class="lp-input" id="lpInput" type="url" placeholder="貼上網址（Ctrl+V）…" spellcheck="false" autocomplete="off">
+  <input class="lp-input" id="lpInput" type="text" placeholder="貼上網址（Ctrl+V）…" spellcheck="false" autocomplete="off">
   <div class="lp-actions">
     <div class="lp-left">
       <button class="lp-btn" id="lpPaste">貼上</button>
@@ -2938,8 +3121,8 @@ function setDueValue(item,value){
  else{item.due=value;delete item.dueUnknown;}
 }
 const fieldValue=(row,field)=>field==="due"?dueValue(row):row[field];
-const TABLE_ADDITIONS = ["planUnit","area","status","totalArea","mainPlus","mainArea","ancillaryArea","floorPrice","cost"];
-const TABLE_DECIMALS = new Set(["totalArea","mainPlus","mainArea","ancillaryArea","floorPrice","cost"]);
+const TABLE_ADDITIONS = ["planUnit","area","status","totalArea","mainPlus","mainArea","ancillaryArea","parkingType","parkingCount","parkingArea","floorPrice","cost"];
+const TABLE_DECIMALS = new Set(["totalArea","mainPlus","mainArea","ancillaryArea","parkingArea","floorPrice","cost"]);
 const FIELDS = [...TABLE_ADDITIONS,"name","cat","layout","floor","price","addr","due","agent","tel","store","url591","urlLeju","urlI","url4","linkNone1","linkNone2","linkNone3","linkNone4","linkBaseName1","linkBaseName2","linkBaseName3","linkBaseName4","linkName1","linkName2","linkName3","linkName4","note","note2","note3","t1","t2","t3","noteFont1","noteFont2","noteFont3","noteOrder"];
 const own = (o,k) => Object.prototype.hasOwnProperty.call(o,k);
 const validSlotId = id => Number.isSafeInteger(id) && id>0 && id!==591;
@@ -2976,6 +3159,13 @@ function price(value){
  if(!Number.isFinite(n) || n > 1e10) fail("售價超出可接受範圍");
  return n;
 }
+function parkingCount(value){
+ if(value==null)return "";
+ const raw=String(value).trim().replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xfee0));
+ if(!raw)return "";
+ if(!/^\d+$/.test(raw)||raw.length>5000)fail("車數請輸入 0 或正整數");
+ return raw.replace(/^0+(?=\d)/,"");
+}
 function tableDecimal(value,maxLength=5000){
  if(value==null || value==="")return "";
  if(typeof value==="number"){
@@ -2992,22 +3182,39 @@ function tableDecimal(value,maxLength=5000){
  return s;
 }
 // An exact sum may contain both the largest supported integer and fraction.
-function mainAreaSum(main,ancillary){
- const a=tableDecimal(main), b=tableDecimal(ancillary);
+function areaArithmetic(main,ancillary,subtract=false){
+ const a=tableDecimal(main,subtract?10002:5000), b=tableDecimal(ancillary);
  if(a==="" || b==="")return null;
  const [ai,af=""]=a.split("."),[bi,bf=""]=b.split(".");
  const scale=Math.max(af.length,bf.length);
- const sum=BigInt(ai+af.padEnd(scale,"0"))+BigInt(bi+bf.padEnd(scale,"0"));
+ const left=BigInt(ai+af.padEnd(scale,"0")),right=BigInt(bi+bf.padEnd(scale,"0"));
+ const sum=subtract?left-right:left+right;
+ if(sum<0n)fail("主附不能小於已輸入的主建或附屬坪數");
  const digits=sum.toString().padStart(scale+1,"0");
  if(!scale)return digits;
  const fraction=digits.slice(-scale).replace(/0+$/,"");
  return digits.slice(0,-scale)+(fraction ? "."+fraction : "");
 }
+function mainAreaSum(main,ancillary){return areaArithmetic(main,ancillary);}
+const areaTrio=Object.freeze(["mainPlus","mainArea","ancillaryArea"]);
+function dependentArea(row,field){
+ const others=areaTrio.filter(key=>key!==field);
+ return others.find(key=>row[key]==null||row[key]==="") || (field==="mainPlus"?"ancillaryArea":"mainPlus");
+}
+function linkedArea(row,field,value,target){
+ const result={[field]:value};
+ if(!areaTrio.includes(field)||value==="")return result;
+ const next={...row,...result};
+ const derived=target==="mainPlus"?mainAreaSum(next.mainArea,next.ancillaryArea):
+   areaArithmetic(next.mainPlus,next[target==="mainArea"?"ancillaryArea":"mainArea"],true);
+ if(derived!==null)result[target]=tableDecimal(derived,target==="mainPlus"?10002:5000);
+ return result;
+}
 function areaValue(row,field){
  if(field==="mainPlus")return mainAreaSum(row?.mainArea,row?.ancillaryArea) ?? row?.mainPlus ?? "";
  return row?.[field] ?? "";
 }
-const areaRangeFields=Object.freeze(["totalArea","mainPlus","mainArea","ancillaryArea"]);
+const areaRangeFields=Object.freeze(["totalArea","mainPlus","mainArea","ancillaryArea","parkingArea"]);
 function compareAreaDecimals(left,right){
  const [a,af=""]=String(left).split("."),[b,bf=""]=String(right).split(".");
  const ai=a.replace(/^0+(?=\d)/,""),bi=b.replace(/^0+(?=\d)/,"");
@@ -3075,7 +3282,7 @@ function record(r,index){
  d.id = r.id || ("import-"+(root.crypto && root.crypto.randomUUID ? root.crypto.randomUUID() : Date.now().toString(36)+"-"+index+"-"+Math.random().toString(36).slice(2)));
  if(!safeId(d.id)) fail("第 "+(index+1)+" 筆物件識別碼不合法");
  const fields=recordFields(r);
- for(const f of fields) d[f]= f==="noteOrder" ? noteOrder(r[f]) : f.startsWith("linkNone") ? linkNone(r[f]) : f==="price" ? price(r[f]) : TABLE_DECIMALS.has(f) ? tableDecimal(r[f],f==="mainPlus"?10002:5000) : f.startsWith("noteFont") ? fontSize(r[f]) : text(r[f],f);
+ for(const f of fields) d[f]= f==="noteOrder" ? noteOrder(r[f]) : f.startsWith("linkNone") ? linkNone(r[f]) : f==="price" ? price(r[f]) : f==="parkingCount" ? parkingCount(r[f]) : TABLE_DECIMALS.has(f) ? tableDecimal(r[f],f==="mainPlus"?10002:5000) : f.startsWith("noteFont") ? fontSize(r[f]) : text(r[f],f);
  if(r.dueUnknown!=null && typeof r.dueUnknown!=="boolean")fail("到期日不確定狀態不正確");
  if(!d.due && r.dueUnknown===true)d.dueUnknown=true;
  if(d.due){
@@ -3263,8 +3470,8 @@ function settings(value){
   if(value[key]!=null){
    if(!obj(value[key])) fail("篩選設定格式不正確");s[key]={};
    const fields = key==="colFilter" ? ["cat","layout","floor","agent","store"]
-    : key==="tableColFilter" ? ["planUnit","area","layout","status","floor","agent","store"]
-    : ["cat","planUnit","area","layout","status","floor","agent","store"];
+    : key==="tableColFilter" ? ["planUnit","area","layout","status","floor","parkingType","parkingCount","agent","store"]
+    : ["cat","planUnit","area","layout","status","floor","parkingType","parkingCount","agent","store"];
    for(const f of fields){
     const a=value[key][f];if(a==null){if(key!=="fltorder") s[key][f]=null;continue;}
     if(!Array.isArray(a)||a.length>5000||a.some(x=>typeof x!=="string"||x.length>5000)) fail("篩選選項格式不正確");
@@ -3885,7 +4092,7 @@ function createStore(storage){
  return {load,commit,readLatest,acknowledge,compact,rawBackup,get history(){return clone(history)},get current(){return current?clone(current):null},get blocked(){return blocked}};
 }
 
-const api={KEY,FIELDS,naturalOrder,communityFeatures,mergeCommunityFeatures,areaRangeFields,areaRanges,compareAreaDecimals,UNKNOWN_DUE,dueValue,setDueValue,recordFields,linkSlots,rebaseLinkSlots,price,tableDecimal,mainAreaSum,areaValue,fontSize,noteOrder,draftValues,mergeDraft,deleteStamp,record,records,categories,settings,validateState,backup,fieldMerge,track,merge,mergeLegacy:(main,previous)=>merge(main,previous,true),stateWriteKey,restore,mainFrom,stateFromMain,createStore,clone,defaults,ready:false};
+const api={KEY,FIELDS,naturalOrder,communityFeatures,mergeCommunityFeatures,areaRangeFields,areaRanges,compareAreaDecimals,parkingCount,UNKNOWN_DUE,dueValue,setDueValue,recordFields,linkSlots,rebaseLinkSlots,price,tableDecimal,mainAreaSum,areaTrio,dependentArea,linkedArea,areaValue,fontSize,noteOrder,draftValues,mergeDraft,deleteStamp,record,records,categories,settings,validateState,backup,fieldMerge,track,merge,mergeLegacy:(main,previous)=>merge(main,previous,true),stateWriteKey,restore,mainFrom,stateFromMain,createStore,clone,defaults,ready:false};
 if(typeof module==="object"&&module.exports) module.exports=api;
 root.PropertyCore=api;
 if(!root.document) return;
@@ -3959,7 +4166,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.22K";
+const APP_VERSION = "2026.11.22N";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -3973,7 +4180,7 @@ const layoutText = g => ({"322":"3房2廳2衛","221":"2房2廳1衛","3改2/22":"
 // 搜尋比對用的字串來源:各欄位之間夾一個分隔字元(U+001F),避免「甲欄結尾＋乙欄開頭」被拼成假命中
 const SEARCH_FIELDS = ["planUnit","name","addr","agent","store","cat","layout","floor","price","note","note2","note3","t1","t2","t3"];   // 不含 due(到期日):關鍵字搜尋不比對到期
 const SEARCH_URL_RE = /https?:\/\/[A-Za-z0-9\-._~:\/?#\[\]@!$&'()*+,;=%]+/gi;   // 與 linkify 同一套;搜尋略過連結網址
-const TABLE_SEARCH_FIELDS = ["planUnit","area","layout","status","name","addr","floor","price","floorPrice","cost","totalArea","mainPlus","mainArea","ancillaryArea","agent","store","note","note2","note3","t1","t2","t3"];
+const TABLE_SEARCH_FIELDS = ["planUnit","area","layout","status","name","addr","floor","price","floorPrice","cost","totalArea","mainPlus","mainArea","ancillaryArea","parkingType","parkingCount","parkingArea","agent","store","note","note2","note3","t1","t2","t3"];
 function searchHay(d){
   let s = "";
   const NOTE_KEYS = { note:1, note2:1, note3:1 };
@@ -4190,49 +4397,46 @@ function nameSegmentsHTML(name){
   return html || esc(s);
 }
 function cardHTML(d){
-  const visible = new Set(tableFields().filter(field => field !== "links"));
-  const compact = density === "compact";
-  const label = field => esc(communityFieldLabel(field));
-  const text = field => communityFieldValue(d,field);
-  function value(field,cls=""){
-    const raw = text(field), unit = communityFieldUnit(field);
-    if (raw === "") return '<span class="cc-empty">—</span>';
-    return `<b class="cc-value ${cls}" ${PropertyCore.areaRangeFields.includes(field)?`title="${esc(PropertyCore.areaValue(d,field))}"`:""} data-copy="${esc(PropertyCore.areaValue(d,field))}">${esc(raw)}${unit ? `<small>${esc(unit)}</small>` : ""}</b>`;
+  const visible=new Set(tableFields()),compact=density==="compact";
+  const raw=key=>visible.has(key)?PropertyCore.areaValue(d,key):"";
+  const has=key=>raw(key)!==""&&raw(key)!=null;
+  const group=(cls,html)=>html?'<div class="'+cls+'">'+html+'</div>':"";
+  function value(key,unit=communityFieldUnit(key)){
+    if(!has(key))return "";
+    const content=esc(communityFieldValue(d,key)),full=esc(raw(key));
+    const title=PropertyCore.areaRangeFields.includes(key)?' title="'+full+'"':"";
+    return '<b class="cc-value" data-community-field="'+key+'" data-copy="'+full+'"'+title+'>'+content+(unit?'<small>'+esc(unit)+'</small>':'')+'</b>';
   }
-  function group(cls, contents, attrs=""){
-    return contents ? `<div class="${cls}"${attrs}>${contents}</div>` : "";
+  function fact(key,unit){
+    const v=value(key,unit);
+    return v?'<span data-fact="'+key+'"><i>'+esc(communityFieldLabel(key))+'</i>'+v+'</span>':"";
   }
-  function fact(field){
-    if (!visible.has(field)) return "";
-    return `<div data-community-field="${field}"><span class="cc-label">${label(field)}</span>${value(field)}</div>`;
+  const name=has("name")?'<h3 class="name" data-community-field="name">'+nameSegmentsHTML(d.name)+'</h3>':"";
+  const address=group("cp-address",value("addr"));
+  const price=group("cp-price",has("price")?'<span class="price-value" data-community-field="price" data-copy="'+esc(d.price)+'"><span class="num">'+esc(money(d.price))+'</span><span class="unit">萬</span></span>':"");
+  let html;
+  if(compact){
+    html=group("cp-head",name+group("cp-status",value("status")))+group("cp-bottom",address+price);
+  }else{
+    const location=["area","planUnit"].map(k=>value(k)).filter(Boolean).join('<span aria-hidden="true"> · </span>');
+    const identity=group("rd-identity",name+group("rd-location",group("rd-status",value("status"))+group("rd-zone",location))+address);
+    const prices=group("rd-prices",fact("floorPrice","")+fact("cost",""));
+    const parking=[has("parkingType")?esc(raw("parkingType")):"",has("parkingCount")?esc(raw("parkingCount"))+" 個":""].filter(Boolean).join(" ");
+    const area=has("parkingArea")?'<small title="'+esc(raw("parkingArea"))+'">'+esc(communityFieldValue(d,"parkingArea"))+' 坪</small>':"";
+    const car=parking||area?'<span><i>車位</i><span class="rd-parking-value">'+(parking?'<b class="cc-value">'+parking+'</b>':"")+area+'</span></span>':"";
+    const metrics=group("rd-metrics",fact("totalArea")+fact("mainPlus")+car);
+    const parts=group("rd-parts",["mainArea","ancillaryArea","layout","floor"].map(k=>fact(k)).join(""));
+    const sg=visible.has("note")?needOrder(d).find(k=>needSeg(d,k).trim()):null;
+    const note=sg!=null?group("rd-note",'<i>備註</i><div class="cc-note-text">'+needToViewHTML(needDisplayText(needSeg(d,sg)).trim().split("\n",2).join("\n"))+'</div>'):"";
+    const href=visible.has("links")&&!linkIsNone(d,COMMUNITY_PROPERTY_LINK_SLOT)?communityTargetHref(d[linkUrlField(COMMUNITY_PROPERTY_LINK_SLOT)]):"";
+    const site=href?'<a class="cp-site" href="'+esc(href)+'" target="_blank" rel="noopener">網站 ↗</a>':"";
+    const phone=has("tel")?'<a class="tel" href="tel:'+esc(raw("tel"))+'"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79a15.53 15.53 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.24 11.36 11.36 0 0 0 3.57.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1.02l-2.2 2.2z"/></svg><span>'+esc(raw("tel"))+'</span></a>':"";
+    const contacts=group("cp-person",value("agent")+group("cp-company",value("store")));
+    html=group("rd-header rd-split-header",identity+group("rd-price-stack",price+prices))+metrics+parts+note+group("rd-footer",contacts+group("rd-actions",site+phone));
   }
-  const tags = ["planUnit","area","layout","status"].filter(field => visible.has(field)).map(field =>
-    `<span data-community-field="${field}"><i class="ml">${label(field)}</i> ${value(field)}</span>`
-  ).join("");
-  const areaKeys = ["totalArea","mainPlus","mainArea","ancillaryArea"].filter(field => visible.has(field));
-  const price = visible.has("price") ? text("price") : "";
-  const priceCell = visible.has("price") ? `<div class="price" data-community-field="price"><span class="cc-label">${label("price")}</span>${price!==""?`<span class="price-value" data-copy="${esc(d.price)}"><span class="num">${esc(price)}</span><span class="unit">${esc(communityFieldUnit("price"))}</span></span>`:'<span class="cc-empty">—</span>'}</div>` : "";
-  const phone = visible.has("tel") ? text("tel") : "";
-  const notes = visible.has("note") ? needOrder(d).map(sg => {
-    const content = needSeg(d,sg);
-    if (!content.trim()) return "";
-    // Previews show the start of each populated section. Keep the source note intact.
-    const firstLines = needDisplayText(content).trim().split("\n",compact ? 1 : 2).join("\n");
-    return `<div class="cc-note-line" data-need-font-seg="${sg}" style="--need-font-scale:${needFontPercent(d,sg)/100}"><b class="cc-note-title">${esc(needTitle(d,sg))}</b><div class="cc-note-text">${needToViewHTML(firstLines)}</div></div>`;
-  }).join("") : "";
-  return `<article class="card community-card${compact?" compact-card":""}${selected.has(d.id)?" selected":""}" data-id="${esc(d.id)}"><svg class="lp-ring" aria-hidden="true"><rect class="lp-track"/><rect class="lp-draw" pathLength="100"/><rect class="lp-tip" pathLength="100"/></svg>
+  return `<article class="card cp-card${compact?" compact-card":" rd-card rd-area-emphasis"}${selected.has(d.id)?" selected":""}" data-id="${esc(d.id)}"><svg class="lp-ring" aria-hidden="true"><rect class="lp-track"/><rect class="lp-draw" pathLength="100"/><rect class="lp-tip" pathLength="100"/></svg>
     ${selMark(d)}
-    <div class="body">${visible.size ? `
-      ${group("meta cc-tags",tags)}
-      ${visible.has("name") ? `<div class="card-head" data-community-field="name"><span class="cc-label">${label("name")}</span><h3 class="name">${text("name")!==""?nameSegmentsHTML(text("name")):'<span class="cc-empty">—</span>'}</h3></div>` : ""}
-      ${group("cc-location",fact("addr") + fact("floor"))}
-      ${group("cc-prices",priceCell + fact("floorPrice") + fact("cost"))}
-      ${group("cc-areas",areaKeys.map(fact).join(""),areaKeys.length === 4 ? "" : ` data-count="${areaKeys.length}"`)}
-      ${group("agent cc-contact",fact("agent") + (visible.has("tel") ? `<div data-community-field="tel"><span class="cc-label">${label("tel")}</span>${phone!==""?`<a class="tel" href="tel:${esc(phone)}"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79a15.53 15.53 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.24 11.36 11.36 0 0 0 3.57.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1.02l-2.2 2.2z"/></svg><span>${esc(phone)}</span></a>`:'<span class="cc-empty">—</span>'}</div>` : ""))}
-      ${group("cc-company",fact("store"))}
-      ${visible.has("note") ? `<div class="cc-notes" data-community-field="note"><span class="cc-label">${label("note")}</span><div>${notes || '<span class="cc-empty">—</span>'}</div></div>` : ""}
-    ` : '<p class="cc-hidden">卡片欄位已全部隱藏</p>'}</div>
-  </article>`;
+<div class="body">${html||'<span class="cc-empty">—</span>'}</div></article>`;
 }
 
 // ---- Storage (auto-saves on your own device; degrades to memory in preview) ----
@@ -4888,7 +5092,7 @@ function saveNav(screen, cat){
 // ==== 表格欄位標題篩選(參考客戶總覽:類別/格局/樓層/承辦/門市=勾選;售價=範圍) ====
 const AREA_FILTER_CACHE_KEY="community_table_v3_app_area_ranges_v1";
 const FLOOR_FILTER_CACHE_KEY="community_table_v3_app_floor_ranges_v1";
-const AREA_LABELS={totalArea:"總坪",mainPlus:"主附",mainArea:"主建",ancillaryArea:"附屬"};
+const AREA_LABELS={totalArea:"總坪",mainPlus:"主附",mainArea:"主建",ancillaryArea:"附屬",parkingArea:"車坪"};
 const isAreaRangeField=field=>PropertyCore.areaRangeFields.includes(field);
 const hasRange=range=>range.lo!==null || range.hi!==null;
 function activeAreaRanges(filters=listFilters()){
@@ -4914,7 +5118,7 @@ function refreshAreaFilteredRow(cell){
 function createListFilters(){
   return {
     colFilter:{cat:null, layout:null, floor:null, agent:null, store:null},
-    tableColFilter:{planUnit:null, area:null, layout:null, status:null, floor:null, agent:null, store:null},
+    tableColFilter:{planUnit:null, area:null, layout:null, status:null, floor:null, parkingType:null, parkingCount:null, agent:null, store:null},
     fltP:{lo:null, hi:null}, tableFltP:{lo:null, hi:null}, tableAreaRanges:PropertyCore.areaRanges(), tableFloorRanges:FloorRangePreview.empty(), due:new Set(), links:{}
   };
 }
@@ -4935,7 +5139,7 @@ function matchesDueFilter(item){
   return dueFilter.has(filterOptionKey(item,"due"));
 }
 let fltField = null;
-const FLT_NAME = { planUnit:"重劃區", area:"區域", status:"狀態", due:"到期", cat:"類別", layout:"格局", floor:"樓層", price:"售價（萬）", agent:"承辦", store:"門市" };
+const FLT_NAME = { parkingType:"車類", parkingCount:"車數", planUnit:"重劃區", area:"區域", status:"狀態", due:"到期", cat:"類別", layout:"格局", floor:"樓層", price:"售價（萬）", agent:"承辦", store:"門市" };
 const numOrNull = v => { try { const n = PropertyCore.price(v); return n === "" ? null : n; } catch(_){ return NaN; } };
 // link-filter:start
 const LINK_FILTER_KEY = "community_table_v3_app_linkfilters_v1";
@@ -5455,9 +5659,9 @@ function setViewMode(vm){
 }
 
 // ---- table rendering ----
-const T_COLS = ["重劃區","區域","格局","狀態","案名","門牌","樓層","網站","售價","底價","成本","總坪","主附","主建","附屬","承辦","電話","公司","註"];
+const T_COLS = ["重劃區","區域","格局","狀態","案名","門牌","樓層","網站","售價","底價","成本","總坪","主附","主建","附屬","車類","車數","車坪","承辦","電話","公司","註"];
 // ---- 表格欄寬調整(拖曳 + 雙擊自適應 + 記憶/同步)。表格填滿容器，最後可見欄承接剩餘寬度。 ----
-const T_FIELDS = ["planUnit","area","layout","status","name","addr","floor","links","price","floorPrice","cost","totalArea","mainPlus","mainArea","ancillaryArea","agent","tel","store","note"];
+const T_FIELDS = ["planUnit","area","layout","status","name","addr","floor","links","price","floorPrice","cost","totalArea","mainPlus","mainArea","ancillaryArea","parkingType","parkingCount","parkingArea","agent","tel","store","note"];
 const DISCREET_KEY = STORE_KEY.replace(/data_v4$/, "discreet_v1");
 function loadDiscreet(){
   try {
@@ -5473,7 +5677,7 @@ let discreet = loadDiscreet();
 function tableFields(){ return discreet.on ? T_FIELDS.filter(f => !discreet.fields.includes(f)) : T_FIELDS; }
 function tableColumnCount(){ return tableFields().length + (editMode ? 1 : 0); }
 // 緊湊欄寬；註下限依標題量測，並依原本操作承接剩餘寬度。
-const DEFAULT_COLW = {"planUnit":64,"area":48,"layout":48,"status":48,"name":104,"addr":84,"floor":48,"links":52,"price":52,"floorPrice":52,"cost":52,"totalArea":48,"mainPlus":48,"mainArea":48,"ancillaryArea":48,"agent":48,"tel":60,"store":76,"note":64};
+const DEFAULT_COLW = {"planUnit":64,"area":48,"layout":48,"status":48,"name":104,"addr":84,"floor":48,"links":52,"price":52,"floorPrice":52,"cost":52,"totalArea":48,"mainPlus":48,"mainArea":48,"ancillaryArea":48,"parkingType":52,"parkingCount":48,"parkingArea":48,"agent":48,"tel":60,"store":76,"note":64};
 const COLW_MIN = 48, COLW_MAX = 640, FLEX_MIN_FALLBACK = 36, DEL_W = 40;
 function loadColW(){ if (storageOK){ try { const s = JSON.parse(localStorage.getItem("community_table_v3_app_colw_v2") || "null"); if (s && typeof s === "object") return {...DEFAULT_COLW, ...s, note:64}; } catch(e){} } return {...DEFAULT_COLW}; }
 function saveColW(){ if (storageOK){ try { localStorage.setItem("community_table_v3_app_colw_v2", JSON.stringify(colW)); } catch(e){} } }
@@ -5502,11 +5706,11 @@ function colGroupHTML(){
     + (editMode ? `<col data-field="_del" style="width:${DEL_W}px">` : "");
 }
 // 彈性欄與刪除欄不放調整把手，其餘欄保留原本操作。
-const FILTERABLE = {totalArea:1,mainPlus:1,mainArea:1,ancillaryArea:1,planUnit:1,area:1,layout:1,status:1,floor:1,price:1,agent:1,store:1};
+const FILTERABLE = {totalArea:1,mainPlus:1,mainArea:1,ancillaryArea:1,parkingType:1,parkingCount:1,parkingArea:1,planUnit:1,area:1,layout:1,status:1,floor:1,price:1,agent:1,store:1};
 function tHeadHTML(){
   const fields = tableFields(), flex = tableFlexField(fields);
   return fields.map(f => {
-    const h = T_COLS[T_FIELDS.indexOf(f)];
+    const h = f === "planUnit" ? "重劃" : T_COLS[T_FIELDS.indexOf(f)];
     const rz = (f && f !== flex) ? `<span class="col-resize" data-field="${f}"></span>` : "";
     const lab = (f && FILTERABLE[f])
       ? `<button type="button" class="th-flt${colFilterOn(f) ? " on" : ""}" data-flt="${f}" aria-haspopup="dialog" aria-controls="fltBg"><span class="th-label">${h}</span><span class="fmk" aria-hidden="true">▾</span></button>`
@@ -5604,7 +5808,7 @@ if (document.fonts){
   if (document.fonts.addEventListener) document.fonts.addEventListener("loadingdone", refreshDueFonts);
 }
 function tchip(d,slot,tab){
-  const url=d[linkUrlField(slot)]||"",label=linkName(d,slot),none=linkIsNone(d,slot),on=!none&&!!safeUrl(url);
+  const url=d[linkUrlField(slot)]||"",label=linkName(d,slot),none=linkIsNone(d,slot),on=!none&&!!(slot===COMMUNITY_PROPERTY_LINK_SLOT?communityTargetHref(url):safeUrl(url));
   const tip=label+(none?"：無連結":on?"："+url:"：尚未加入連結");
   const single=slot===COMMUNITY_PROPERTY_LINK_SLOT,emptyAdd=single&&tab&&!on;
   const display=single?(on?"開啟":"－"):(none?"無":label);
@@ -5681,7 +5885,7 @@ function observeTableLinks(){
   if(observedLinkGroup){tableLinkObserver?.observe(observedLinkGroup);queueTableLinkFit();}
 }
 if(!tableLinkObserver)window.addEventListener("resize",queueTableLinkFit);
-const TABLE_NUMBERS = new Set(["price","totalArea","mainPlus","mainArea","ancillaryArea","floorPrice","cost"]);
+const TABLE_NUMBERS = new Set(["price","totalArea","mainPlus","mainArea","ancillaryArea","parkingCount","parkingArea","floorPrice","cost"]);
 function tableFileNameAvailable(){
   return !discreet.on || !["addr","name","price","agent"].some(field => discreet.fields.includes(field));
 }
@@ -5699,10 +5903,9 @@ function trowHTML(d){
       return `<td class="tneedcell"><div class="tcell tneed" data-need="1"${tTab} title="${esc(needSummaryText(d))}">${marker}</div></td>`;
     }
     const value = PropertyCore.areaValue(d,field);
-    const autoSum=field==="mainPlus" && d.mainArea!=="" && d.ancillaryArea!=="" && d.mainArea!=null && d.ancillaryArea!=null;
     const content = field === "name" && !editMode ? nameSegmentsHTML(value) : areaTableHTML(field,value);
     const cls = field === "name" ? " tname" : TABLE_NUMBERS.has(field) ? " tnum" : "";
-    const cell = `<div class="tcell${cls}" contenteditable="false"${tTab} data-field="${field}"${autoSum ? ' aria-readonly="true"' : ""} title="${esc(value)}">${content}</div>`;
+    const cell = `<div class="tcell${cls}" contenteditable="false"${tTab} data-field="${field}" title="${esc(value)}">${content}</div>`;
     if (field === "planUnit" && tableFileNameAvailable()){
       return `<td class="duewrap"><span class="gen-edge"></span><button type="button" class="gen-btn" tabindex="-1" data-gen="1" title="生成檔名" aria-label="生成檔名">${GEN_ICON}<span class="gen-label">生成</span></button>${cell}</td>`;
     }
@@ -5954,24 +6157,19 @@ function openTableDueCal(trigger){
   });
 }
 function updateTableAreaCell(cell,it){
- const sumCell=cell.closest("tr")?.querySelector('[data-field="mainPlus"]');
- if(!sumCell || !it)return;
- const sum=PropertyCore.mainAreaSum(it.mainArea,it.ancillaryArea);
- const value=sum ?? it.mainPlus ?? "";
- if(sum===null)sumCell.removeAttribute("aria-readonly");
- else sumCell.setAttribute("aria-readonly","true");
- paintAreaCell(sumCell,"mainPlus",value);
+ if(!it)return;
+ for(const field of PropertyCore.areaTrio){
+   const node=cell.closest("tr")?.querySelector('[data-field="'+field+'"]');
+   if(node && node!==cell && !tCellIsEditing(node))paintAreaCell(node,field,PropertyCore.areaValue(it,field));
+ }
 }
 function tCommitCell(cell){                       // 回傳 true=值有變更(呼叫端據此決定要不要閃「已儲存」)
   const it = tFindItem(cell); if (!it) return false;
   const field = cell.dataset.field;
-  if(field==="mainPlus" && PropertyCore.mainAreaSum(it.mainArea,it.ancillaryArea)!==null){
-    updateTableAreaCell(cell,it);return false;
-  }
   let val = cell.textContent.trim();
   if (field === "name") val = normalizeName(val);
   if (TABLE_NUMBERS.has(field)){
-    try { val=field === "price" ? PropertyCore.price(val) : PropertyCore.tableDecimal(val); cell.removeAttribute("aria-invalid"); }
+    try { val=field === "price" ? PropertyCore.price(val) : field==="parkingCount" ? PropertyCore.parkingCount(val) : PropertyCore.tableDecimal(val); cell.removeAttribute("aria-invalid"); }
     catch(e){
       const label = T_COLS[T_FIELDS.indexOf(field)];
       cell.setAttribute("aria-invalid","true"); toast(e.message.replace(/售價/g,label));
@@ -5984,9 +6182,13 @@ function tCommitCell(cell){                       // 回傳 true=值有變更(�
     return window.CommunityShared.edit({id:it.id,field:field==="name"?"fullName":field,value:val});
   }
   if (it[field] !== val){
-    const areaInput=field==="mainArea" || field==="ancillaryArea";
-    if(areaInput && val==="")it.mainPlus=PropertyCore.areaValue(it,"mainPlus");
-    it[field] = val; it.updatedAt = Date.now(); if (!saveItems()) return false;
+    const areaInput=PropertyCore.areaTrio.includes(field);
+    let changes={[field]:val};
+    if(areaInput){
+      try{changes=PropertyCore.linkedArea(it,field,val,cell._areaTarget||PropertyCore.dependentArea(it,field));}
+      catch(e){cell.setAttribute("aria-invalid","true");toast(e.message);return false;}
+    }
+    Object.assign(it,changes);it.updatedAt=Date.now();if(!saveItems())return false;
     if(areaInput)updateTableAreaCell(cell,tFindItem(cell));
     cell.title=String(val); if (TABLE_NUMBERS.has(field) && !tCellIsEditing(cell)) cell.textContent=String(val); onLocalChange("data"); return true; }
   return false;
@@ -6038,6 +6240,7 @@ function tCellBeginType(cell){
   if (!cell || !cell.classList.contains("tcell") || !cell.dataset.field || !editMode) return;
   const active = document.activeElement;
   if (active && active !== cell && tCellIsEditing(active)) tCellExitEdit(active, {flash: false, defer: true});
+  if(PropertyCore.areaTrio.includes(cell.dataset.field))cell._areaTarget=PropertyCore.dependentArea(tFindItem(cell),cell.dataset.field);
   cell.textContent = "";
   cell.setAttribute("contenteditable", "true");
   cell.focus({ preventScroll: true });
@@ -6049,6 +6252,7 @@ function tCellEdit(cell, x, y, opts){
   if (!cell || !cell.classList.contains("tcell") || !cell.dataset.field || !editMode) return;
   const active = document.activeElement;
   if (active && active !== cell && tCellIsEditing(active)) tCellExitEdit(active, {flash: false, defer: true});
+  if(PropertyCore.areaTrio.includes(cell.dataset.field))cell._areaTarget=PropertyCore.dependentArea(tFindItem(cell),cell.dataset.field);
   if(cell.querySelector(".area-extra"))cell.textContent=cell.textContent;
   cell.setAttribute("contenteditable", "true");
   cell.focus({ preventScroll: true });
@@ -6619,6 +6823,7 @@ function visitPropertyLink(item,slot){
   if(!item||!linkSlotById(slot))return;
   const name=linkName(item,slot),url=String(item[linkUrlField(slot)]||"").trim();
   if(linkIsNone(item,slot))toast(name+" 已標記無連結");
+  else if(url&&slot===COMMUNITY_PROPERTY_LINK_SLOT)openCommunityTarget(url);
   else if(url)openExtUrl(normUrl(url));
   else toast(name+" 尚未設定連結");
 }
@@ -6721,6 +6926,7 @@ function openLinkPop(source,slot=Number(source.dataset.slot)){
   lpTableTarget={itemId,slot,initialLabel:label};
   lpNoneWrap.hidden=false;lpNone.checked=linkIsNone(item,slot);
   setLinkTitle(label);
+  lpInput.placeholder=slot===COMMUNITY_PROPERTY_LINK_SLOT?"貼上網址或電腦檔案路徑":"貼上網址…";
   if(slot===COMMUNITY_PROPERTY_LINK_SLOT&&label==="網站")lpKind.hidden=true;
   setLinkCaseName(item.name, tableFields().includes("name"));
   lpInput.value = item[linkUrlField(slot)]||"";
@@ -6733,6 +6939,7 @@ function openLinkPop(source,slot=Number(source.dataset.slot)){
 function lpOutside(e){ if (e.target.closest("#linkpop") || e.target.closest(".tchip") || e.target.closest(".need-link-chip")) return; commitLink(); }
 // 備註欄「連結」標籤(need-link-chip)的編輯面板:貼上/清除/開啟/完成。與表格膠囊 openLinkPop 共用同一個浮層,但寫回路徑不同(靠 commitNeedSeg 重新序列化該段,而非寫 item 欄位)
 function openLinkPopNeed(chip){
+  lpInput.placeholder="貼上網址（Ctrl+V）…";
   const priorEd=chip.closest(".needexp-ed, .fneed-ed"),priorRow=priorEd?.closest(".needexp");
   const priorId=priorRow?.dataset.for,priorSeg=priorEd?.dataset.seg,priorUrl=chip.getAttribute("data-url");
   const priorIndex=priorEd?[...priorEd.querySelectorAll(".need-link-chip")].indexOf(chip):-1;
@@ -6847,7 +7054,7 @@ lpCopyBtn.addEventListener("click", ()=>{
   if (navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(copied).catch(fallback); }
   else fallback();
 });
-lpOpenBtn.addEventListener("click", ()=>{ const u=lpInput.value.trim(); if (u) openExtUrl(normUrl(u)); });
+lpOpenBtn.addEventListener("click", ()=>{ const u=lpInput.value.trim(); if(lpTableTarget?.slot===COMMUNITY_PROPERTY_LINK_SLOT)openCommunityTarget(u);else if (u) openExtUrl(normUrl(u)); });
 
 // ---- toggle handlers ----
 document.getElementById("coverVT").addEventListener("click", e=>{
@@ -7729,7 +7936,7 @@ document.addEventListener("keydown", e => {
 
 // ---- Add / Edit / Delete ----
 const modalBg = document.getElementById("modalBg");
-const FORM_INPUT_KEYS = T_FIELDS.filter(field => field !== "note" && field !== "links");
+const FORM_INPUT_KEYS = T_FIELDS.filter(field => !["note","links","parkingType","parkingCount","parkingArea"].includes(field));
 const F = Object.fromEntries([...FORM_INPUT_KEYS,"note","note2","note3","t1","t2","t3"].map(k=>[k,document.getElementById("f_"+k)]));
 const formCommunity = document.getElementById("formCommunity");
 const formCommunityUI=(()=>{
@@ -7825,20 +8032,31 @@ function fillFormCommunity(key, list = cats){
 formCommunity.addEventListener("change",()=>saveFormDraft());
 function fillFormInputs(record){
   for(const key of FORM_INPUT_KEYS) F[key].value = record?.[key] ?? "";
-  updateFormArea();
+  for(const key of PropertyCore.areaTrio)F[key].setCustomValidity("");
+  F.mainPlus.value=PropertyCore.areaValue(record,"mainPlus");
+  formAreaEdit=null;
 }
-function updateFormArea(){
- let sum=null;
- try{sum=PropertyCore.mainAreaSum(F.mainArea.value,F.ancillaryArea.value);}catch(e){/* Keep incomplete input for validation and drafts. */}
- F.mainPlus.readOnly=sum!==null;
- if(sum!==null)F.mainPlus.value=sum;
+let formAreaEdit=null;
+const formAreas=()=>Object.fromEntries(PropertyCore.areaTrio.map(key=>[key,F[key].value.trim()]));
+for(const field of PropertyCore.areaTrio){
+ const input=F[field];
+ input.addEventListener("focus",()=>{formAreaEdit={field,target:PropertyCore.dependentArea(formAreas(),field)};});
+ input.addEventListener("input",()=>{
+   const row=formAreas();
+   if(formAreaEdit?.field!==field)formAreaEdit={field,target:PropertyCore.dependentArea(row,field)};
+   try{
+     const changes=PropertyCore.linkedArea(row,field,row[field],formAreaEdit.target);
+     if(Object.hasOwn(changes,formAreaEdit.target))F[formAreaEdit.target].value=changes[formAreaEdit.target];
+     for(const key of PropertyCore.areaTrio)F[key].setCustomValidity("");
+   }catch(e){input.setCustomValidity(e.message);}
+ });
 }
-for(const source of [F.mainArea,F.ancillaryArea])source.addEventListener("input",updateFormArea);
 function formInputValue(key){
   const input=F[key], raw=input.value.trim();
   if(key==="name")return normalizeName(raw);
   if(!TABLE_NUMBERS.has(key))return raw;
   try{
+    if(input.validity?.customError)throw new Error(input.validationMessage);
     if(input.validity?.badInput)throw new Error("請輸入有效數字");
     return key==="price" ? PropertyCore.price(raw) : PropertyCore.tableDecimal(raw,key==="mainPlus"&&F.mainPlus.readOnly?10002:5000);
   }catch(error){
@@ -10774,6 +10992,8 @@ cardsEl.addEventListener("click", e => {
   }
   const more=e.target.closest(".more-links");
   if(more){e.stopPropagation();openMoreLinks(more);return;}
+  const site=e.target.closest(".cp-site");
+  if(site&&localLinkPath(site.getAttribute("href"))){e.preventDefault();openCommunityTarget(site.getAttribute("href"));return;}
   if (isLink(e.target)) return;   // 電話撥號 / 連結開啟:兩模式皆維持原生動作
   if (editMode){
     openForm(id);                 // 編輯模式:點卡片進編輯表單
@@ -12944,11 +13164,91 @@ function paintPropertyState(state){
     active.options=options(active.field);const current=active.keepNameOpen?valueOf({name:active.fullNameDraft},'name'):valueOf(item,active.field);
     menu.setAttribute('aria-label',labels[active.field]+'選項');
     menu.innerHTML=head(labels[active.field])+(active.field==='name'?`<div class="fo-full-name"><label for="fieldFullName">編輯完整案名／戶別</label><div class="fo-full-name-row"><input id="fieldFullName" class="fo-input" data-full-name aria-label="編輯完整案名／戶別" value="${esc(active.fullNameDraft??String(item.name||''))}" placeholder="社區名稱／戶別" autocomplete="off"><button type="button" class="fo-primary" data-save-full-name>儲存</button></div><span class="fo-full-name-hint">只修改這筆物件，也可按 Enter 儲存。</span></div>`:'')+`<button type="button" class="fo-clear" data-clear aria-label="清空這筆${labels[active.field]}">—</button>`+
-      active.options.map((opt,i)=>`<div class="fo-line"><button type="button" class="fo-option" data-select="${i}" aria-pressed="${opt.name===current}"><span>${esc(opt.name)}</span>${opt.name===current?'<span class="fo-check">✓</span>':''}</button>${colored.has(active.field)?`<button type="button" class="fo-color" data-color="${i}" aria-label="選擇 ${esc(opt.name)} 的顏色"><span class="fo-dot${opt.hex&&opt.alpha?'':' none'}" style="--dot:${opt.hex||'#64748b'}"></span></button>`:''}<button type="button" class="fo-rename" data-rename="${i}" aria-label="重新命名 ${esc(opt.name)}">重新命名</button><button type="button" class="fo-delete" data-delete-option="${i}" aria-label="刪除 ${esc(opt.name)} 選項">刪除</button></div>`).join('')+
+      active.options.map((opt,i)=>`<div class="fo-line"><button type="button" class="fo-option" title="長按調整順序" aria-keyshortcuts="Alt+ArrowDown" data-select="${i}" aria-pressed="${opt.name===current}"><span>${esc(opt.name)}</span>${opt.name===current?'<span class="fo-check">✓</span>':''}</button>${colored.has(active.field)?`<button type="button" class="fo-color" data-color="${i}" aria-label="選擇 ${esc(opt.name)} 的顏色"><span class="fo-dot${opt.hex&&opt.alpha?'':' none'}" style="--dot:${opt.hex||'#64748b'}"></span></button>`:''}<button type="button" class="fo-rename" data-rename="${i}" aria-label="重新命名 ${esc(opt.name)}">重新命名</button><button type="button" class="fo-delete" data-delete-option="${i}" aria-label="刪除 ${esc(opt.name)} 選項">刪除</button></div>`).join('')+
       `<div class="fo-add"><input class="fo-input" data-add-input placeholder="自訂…" aria-label="新增自訂${labels[active.field]}" maxlength="80" autocomplete="off"><button type="button" class="fo-primary" data-add>加入</button></div><p class="fo-error" role="alert"></p>`;
+    if(active.addDraft!=null){menu.querySelector('[data-add-input]').value=active.addDraft;delete active.addDraft;}
     window.CommunityShared?.decorateMenu(menu,item,active.field);
     menu.classList.add('show');place();
   }
+  let optionPress=null, sortDrag=null;
+  function cancelOptionPress(){
+    if(optionPress)clearTimeout(optionPress.timer);
+    optionPress=null;
+  }
+  function renderOptionOrder(){
+    menu.setAttribute('aria-label',labels[active.field]+'排序');
+    menu.innerHTML=head(labels[active.field]+'排序')+
+      '<div class="fo-order-list">'+active.orderDraft.map((opt,i)=>
+        '<div class="fo-order-row"><span class="fo-order-grip" aria-hidden="true">⠿</span><span class="fo-order-name">'+esc(opt.name)+'</span>'+
+        '<button type="button" class="fo-rename" data-step="-1" aria-label="上移 '+esc(opt.name)+'" '+(i===0?'disabled':'')+'>↑</button>'+
+        '<button type="button" class="fo-rename" data-step="1" aria-label="下移 '+esc(opt.name)+'" '+(i===active.orderDraft.length-1?'disabled':'')+'>↓</button></div>').join('')+
+      '</div><p class="fo-error" role="alert"></p><div class="fo-actions"><button type="button" class="fo-secondary" data-back>取消</button><button type="button" class="fo-primary" data-order-save>完成</button></div>';
+    place();
+  }
+  function enterOptionOrder(){
+    if(active?.mode!=='menu')return;
+    active.orderDraft=active.options.map(opt=>({...opt}));
+    active.addDraft=menu.querySelector('[data-add-input]').value;
+    active.mode='order';renderOptionOrder();
+  }
+  function moveOption(from,to){
+    if(to<0||from===to||to>=active.orderDraft.length)return;
+    const [entry]=active.orderDraft.splice(from,1);
+    active.orderDraft.splice(to,0,entry);
+    const list=menu.querySelector('.fo-order-list'),scroll=list.scrollTop;
+    renderOptionOrder();
+    menu.querySelector('.fo-order-list').scrollTop=scroll;
+    return menu.querySelectorAll('.fo-order-row')[to];
+  }
+  function saveOptionOrder(){
+    if(active.orderDraft.some((opt,i)=>opt.name!==active.options[i].name)){
+      const next=clone(catalogs);
+      next[active.field]=active.orderDraft;
+      if(!saveCatalog(next)){error(CommunityData.lastError||'選項順序尚未儲存');return;}
+      refreshCatalogs();active.catalogBase=JSON.stringify(catalogs);
+    }
+    showMenu();
+  }
+  menu.addEventListener('pointerdown',event=>{
+    cancelOptionPress();
+    if(!event.isPrimary||event.button!==0)return;
+    const button=event.target.closest('[data-select]');
+    if(button&&active?.mode==='menu'){
+      const session=active;
+      optionPress={id:event.pointerId,x:event.clientX,y:event.clientY,timer:setTimeout(()=>{
+        if(active!==session||active.mode!=='menu'||!button.isConnected)return;
+        menu.setPointerCapture(event.pointerId);
+        enterOptionOrder();
+      },500)};
+    }
+    const grip=event.target.closest('.fo-order-grip');
+    if(grip&&active?.mode==='order'){
+      const row=grip.closest('.fo-order-row'),from=Array.from(row.parentNode.children).indexOf(row);
+      sortDrag={id:event.pointerId,row,from,to:from};row.classList.add('fo-moving');menu.setPointerCapture(event.pointerId);event.preventDefault();
+    }
+  });
+  window.addEventListener('pointermove',event=>{
+    if(optionPress?.id===event.pointerId&&Math.hypot(event.clientX-optionPress.x,event.clientY-optionPress.y)>8)cancelOptionPress();
+    if(sortDrag?.id!==event.pointerId||active?.mode!=='order')return;
+    const list=menu.querySelector('.fo-order-list'),rect=list.getBoundingClientRect();
+    if(event.clientY<rect.top+20)list.scrollTop-=12;
+    if(event.clientY>rect.bottom-20)list.scrollTop+=12;
+    const rows=[...list.children];
+    const index=rows.findIndex(row=>event.clientY<row.getBoundingClientRect().bottom);
+    sortDrag.to=index<0?rows.length-1:index;
+    rows.forEach((row,i)=>{row.classList.toggle('fo-before',i===sortDrag.to&&i<sortDrag.from);row.classList.toggle('fo-after',i===sortDrag.to&&i>sortDrag.from);});
+  },true);
+  function endOptionPointer(event){
+    if(optionPress?.id===event.pointerId)cancelOptionPress();
+    if(sortDrag?.id!==event.pointerId)return;
+    const drag=sortDrag;sortDrag=null;
+    menu.querySelectorAll('.fo-order-row').forEach(row=>row.classList.remove('fo-moving','fo-before','fo-after'));
+    if(event.type==='pointerup'&&active?.mode==='order')moveOption(drag.from,drag.to);
+  }
+  for(const type of ['pointerup','pointercancel','lostpointercapture'])window.addEventListener(type,endOptionPointer,true);
+  menu.addEventListener('contextmenu',event=>{if(optionPress||active?.mode==='order')event.preventDefault();});
+
+
   function open(cell){
     const item=tFindItem(cell);if(!item)return;
     if(active)close();closeCatMenu();closeLinkPop();
@@ -13172,6 +13472,13 @@ function paintPropertyState(state){
   menu.addEventListener('click',event=>{
     event.stopPropagation();const b=event.target.closest('button');if(!b||!active)return;
     if(b.hasAttribute('data-close'))close();
+    else if(b.hasAttribute('data-order-save'))saveOptionOrder();
+    else if(b.hasAttribute('data-step')){
+      const row=b.closest('.fo-order-row'),step=Number(b.dataset.step);
+      const from=Array.from(row.parentNode.children).indexOf(row);
+      const moved=moveOption(from,from+step);
+      (moved?.querySelector('[data-step="'+step+'"]:not(:disabled)')||moved?.querySelector('[data-step]:not(:disabled)'))?.focus({preventScroll:true});
+    }
     else if(b.hasAttribute('data-clear'))choose('');
     else if(b.hasAttribute('data-select')){
       const name=active.options[Number(b.dataset.select)].name;
@@ -13220,8 +13527,9 @@ function paintPropertyState(state){
     if(active)close();
   },true);
   document.addEventListener('keydown',event=>{
-    if(event.key==='Escape'&&active){event.preventDefault();event.stopImmediatePropagation();if(draft)cancelTint();else if(active.mode==='rename'||active.mode==='delete')showMenu();else close();return;}
+    if(event.key==='Escape'&&active){event.preventDefault();event.stopImmediatePropagation();if(draft)cancelTint();else if(['rename','delete','order'].includes(active.mode))showMenu();else close();return;}
     if(menu.contains(event.target)){
+      if(event.altKey&&event.key==='ArrowDown'&&event.target.closest('[data-select]')){event.preventDefault();event.stopPropagation();enterOptionOrder();menu.querySelector('[data-order-save]').focus();return;}
       event.stopPropagation();if(event.key==='Enter'&&!event.isComposing&&!event.repeat){if(event.target.hasAttribute('data-full-name')){event.preventDefault();saveFullName();}else if(event.target.hasAttribute('data-add-input')){event.preventDefault();add();}else if(event.target.hasAttribute('data-rename-input')){event.preventDefault();rename();}}return;
     }
     if(tint.contains(event.target)){event.stopPropagation();return;}
@@ -13234,6 +13542,7 @@ function paintPropertyState(state){
     if(!active)return true;
     if(window._saveBlocked)return false;
     if(document.getElementById('communityDefaultsBg')?.classList.contains('open'))return false;
+    if(active.mode==='order'){toast('請先完成或取消排序。');return false;}
     if(active.mode==='delete'){toast('請先確認刪除或取消。');return false;}
     if(draft){tint.querySelector('[data-tint-done]').click();if(draft)return false;}
     if(active.mode==='rename'){rename();if(active?.mode==='rename')return false;close();return true;}
@@ -13348,6 +13657,8 @@ function paintPropertyState(state){
   let names=Array(slotCount).fill(''),communities=new Map(),appearance=defaultAppearance(),editor=null;
   function normalizeURL(raw){
     const value=String(raw||'').trim();if(!value)return '';
+    const path=localLinkPath(value);
+    if(path)return COMMUNITY_FILE_MARK+encodeURIComponent(path);
     if(/[\u0000-\u0020\u007f]/.test(value))throw new Error('網址中不能有空格或換行。');
     const url=new URL(/^[a-z][a-z\d+.-]*:/i.test(value)?value:'https://'+value);
     if(!['http:','https:'].includes(url.protocol)||url.username||url.password)throw new Error('請填入 http 或 https 網址。');
@@ -13395,7 +13706,7 @@ function paintPropertyState(state){
       const label=name||'第 '+(slot+2)+' 格';
       if(!preview){
         link.dataset.community=community;link.dataset.slot=String(slot);
-        link.title=community+' · '+label+(url?'\n'+url:'\n尚未設定網址');
+        link.title=community+' · '+label+(url?'\n'+(localLinkPath(url)||url):'\n尚未設定網址');
         if(!url){
           link.type='button';link.dataset.clLinkAction='add';link.setAttribute('aria-haspopup','dialog');
           link.setAttribute('aria-label',community+' · '+label+'，新增連結');
@@ -13411,7 +13722,7 @@ function paintPropertyState(state){
         const openLink=document.createElement('a');openLink.className='cl-link-open';
         openLink.href=url;openLink.target='_blank';openLink.rel='noopener noreferrer';openLink.dataset.clLinkAction='open';
         openLink.dataset.community=community;openLink.dataset.slot=String(slot);
-        openLink.setAttribute('aria-label',community+' · '+label+'，開啟連結');openLink.title=url;
+        openLink.setAttribute('aria-label',community+' · '+label+'，開啟連結');openLink.title=localLinkPath(url)||url;
         openLink.append(text,mark);
         const edit=document.createElement('button');edit.type='button';edit.className='cl-link-edit';edit.textContent='編輯';
         edit.dataset.clLinkAction='edit';edit.dataset.community=community;edit.dataset.slot=String(slot);
@@ -13485,7 +13796,7 @@ function paintPropertyState(state){
       editor.colorPicker=window.CommunityLinkColorPicker.mount(dialog.querySelector('.cl-inline-color-host'),{color:editor.draft.background,onPreview:setDraftColor});
     }else{
       const url=communities.get(community)?.[slot]||'';
-      dialog.innerHTML=header(community+' · '+(names[slot]||'第 '+(slot+2)+' 格'))+`<div class="cl-url-row"><label class="cl-url-label" for="communityLinkURL">網址</label><input id="communityLinkURL" class="fo-input" type="url" placeholder="https://" value="${esc(url)}" autocomplete="off" spellcheck="false"></div>`+footer('<button type="button" class="fo-secondary cl-clear" data-cl-clear>清空網址</button>');
+      dialog.innerHTML=header(community+' · '+(names[slot]||'第 '+(slot+2)+' 格'))+`<div class="cl-url-row"><label class="cl-url-label" for="communityLinkURL">連結</label><input id="communityLinkURL" class="fo-input" type="text" placeholder="網址或電腦檔案路徑" value="${esc(localLinkPath(url)||url)}" autocomplete="off" spellcheck="false"></div>`+footer('<button type="button" class="fo-secondary cl-clear" data-cl-clear>清空連結</button>');
     }
     lockOverlay();backdrop.classList.add('open');namesButton.setAttribute('aria-expanded',String(kind==='names'));dialog.querySelector('input:not(:disabled)')?.focus({preventScroll:true});
   }
@@ -13505,7 +13816,7 @@ function paintPropertyState(state){
       }catch(failure){error(failure.message);return;}
       if(!save(next,communities,look))return;
     }else{
-      let url;try{url=normalizeURL(dialog.querySelector('#communityLinkURL').value);}catch(_){error('請填入有效的 http 或 https 網址。');return;}
+      let url;try{url=normalizeURL(dialog.querySelector('#communityLinkURL').value);}catch(_){error('請填入有效網址或完整電腦檔案路徑。');return;}
       const next=new Map(communities),urls=(next.get(editor.community)||Array(slotCount).fill('')).slice();urls[editor.slot]=url;next.set(editor.community,urls);
       if(!save(names,next))return;
     }
@@ -13520,7 +13831,11 @@ function paintPropertyState(state){
     const action=event.target.closest('[data-cl-link-action]');if(!action||tselMode)return;
     // Native anchors retain normal opening, modifier keys and a separate edit target.
     event.stopImmediatePropagation();
-    if(action.tagName==='A')return;
+    if(action.tagName==='A'){
+      const target=action.getAttribute('href');
+      if(localLinkPath(target)){event.preventDefault();openCommunityTarget(target);}
+      return;
+    }
     event.preventDefault();open('url',action.dataset.community,Number(action.dataset.slot));
   },true);
   let downOnBackground=false;
@@ -14630,9 +14945,12 @@ function paintPropertyState(state){
   open(spec){const el=Array.from(tableWrap.querySelectorAll('.tcell[data-field]')).find(cell=>tFindItem(cell)?.id===spec.id&&cell.dataset.field===spec.field);if(!el)return null;if(el.querySelector('.area-extra'))el.textContent=el.textContent;el.dataset.quickEdit='cell';el.contentEditable='true';el.tabIndex=0;el.focus({preventScroll:true});caretEnd(el);tScrollFieldIntoView(el);return {...spec,el,kind:'cell'};},
   commit(state){
    const {el,field}=state;let value=el.textContent.trim();
-   if(TABLE_NUMBERS.has(field))try{value=field==='price'?PropertyCore.price(value):PropertyCore.tableDecimal(value);el.removeAttribute('aria-invalid');}catch(error){el.setAttribute('aria-invalid','true');toast(error.message.replace(/售價/g,T_COLS[T_FIELDS.indexOf(field)]));return false;}
+   if(TABLE_NUMBERS.has(field))try{value=field==='price'?PropertyCore.price(value):field==='parkingCount'?PropertyCore.parkingCount(value):PropertyCore.tableDecimal(value);el.removeAttribute('aria-invalid');}catch(error){el.setAttribute('aria-invalid','true');toast(error.message.replace(/售價/g,T_COLS[T_FIELDS.indexOf(field)]));return false;}
    const before=state.baseItems.find(item=>item.id===state.id);const values={[field]:value};
-   if((field==='mainArea'||field==='ancillaryArea')&&value==='')values.mainPlus=PropertyCore.areaValue(before,'mainPlus');
+   if(PropertyCore.areaTrio.includes(field)&&value!==before[field]){
+     try{Object.assign(values,PropertyCore.linkedArea(before,field,value,PropertyCore.dependentArea(before,field)));}
+     catch(error){el.setAttribute('aria-invalid','true');toast(error.message);return false;}
+   }
    const ok=patch(state,values);if(ok)updateTableAreaCell(el,items.find(item=>item.id===state.id));return ok;
   },
   finish(state){state.el.contentEditable='false';delete state.el.dataset.quickEdit;const item=items.find(item=>item.id===state.id);if(item){paintAreaCell(state.el,state.field,PropertyCore.areaValue(item,state.field));}state.el.blur();},
@@ -14662,7 +14980,9 @@ function paintPropertyState(state){
  const originalUI=syncToggleUI;
  syncToggleUI=function(...args){const value=originalUI(...args);indicator();return value;};
  window.addEventListener('pointerdown',event=>{
-  lastPointer={type:event.pointerType,time:performance.now(),button:event.button};
+  lastPointer={type:event.pointerType,time:performance.now(),button:event.button,
+   nameEditor: event.pointerType==='mouse' && event.button===0 && current?.kind==='option' &&
+    current.field==='name' && event.target.closest('#fieldOptionMenu') ? current : null};
   blockedPointer=false;
   if(!current||![0,2].includes(event.button))return;
   if(event.target.closest('#modeBtn')){event.preventDefault();return;}
@@ -14678,6 +14998,11 @@ function paintPropertyState(state){
   for(const adapter of adapters){const spec=adapter.target(event.target);if(!spec?.id)continue;event.preventDefault();event.stopImmediatePropagation();pendingRedraw=false;open(adapter,spec);return;}
  },true);
  window.addEventListener('click',event=>{
+  // A mouse selection can start inside the editor and dispatch its click on the page body.
+  if(event.detail>0 && lastPointer?.nameEditor && current===lastPointer.nameEditor){
+   lastPointer.nameEditor=null;
+   if(!current.adapter.contains(current,event.target)){event.stopImmediatePropagation();return;}
+  }
   if(blockedPointer){blockedPointer=false;event.preventDefault();event.stopImmediatePropagation();return;}
   if(pendingRedraw){pendingRedraw=false;queueMicrotask(()=>{if(!current)applyFilter();});}
   if(!current)return;
@@ -14896,7 +15221,7 @@ function paintPropertyState(state){
 
 (() => {
   const $ = id => document.getElementById(id);
-  const labels = {note:'備註',note2:'注意',note3:'其它',price:'售價',agent:'承辦',name:'案名',store:'公司',t1:'備註標題',t2:'注意標題',t3:'其它標題',addr:'門牌',layout:'格局',floor:'樓層',tel:'電話',due:'到期日',cat:'社區歸屬',planUnit:'重劃區',area:'區域',status:'狀態',totalArea:'總坪',mainPlus:'主附',mainArea:'主建',ancillaryArea:'附屬',floorPrice:'底價',cost:'成本'};
+  const labels = {note:'備註',note2:'注意',note3:'其它',price:'售價',agent:'承辦',name:'案名',store:'公司',t1:'備註標題',t2:'注意標題',t3:'其它標題',addr:'門牌',layout:'格局',floor:'樓層',tel:'電話',due:'到期日',cat:'社區歸屬',planUnit:'重劃區',area:'區域',status:'狀態',totalArea:'總坪',mainPlus:'主附',mainArea:'主建',ancillaryArea:'附屬',parkingType:'車類',parkingCount:'車數',parkingArea:'車坪',floorPrice:'底價',cost:'成本'};
   const tools = document.createElement('div');
   tools.className = 'history-tools';
   tools.innerHTML=['tryUndo','tryRedo'].map(id=>'<button id="'+id+'" type="button">'+'<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M2 11 11 3v5c6.1.2 10.3 4 11 12-2.7-4.7-6-6.5-11-6.5V19z"/></svg>'+'<span>'+(id==='tryUndo'?'還原':'重做')+'</span></button>').join('');
