@@ -2208,27 +2208,15 @@ async function openCommunityTarget(value){
 
 
 /* Clear drag source and destination, scoped to the existing ordering dialog. */
-#customOrderBg.community-order-drag .custom-order-row{cursor:grab;transition:background-color 120ms ease;}
-#customOrderBg.community-order-drag .custom-order-row:not(.community-order-ghost):hover{background:var(--surface-2);}
+#customOrderBg.community-order-drag .custom-order-row{position:relative;cursor:grab;}
+#customOrderBg.community-order-drag .custom-order-row:hover{background:var(--surface-2);}
 #customOrderBg.community-order-drag .custom-order-grip{width:40px;min-width:40px;height:44px;min-height:44px;border-radius:9px;background:var(--surface-2);}
 #customOrderBg.community-order-drag .custom-order-moves button{cursor:pointer;}
-#customOrderBg.community-order-drag .custom-order-row.community-order-source{display:none!important;}
 #customOrderBg.community-order-dragging,#customOrderBg.community-order-dragging *{cursor:grabbing!important;user-select:none!important;}
-#customOrderBg .community-order-dropgap{display:flex;align-items:center;justify-content:space-between;gap:12px;box-sizing:border-box;min-height:56px;padding:8px 15px;border:2px dashed var(--accent-deep,#607580);border-radius:10px;background:var(--accent-tint,var(--surface-2));color:var(--accent-deep,#607580);list-style:none;}
-#customOrderBg .community-drop-label{font-size:14px;font-weight:700;}
-#customOrderBg .community-drop-position{font-size:12px;font-weight:600;white-space:nowrap;}
-#customOrderBg .community-order-ghost{position:fixed;top:0;left:0;z-index:14000;box-sizing:border-box;margin:0;padding:7px 10px;pointer-events:none;border:1px solid var(--accent-deep,#607580);border-radius:12px;background:var(--card);box-shadow:0 15px 38px #162b3940,0 3px 9px #162b3929;opacity:.98;will-change:transform;transition:none!important;}
-#customOrderBg .community-order-ghost .custom-order-moves{opacity:.3;}
-#customOrderBg .community-order-ghost .custom-order-grip{background:transparent;}
-#customOrderBg .community-order-ghost .custom-order-position{display:none;}
-#customOrderBg .community-drag-hint{position:absolute;right:10px;bottom:-25px;padding:4px 8px;border-radius:7px;background:var(--ink,#27353D);color:var(--card,#fff);font-size:11px;line-height:1.4;font-weight:600;white-space:nowrap;box-shadow:0 2px 5px #0002;}
-#customOrderBg .community-order-ghost.is-invalid{opacity:.75;}
-#customOrderBg .community-order-dropgap.is-invalid{border-style:dotted;opacity:.5;}
-#customOrderBg.community-order-drag .custom-order-row.community-order-landed{animation:community-order-landed 700ms ease-out;}
-@keyframes community-order-landed{from{background:var(--accent-tint,var(--surface-2));}to{background:var(--card);}}
-@media(pointer:coarse){#customOrderBg.community-order-drag .custom-order-row{cursor:default;}#customOrderBg.community-order-drag .custom-order-grip{width:44px;min-width:44px;}#customOrderBg .community-order-ghost{max-width:calc(100vw - 16px);}}
-@media(prefers-reduced-motion:reduce){#customOrderBg.community-order-drag .custom-order-row{transition:none;}#customOrderBg.community-order-drag .custom-order-row.community-order-landed{animation:none;background:var(--accent-tint,var(--surface-2));}}
-
+#customOrderBg.community-order-dragging .custom-order-row:not(.community-order-moving){transition:transform .14s ease;}
+#customOrderBg .custom-order-row.community-order-moving{z-index:2;background:var(--surface-2);border-radius:8px;}
+@media(pointer:coarse){#customOrderBg.community-order-drag .custom-order-row{cursor:default;}#customOrderBg.community-order-drag .custom-order-grip{width:44px;min-width:44px;}}
+@media(prefers-reduced-motion:reduce){#customOrderBg.community-order-dragging .custom-order-row:not(.community-order-moving){transition:none;}}
 
 #customOrderBtn>span[aria-hidden="true"]{display:none;}
 
@@ -4169,7 +4157,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.22Q";
+const APP_VERSION = "2026.11.22R";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -14566,12 +14554,12 @@ function paintPropertyState(state){
 })();
 
 
-/* Order dragging: floating row, stable destination, draft commit on drop. */
+/* Reorder within the list. Only a valid drop changes the current draft. */
 (() => {
   'use strict';
   if(window.CommunityOrderDrag)return;
   const ui=customOrderUI,threshold=6;
-  let suppressClickUntil=0,landingTimer=0;
+  let suppressClickUntil=0;
   const owned=()=>customDrag?.communityOrderDrag===true;
   const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
   const originalStop=stopCustomDrag,originalRender=renderCustomOrder;
@@ -14579,7 +14567,7 @@ function paintPropertyState(state){
   function decorate(){
     ui.bg.classList.add('community-order-drag');
     const tip=ui.bg.querySelector('.custom-order-tip');
-    if(tip)tip.textContent='拖曳整列到「放在這裡」；手機請拉左側把手，也可按右側 ↑ ↓。';
+    if(tip)tip.textContent='拖曳整列調整順序，手機可拉左側把手，也可按右側 ↑ ↓。';
     for(const row of rowElements()){
       row.title='拖曳調整順序';
       const handle=row.querySelector('[data-order-grip]');if(handle)handle.title='拖曳調整，或用鍵盤 ↑ ↓ 移動';
@@ -14589,22 +14577,21 @@ function paintPropertyState(state){
   function inPanel(drag){const r=ui.panel.getBoundingClientRect();return drag.x>=r.left&&drag.x<=r.right&&drag.y>=r.top&&drag.y<=r.bottom;}
   function updateDestination(drag){
     if(!drag.active)return;
-    drag.valid=inPanel(drag);drag.placeholder.classList.toggle('is-invalid',!drag.valid);drag.ghost.classList.toggle('is-invalid',!drag.valid);
-    drag.ghost.querySelector('.community-drag-hint').textContent=drag.valid?'放開滑鼠，移到這裡':'移回清單內放開';
-    if(!drag.valid)return;
-    const others=rowElements().filter(row=>row!==drag.row);
-    let index=others.findIndex(row=>{const r=row.getBoundingClientRect();return drag.y<r.top+r.height/2;});
-    if(index<0)index=others.length;
-    const next=others[index]||null;
-    let currentNext=drag.placeholder.nextElementSibling;while(currentNext===drag.row)currentNext=currentNext.nextElementSibling;
-    if(currentNext!==next)ui.list.insertBefore(drag.placeholder,next);
-    drag.order=others.map(row=>row.dataset.orderKey);drag.order.splice(index,0,drag.key);drag.targetIndex=index;
-    drag.placeholder.querySelector('.community-drop-position').textContent='第 '+(index+1)+' 位';
-    others.forEach(row=>{const position=row.querySelector('.custom-order-position');if(position)position.textContent=String(drag.order.indexOf(row.dataset.orderKey)+1);});
-  }
-  function paintGhost(drag){
-    const width=drag.ghost.getBoundingClientRect().width,x=clamp(drag.x-drag.offsetX,8,Math.max(8,document.documentElement.clientWidth-width-8));
-    drag.ghost.style.transform=`translate3d(${Math.round(x)}px,${Math.round(drag.y-drag.offsetY)}px,0)`;
+    drag.valid=inPanel(drag);
+    const top=clamp(drag.origin+drag.y-drag.startY+ui.panel.scrollTop-drag.startScroll,drag.stops[0],drag.stops.at(-1));
+    drag.row.style.transform='translateY('+(top-drag.origin)+'px)';
+    let target=0;
+    while(target+1<drag.stops.length&&top>=(drag.stops[target]+drag.stops[target+1])/2)target++;
+    if(target===drag.targetIndex)return;
+    drag.targetIndex=target;
+    const order=drag.rows.map(row=>row.dataset.orderKey);
+    order.splice(target,0,order.splice(drag.from,1)[0]);
+    drag.order=order;
+    drag.rows.forEach((row,i)=>{
+      const shift=drag.from<i&&i<=target?-1:target<=i&&i<drag.from?1:0;
+      if(row!==drag.row)row.style.transform=shift?'translateY('+(shift*drag.height)+'px)':'';
+      row.querySelector('.custom-order-position').textContent=String((i===drag.from?target:i+shift)+1);
+    });
   }
   function frame(){
     if(!owned()||!customDrag.active)return;const drag=customDrag,r=ui.panel.getBoundingClientRect(),edge=Math.min(48,r.height/4);
@@ -14613,28 +14600,27 @@ function paintPropertyState(state){
       if(drag.y<r.top+edge)delta=-Math.ceil((r.top+edge-drag.y)/4);
       else if(drag.y>r.bottom-edge)delta=Math.ceil((drag.y-r.bottom+edge)/4);
     }
+    const before=ui.panel.scrollTop;
     if(delta)ui.panel.scrollTop=clamp(ui.panel.scrollTop+clamp(delta,-14,14),0,Math.max(0,ui.panel.scrollHeight-ui.panel.clientHeight));
-    paintGhost(drag);updateDestination(drag);customDragFrame=requestAnimationFrame(frame);
+    updateDestination(drag);
+    if(delta&&ui.panel.scrollTop!==before)customDragFrame=requestAnimationFrame(frame);else customDragFrame=0;
   }
   function activate(drag){
-    const r=drag.row.getBoundingClientRect();drag.active=true;drag.offsetX=clamp(drag.startX-r.left,12,Math.max(12,r.width-12));drag.offsetY=clamp(drag.startY-r.top,8,Math.max(8,r.height-8));
-    drag.placeholder=document.createElement('li');drag.placeholder.className='community-order-dropgap';drag.placeholder.style.height=r.height+'px';drag.placeholder.setAttribute('aria-hidden','true');
-    drag.placeholder.innerHTML='<span class="community-drop-label">放在這裡</span><span class="community-drop-position"></span>';
-    drag.ghost=drag.row.cloneNode(true);drag.ghost.classList.add('community-order-ghost');drag.ghost.removeAttribute('data-order-key');drag.ghost.removeAttribute('title');drag.ghost.setAttribute('aria-hidden','true');drag.ghost.inert=true;
-    drag.ghost.style.width=r.width+'px';drag.ghost.style.minHeight=r.height+'px';
-    for(const el of drag.ghost.querySelectorAll('[id]'))el.removeAttribute('id');
-    for(const button of drag.ghost.querySelectorAll('button')){button.disabled=true;button.tabIndex=-1;}
-    const hint=document.createElement('span');hint.className='community-drag-hint';drag.ghost.appendChild(hint);
-    drag.row.before(drag.placeholder);drag.row.classList.add('community-order-source');ui.bg.appendChild(drag.ghost);ui.bg.classList.add('community-order-dragging');
-    paintGhost(drag);updateDestination(drag);customAnnounce('已抓取 '+customRowText(drag.key).name+'，拖到目標位置後放開。');
-    cancelAnimationFrame(customDragFrame);customDragFrame=requestAnimationFrame(frame);
+    drag.rows=rowElements();drag.from=drag.rows.indexOf(drag.row);
+    const rects=drag.rows.map(row=>row.getBoundingClientRect());
+    const rect=rects[drag.from];drag.origin=rect.top;drag.height=rect.height;
+    drag.stops=rects.map((r,i)=>i<=drag.from?r.top:r.bottom-rect.height);
+    drag.targetIndex=drag.from;drag.startScroll=ui.panel.scrollTop;drag.active=true;
+    drag.row.classList.add('community-order-moving');ui.bg.classList.add('community-order-dragging');
+    updateDestination(drag);customAnnounce('已抓取 '+customRowText(drag.key).name+'，拖到目標位置後放開。');
   }
   stopCustomDrag=function(cancel=false){
     if(!owned())return originalStop(cancel);
     const drag=customDrag;customDrag=null;cancelAnimationFrame(customDragFrame);customDragFrame=0;
     // Clear shared state before releasing capture so the old lost-capture handler is harmless.
     if(ui.list.hasPointerCapture(drag.pointerId))ui.list.releasePointerCapture(drag.pointerId);
-    drag.ghost?.remove();drag.placeholder?.remove();drag.row.classList.remove('community-order-source');ui.bg.classList.remove('community-order-dragging');
+    ui.bg.classList.remove('community-order-dragging');drag.row.classList.remove('community-order-moving');
+    drag.rows?.forEach(row=>row.style.transform='');
     const current=customOrderDraft===drag.draft&&customOrderDraft?.kind===drag.kind,commit=!cancel&&drag.active&&drag.valid;
     if(!current)return;
     customOrderDraft.orders[drag.kind]=commit?replaceCustomOrderSlots(drag.before,drag.order):drag.before.slice();
@@ -14643,12 +14629,12 @@ function paintPropertyState(state){
     const scrollTop=ui.panel.scrollTop;renderCustomOrder();ui.panel.scrollTop=scrollTop;
     const row=rowElements().find(element=>element.dataset.orderKey===drag.key);row?.querySelector('[data-order-grip]')?.focus({preventScroll:true});
     if(commit){
-      row?.classList.add('community-order-landed');clearTimeout(landingTimer);landingTimer=setTimeout(()=>row?.classList.remove('community-order-landed'),700);
       customAnnounce(customRowText(drag.key).name+' 已移到第 '+(customVisibleOrder().indexOf(drag.key)+1)+' 位，按完成套用。');
     }else customAnnounce('已取消拖曳，順序未變動。');
   };
   ui.list.addEventListener('pointerdown',event=>{
     if(!customOrderDraft||event.button!==0||event.isPrimary===false)return;
+    suppressClickUntil=0; // A fresh press is a new action, even just after a drop.
     const row=event.target.closest('.custom-order-row[data-order-key]');if(!row||!ui.list.contains(row))return;
     const handle=event.target.closest('[data-order-grip]'),interactive=event.target.closest('button,a,input,select,textarea');
     if(interactive&&!handle)return;
@@ -14662,6 +14648,7 @@ function paintPropertyState(state){
     if(!owned()||event.pointerId!==customDrag.pointerId)return;event.preventDefault();event.stopImmediatePropagation();
     customDrag.x=event.clientX;customDrag.y=event.clientY;
     if(!customDrag.active&&Math.hypot(event.clientX-customDrag.startX,event.clientY-customDrag.startY)>=threshold)activate(customDrag);
+    if(customDrag.active&&!customDragFrame)customDragFrame=requestAnimationFrame(frame);
   },true);
   ui.list.addEventListener('pointerup',event=>{
     if(!owned()||event.pointerId!==customDrag.pointerId)return;event.preventDefault();event.stopImmediatePropagation();
