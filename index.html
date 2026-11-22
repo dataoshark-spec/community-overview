@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>社區總覽</title>
-<link rel="icon" type="image/png" href="icon-192.png?v=20261122F">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261122F">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261122G">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261122G">
 <link rel="manifest" id="propertyManifest">
 <script>
 (function(){
@@ -13,8 +13,8 @@
  var absolute=function(file){return new URL(file,base).href};
  var manifest={id:base.href,name:"社區總覽",short_name:"社區總覽",start_url:base.href,scope:base.href,display:"standalone",
   orientation:"portrait",background_color:"#F4F6F7",theme_color:"#AFBBC1",
-  icons:[{src:absolute("icon-192.png?v=20261122F"),sizes:"192x192",type:"image/png",purpose:"any"},
-         {src:absolute("icon-512.png?v=20261122F"),sizes:"512x512",type:"image/png",purpose:"any"}]};
+  icons:[{src:absolute("icon-192.png?v=20261122G"),sizes:"192x192",type:"image/png",purpose:"any"},
+         {src:absolute("icon-512.png?v=20261122G"),sizes:"512x512",type:"image/png",purpose:"any"}]};
  document.getElementById("propertyManifest").href="data:application/manifest+json;charset=utf-8,"+encodeURIComponent(JSON.stringify(manifest));
 })();
 </script>
@@ -2348,6 +2348,27 @@
   }
 }
 </style>
+<style id="form-community-select-style">
+/* Form community picker: keep the original select as the data source. */
+#formCommunity[hidden]{display:none;}
+#modalBg .form-community-control{position:relative;min-width:0;}
+#formCommunityButton{display:flex;align-items:center;gap:8px;max-width:min(38vw,175px);min-height:32px;padding:5px 8px;border:1px solid var(--line);border-radius:9px;background:var(--surface-2);color:var(--ink);font:inherit;cursor:pointer;}
+#formCommunityButton .form-community-value{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+#formCommunityButton svg{width:13px;height:13px;flex:none;color:var(--ink-soft);transition:transform .15s;}
+#formCommunityButton[aria-expanded="true"]{border-color:var(--accent-deep);}
+#formCommunityButton[aria-expanded="true"] svg{transform:rotate(180deg);}
+#formCommunityButton:focus-visible{outline:2px solid var(--accent-deep);outline-offset:2px;}
+#formCommunityMenu{position:absolute;right:0;top:calc(100% + 6px);z-index:5;box-sizing:border-box;width:max-content;min-width:100%;padding:4px;border:1px solid var(--line);border-radius:12px;background:var(--card);box-shadow:0 8px 24px #162b3924;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;}
+#formCommunityMenu[hidden]{display:none;}
+#formCommunityMenu .form-community-option{display:flex;align-items:center;gap:12px;box-sizing:border-box;width:100%;min-height:34px;padding:7px 9px;border:0;border-radius:8px;text-align:left;background:transparent;color:var(--ink);font:inherit;font-size:13px;line-height:20px;cursor:pointer;}
+#formCommunityMenu .form-community-option span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#formCommunityMenu .form-community-option svg{width:14px;height:14px;flex:none;visibility:hidden;}
+#formCommunityMenu .form-community-option[aria-selected="true"]{background:var(--surface-2);color:var(--accent-deep);}
+#formCommunityMenu .form-community-option[aria-selected="true"] svg{visibility:visible;}
+#formCommunityMenu .form-community-option.active{background:var(--surface-3);color:var(--ink);}
+@media(hover:hover){#formCommunityMenu .form-community-option:hover{background:var(--surface-3);color:var(--ink);}}
+@media(pointer:coarse){#formCommunityMenu .form-community-option{min-height:44px;}}
+</style>
 </head>
 <body>
 <div id="app">
@@ -2548,7 +2569,7 @@
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
       <div class="modal-head">
         <h2 id="modalTitle">新增物件</h2>
-        <label class="form-community-label">社區<select id="formCommunity" aria-label="所屬社區"></select></label>
+        <div class="form-community-label"><span>社區</span><div class="form-community-control"><select id="formCommunity" aria-label="所屬社區" hidden aria-hidden="true" tabindex="-1"></select><button type="button" id="formCommunityButton" role="combobox" aria-label="所屬社區" aria-haspopup="listbox" aria-controls="formCommunityMenu" aria-expanded="false"><span class="form-community-value">未指定社區</span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 6 4 4 4-4"/></svg></button><div id="formCommunityMenu" role="listbox" aria-label="社區選項" hidden></div></div></div>
         <button class="x" id="modalClose" aria-label="關閉">✕</button>
       </div>
       <div class="modal-body">
@@ -3699,7 +3720,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.22F";
+const APP_VERSION = "2026.11.22G";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -7433,6 +7454,83 @@ const modalBg = document.getElementById("modalBg");
 const FORM_INPUT_KEYS = T_FIELDS.filter(field => field !== "note" && field !== "links");
 const F = Object.fromEntries([...FORM_INPUT_KEYS,"note","note2","note3","t1","t2","t3"].map(k=>[k,document.getElementById("f_"+k)]));
 const formCommunity = document.getElementById("formCommunity");
+const formCommunityUI=(()=>{
+  const trigger=document.getElementById('formCommunityButton');
+  const menu=document.getElementById('formCommunityMenu');
+  const wrap=trigger.parentElement;
+  let options=[],active=-1,typeText='',typeAt=0;
+  function close(){
+    menu.hidden=true;trigger.setAttribute('aria-expanded','false');
+    trigger.removeAttribute('aria-activedescendant');active=-1;typeText='';
+  }
+  function sync(){
+    close();
+    const label=formCommunity.selectedOptions[0]?.textContent||'未指定社區';
+    trigger.querySelector('.form-community-value').textContent=label;
+    trigger.title=label;
+  }
+  function position(){
+    if(menu.hidden)return;
+    const edge=modalBg.querySelector('.modal').getBoundingClientRect();
+    const anchor=wrap.getBoundingClientRect();
+    menu.style.maxWidth=Math.max(anchor.width,Math.min(280,anchor.right-edge.left-10))+'px';
+    menu.style.maxHeight=Math.max(36,Math.min(260,edge.bottom-anchor.bottom-14))+'px';
+  }
+  function highlight(index,scroll=false){
+    if(!options.length)return;
+    active=Math.max(0,Math.min(options.length-1,index));
+    options.forEach((option,i)=>option.classList.toggle('active',i===active));
+    trigger.setAttribute('aria-activedescendant',options[active].id);
+    if(scroll)options[active].scrollIntoView({block:'nearest'});
+  }
+  function open(){
+    options=Array.from(formCommunity.options).filter(option=>!option.hidden&&!option.disabled).map((option,index)=>{
+      const row=document.createElement('button');row.type='button';row.className='form-community-option';
+      row.id='formCommunityChoice'+index;row.tabIndex=-1;row.setAttribute('role','option');
+      row.setAttribute('aria-selected',String(option.value===formCommunity.value));row.dataset.value=option.value;row.title=option.textContent;
+      const label=document.createElement('span');label.textContent=option.textContent;row.append(label);
+      row.insertAdjacentHTML('beforeend','<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 8 3 3 7-7"/></svg>');
+      return row;
+    });
+    menu.replaceChildren(...options);menu.hidden=false;trigger.setAttribute('aria-expanded','true');position();
+    highlight(Math.max(0,options.findIndex(option=>option.dataset.value===formCommunity.value)),true);
+  }
+  function choose(option){
+    if(!option)return;
+    const value=option.dataset.value,changed=formCommunity.value!==value;
+    formCommunity.value=value;sync();
+    if(changed)formCommunity.dispatchEvent(new Event('change',{bubbles:true}));
+    trigger.focus({preventScroll:true});
+  }
+  trigger.addEventListener('click',()=>{if(menu.hidden)open();else close();});
+  trigger.addEventListener('keydown',event=>{
+    if(event.isComposing||event.keyCode===229||event.ctrlKey||event.metaKey)return;
+    if(event.key==='Escape'&&!menu.hidden){event.preventDefault();event.stopPropagation();close();return;}
+    if(event.key==='Tab'){close();return;}
+    if(['ArrowDown','ArrowUp','Home','End','Enter',' '].includes(event.key)){
+      event.preventDefault();event.stopPropagation();
+      const wasClosed=menu.hidden;if(wasClosed)open();
+      if(event.key==='Home')highlight(0,true);
+      else if(event.key==='End')highlight(options.length-1,true);
+      else if(!wasClosed&&(event.key==='ArrowDown'||event.key==='ArrowUp'))highlight(active+(event.key==='ArrowDown'?1:-1),true);
+      else if(!wasClosed&&(event.key==='Enter'||event.key===' '))choose(options[active]);
+    }else if(event.key.length===1&&!event.altKey){
+      event.preventDefault();event.stopPropagation();if(menu.hidden)open();
+      const now=Date.now();typeText=(now-typeAt<650?typeText:'')+event.key.toLocaleLowerCase();typeAt=now;
+      const index=options.findIndex(option=>option.textContent.trim().toLocaleLowerCase().startsWith(typeText));
+      if(index>=0)highlight(index,true);
+    }
+  });
+  menu.addEventListener('pointerdown',event=>{if(event.pointerType==='mouse'&&event.target.closest('.form-community-option'))event.preventDefault();});
+  menu.addEventListener('click',event=>choose(event.target.closest('.form-community-option')));
+  document.addEventListener('pointerdown',event=>{if(!menu.hidden&&!wrap.contains(event.target))close();},true);
+  document.addEventListener('focusin',event=>{if(!menu.hidden&&!wrap.contains(event.target))close();});
+  window.addEventListener('resize',position,{passive:true});
+  window.visualViewport?.addEventListener('resize',position,{passive:true});
+  formCommunity.addEventListener('change',sync);
+  return {sync,close,focus:()=>trigger.focus()};
+})();
+
 function fillFormCommunity(key, list = cats){
   const groups = communityGroups(list);
   formCommunity.replaceChildren(new Option("未指定社區",""),
@@ -7444,6 +7542,7 @@ function fillFormCommunity(key, list = cats){
     formCommunity.add(prior);
   }
   formCommunity.value = key || "";
+  formCommunityUI.sync();
 }
 formCommunity.addEventListener("change",()=>saveFormDraft());
 function fillFormInputs(record){
@@ -7619,6 +7718,7 @@ function applyPendingMergeIfAny(){
   }
 }
 function closeForm(){
+  formCommunityUI.close();
   closeNeedOrderUI();
   if(formConflict)saveFormDraft();else clearFormDraft();
   modalBg.classList.remove("open"); editingId=null;
@@ -7887,7 +7987,7 @@ function saveForm(){
     if(latest.resetAt!==formBaseResetAt){showFormConflict("資料已從備份還原，這份草稿先保留，請核對新資料後再修改。");return;}
     if(rec.cat && (!editingId || rec.cat!==formBaseRec.cat) && !communityGroups(latest.cats).some(c=>c.key===rec.cat)){
       saveFormDraft();fillFormCommunity(rec.cat,latest.cats);
-      toast("所選社區已不存在，請重新選擇社區");formCommunity.focus();return;
+      toast("所選社區已不存在，請重新選擇社區");formCommunityUI.focus();return;
     }
     if(editingId && !latest.items.some(x=>x.id===editingId)){showFormConflict("此物件已被刪除，這份草稿先保留，請核對資料。");return;}
   }catch(e){saveFormDraft();toast("尚未儲存："+e.message);return;}
