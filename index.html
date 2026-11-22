@@ -337,6 +337,7 @@ async function openCommunityTarget(value){
   .cats{display:flex;flex-direction:column;gap:10px;margin-top:24px;flex:none;}
   #cats{display:flex;flex-direction:column;gap:inherit;}
   #cats:empty{display:none;}
+  #coverUnassigned[hidden]{display:none;}
   #coverUnassigned .cat-ct small{margin:0 0 0 4px;}
   .cat-btn{
     display:flex;align-items:center;gap:14px;width:100%;text-align:left;
@@ -4157,7 +4158,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.22S";
+const APP_VERSION = "2026.11.22T";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -4551,7 +4552,24 @@ function communityLabel(key, list = cats){
   return (group.community === true || generated) && group.label ? group.label : key;
 }
 function isOnSale(item){ return !CLOSED_SALE_STATUSES.has(String(item?.status ?? "").trim()); }
-function communitySaleCount(key){ return items.filter(it => it.cat === key && isOnSale(it)).length; }
+function namedCommunity(item){return String(item?.name||"").split(/[／/]/,1)[0].trim();}
+function homeCommunities(){
+  const groups=new Map();
+  for(const c of communityGroups()){
+    const name=communityLabel(c.key).trim();
+    if(name&&!groups.has(name))groups.set(name,{name,color:c.color,count:0});
+  }
+  for(const item of items){
+    const name=namedCommunity(item);
+    if(!name)continue;
+    if(!groups.has(name))groups.set(name,{name,color:"#8494A0",count:0});
+    if(isOnSale(item))groups.get(name).count++;
+  }
+  return groups;
+}
+function managedCommunityKey(name){
+  return name?communityGroups().find(c=>communityLabel(c.key).trim()===name)?.key||"":"";
+}
 const communityMovePlans = new WeakMap();
 function communityMoveError(code,message){
   return Object.assign(new Error(message),{moveCode:code});
@@ -4602,7 +4620,7 @@ async function applyCommunityMove(plan,targetKey){
       const rows=new Map(latest.items.map(r=>[r.id,r]));
       for(const source of draft.sources){
         const row=rows.get(source.id);
-        if(isUnassignedCommunityFilterActive() && row && assigned.has(row.cat)){
+        if(isUnassignedCommunityFilterActive() && row && namedCommunity(row)){
           throw communityMoveError("stale","所選物件已有社區歸屬，請重新確認未指定清單。");
         }
         if(!row || row.cat!==source.cat || row._fieldUpdatedAt.cat!==source.clock){
@@ -4631,7 +4649,7 @@ async function applyCommunityMove(plan,targetKey){
     return {ok:false,code:error.moveCode||"storage",message:error.moveCode ? error.message : "批次指定尚未儲存，請重試。"+error.message};
   }finally{draft.saving=false;}
 }
-function activeCommunity(key = currentCat){ return communityGroups().some(c => c.key === key) ? key : ""; }
+function activeCommunity(key = currentCat){ return key && homeCommunities().has(key) ? key : ""; }
 
 const catCount = key => items.filter(d => d.cat === key).length;
 const catColor = key => { const c = cats.find(x => x.key === key); return c ? safeColor(c.color) : "#8494A0"; };
@@ -4655,13 +4673,14 @@ const coverUnassigned = document.getElementById("coverUnassigned");
 const allListTab = document.getElementById("allListTab");
 function renderCover(){
   const waiting = unassignedCommunityItems().length;
+  coverUnassigned.hidden = waiting===0;
   document.getElementById("coverUnassignedCount").textContent = waiting;
   coverUnassigned.setAttribute("aria-label", "篩選未指定社區的物件，" + waiting + " 筆");
-  document.getElementById("cats").innerHTML = communityGroups().map(c => `
-    <button class="cat-btn" data-cat="${esc(c.key)}">
+  document.getElementById("cats").innerHTML = Array.from(homeCommunities().values()).map(c => `
+    <button class="cat-btn" data-cat="${esc(c.name)}">
       <span class="cat-dot" style="background:${safeColor(c.color)}"></span>
-      <span class="cat-main"><b>${esc(communityLabel(c.key))}</b></span>
-      <span class="cat-ct"><small>在售</small>${communitySaleCount(c.key)}</span>
+      <span class="cat-main"><b>${esc(c.name)}</b></span>
+      <span class="cat-ct"><small>在售</small>${c.count}</span>
       <span class="arrow">→</span>
     </button>`).join("");
   document.getElementById("coverCount").textContent = items.length;
@@ -4713,7 +4732,7 @@ function applyCustomOrderSettings(settings){
   customOrderResetAt=resetAt;
   saveCustomOrderCache();
 }
-function customOrderKeys(item){return {property:item.id,planUnit:String(item.planUnit||"").trim(),community:String(item.name||"").split(/[／/]/,1)[0].trim()};}
+function customOrderKeys(item){return {property:item.id,planUnit:String(item.planUnit||"").trim(),community:namedCommunity(item)};}
 function customOrderValues(list){
   const compare=(a,b)=>a===b?0:!a?1:!b?-1:windowsNameCompare(a,b);
   const keyed=list.map(customOrderKeys);
@@ -4881,7 +4900,7 @@ function sortCommunityGroups(list,byPlanUnit){
   const compare=(a,b)=>a===b ? 0 : !a ? 1 : !b ? -1 : windowsNameCompare(a,b);
   return list.map((item,index)=>({
     item,index,planUnit:String(item.planUnit||"").trim(),
-    community:String(item.name||"").split(/[／/]/,1)[0].trim()
+    community:namedCommunity(item)
   })).sort((a,b)=>(byPlanUnit ? compare(a.planUnit,b.planUnit) : 0)
     || compare(a.community,b.community) || a.index-b.index).map(row=>row.item);
 }
@@ -5074,7 +5093,7 @@ const listCounter=(()=>{
 const NAV_KEY = "community_table_v3_app_lastview_v1";
 function saveNav(screen, cat){
   if (!storageOK) return;
-  const nav = {screen, cat:cat || ""};
+  const nav = {screen, cat:cat || "", communityByName:true};
   if (screen === "list" && !nav.cat && isUnassignedCommunityFilterActive()) nav.unassignedOnly = true;
   if (nav.unassignedOnly && shortcutFilters) nav.fromUnassignedShortcut = true;
   try { localStorage.setItem(NAV_KEY, JSON.stringify(nav)); } catch(e){}
@@ -6771,7 +6790,8 @@ catmenu.addEventListener("click", e=>{
 function addTableRow(){
   if (!editMode){ editMode = true; saveEditMode(); }
   if (searchEl.value){ searchEl.value = ""; }   // 清除搜尋:否則新增的空白列會被搜尋過濾掉、看不到也無法輸入
-  const cat = activeCommunity();
+  const community = activeCommunity();
+  const cat = managedCommunityKey(community);
   if (cat){
     try{
       if (!communityGroups(PropertyCore.local().readLatest().cats).some(c=>c.key===cat)){
@@ -6779,7 +6799,7 @@ function addTableRow(){
       }
     }catch(error){toast("無法取得最新社區："+error.message);return;}
   }
-  const it = { id: uid(), name:"", cat, planUnit:"", area:"", status:"", totalArea:"", mainPlus:"", mainArea:"", ancillaryArea:"", floorPrice:"", cost:"", layout:"", floor:"", price:"", addr:"", due:"", agent:"", tel:"", store:"", note:"", note2:"", note3:"", t1:"", t2:"", t3:"", url591:null, urlLeju:null, urlI:null, url4:null, ...newLinkNames(), updatedAt: Date.now() };
+  const it = { id: uid(), name:community, cat, planUnit:"", area:"", status:"", totalArea:"", mainPlus:"", mainArea:"", ancillaryArea:"", floorPrice:"", cost:"", layout:"", floor:"", price:"", addr:"", due:"", agent:"", tel:"", store:"", note:"", note2:"", note3:"", t1:"", t2:"", t3:"", url591:null, urlLeju:null, urlI:null, url4:null, ...newLinkNames(), updatedAt: Date.now() };
   const filtersCleared = applyColFilters([it]).length === 0;
   if (filtersCleared) clearAllColFilters();
   items.push(it); saveItems(); onLocalChange("data");
@@ -7202,11 +7222,10 @@ function assignedCommunityKeys(groups){
   return new Set(communityGroups(groups).map(group => group.key));
 }
 function unassignedCommunityItems(){
-  const assigned = assignedCommunityKeys(cats);
-  return items.filter(row => !assigned.has(row.cat));
+  return items.filter(row => !namedCommunity(row));
 }
 function itemsInCommunityScope(){
-  if (currentCat) return items.filter(row => row.cat === currentCat && isOnSale(row));
+  if (currentCat) return items.filter(row => namedCommunity(row) === currentCat && isOnSale(row));
   return unassignedOnly ? unassignedCommunityItems() : items.slice();
 }
 function getFilteredItems(linkSelections = listFilters().links, scope = itemsInCommunityScope(), skipField){
@@ -7251,7 +7270,7 @@ function applyFilter(){
     else if (items.length) emptyText = "找不到符合的物件";
     else emptyText = viewMode === "table" ? "還沒有物件，點右上「＋ 新增物件」開始建立。" : "尚無物件，點右下角「＋ 新增物件」開始建立。";
   }
-  titleEl.textContent = currentCat ? communityLabel(currentCat) : "全部物件";
+  titleEl.textContent = currentCat || "全部物件";
   titleEl.title=titleEl.textContent;
   listCounter.refresh(list);
   const allActive = !currentCat && !unassignedOnly;
@@ -8174,7 +8193,9 @@ function openForm(id){
   document.getElementById("modalTitle").textContent = d ? "編輯物件" : "新增物件";
   document.getElementById("modalDelete").style.display = d ? "inline-flex" : "none";
   fillFormInputs(d);
-  fillFormCommunity(d ? d.cat : activeCommunity());
+  const scopeName=d?"":activeCommunity();
+  if(scopeName)F.name.value=scopeName;
+  fillFormCommunity(d ? d.cat : managedCommunityKey(scopeName));
   F.note.innerHTML  = (d && d.note)  ? needToFormHTML(d.note)  : "<div><br></div>";
   F.note2.innerHTML = (d && d.note2) ? needToFormHTML(d.note2) : "<div><br></div>";
   F.note3.innerHTML = (d && d.note3) ? needToFormHTML(d.note3) : "<div><br></div>";
@@ -11340,7 +11361,7 @@ settingsBack.addEventListener("click",closeSettings);
   let nav = null;
   try { nav = JSON.parse(localStorage.getItem(NAV_KEY) || "null"); } catch(err){}
   if (nav && nav.screen === "list"){
-    openList(nav.cat, nav);
+    openList(nav.communityByName ? nav.cat : communityLabel(nav.cat).trim(), nav);
   }
 })();
 
@@ -11961,7 +11982,7 @@ catListEl.addEventListener("click",e=>{
         const selectedCats=filters?.colFilter.cat;
         if(selectedCats){selectedCats.delete(key);if(!selectedCats.size)filters.colFilter.cat=null;}
       }
-      if(currentCat===key)currentCat="";
+      if(currentCat===name&&!activeCommunity())currentCat="";
       save(()=>{
         if(listView.classList.contains("active"))saveNav("list",currentCat);
         renderCatList();toast("已刪除社區");
