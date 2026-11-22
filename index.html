@@ -2396,10 +2396,10 @@ async function openCommunityTarget(value){
 #tableWrap .tcell:is([data-field="floorPrice"],[data-field="cost"],[data-field="mainArea"],[data-field="ancillaryArea"],[data-field="parkingArea"],[data-field="status"]) {
   font-size:.75rem;
   font-weight:400;
-  color:#65747C;
+  color:var(--field-tint-ink,#65747C);
 }
 [data-theme="dark"] #tableWrap .tcell:is([data-field="floorPrice"],[data-field="cost"],[data-field="mainArea"],[data-field="ancillaryArea"],[data-field="parkingArea"],[data-field="status"]) {
-  color:#A1ADB4;
+  color:var(--field-tint-ink,#A1ADB4);
 }
 </style>
 <style id="community-scrollbar-style">
@@ -3389,12 +3389,10 @@ function communityFeatures(value){
     const seen=new Set();result[field]=list.map(entry=>{
      if(!obj(entry))fail('欄位選項不正確');const name=text(entry.name,80,false).trim();if(seen.has(name))fail('欄位選項名稱重複');seen.add(name);
      const item={name};
-     if(['planUnit','area','name'].includes(field)){
-      if(own(entry,'hex')){if(typeof entry.hex!=='string'||!/^#[0-9a-f]{6}$/i.test(entry.hex))fail('欄位底色色碼不正確');item.hex=entry.hex;}
-      if(own(entry,'alpha')){if(typeof entry.alpha!=='number'||!Number.isFinite(entry.alpha)||entry.alpha<0||entry.alpha>100)fail('欄位底色濃度不正確');item.alpha=entry.alpha;}
-      if(own(entry,'text')){if(!['black','white'].includes(entry.text))fail('欄位文字顏色不正確');item.text=entry.text;}
-      if(own(entry,'fontWeight')){if(![400,600,700].includes(entry.fontWeight))fail('欄位字體粗細不正確');item.fontWeight=entry.fontWeight;}
-     }
+     if(own(entry,'hex')){if(typeof entry.hex!=='string'||!/^#[0-9a-f]{6}$/i.test(entry.hex))fail('欄位底色色碼不正確');item.hex=entry.hex;}
+     if(own(entry,'alpha')){if(typeof entry.alpha!=='number'||!Number.isFinite(entry.alpha)||entry.alpha<0||entry.alpha>100)fail('欄位底色濃度不正確');item.alpha=entry.alpha;}
+     if(own(entry,'text')){if(!['black','white'].includes(entry.text))fail('欄位文字顏色不正確');item.text=entry.text;}
+     if(own(entry,'fontWeight')){if(![400,600,700].includes(entry.fontWeight))fail('欄位字體粗細不正確');item.fontWeight=entry.fontWeight;}
      return item;
     });
    }
@@ -4167,7 +4165,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.22O";
+const APP_VERSION = "2026.11.22P";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -13093,7 +13091,7 @@ function paintPropertyState(state){
 (() => {
   'use strict';
   const labels={planUnit:'重劃區',area:'區域',layout:'格局',status:'狀態',parkingType:'車類',name:'社區名稱'};
-  const fields=Object.keys(labels), colored=new Set(['planUnit','area','name']);
+  const fields=Object.keys(labels), colored=new Set(fields);
   const palette=[['紅色','#ef4444'],['橙色','#f97316'],['黃色','#eab308'],['綠色','#16a34a'],['青色','#0891b2'],['藍色','#2563eb'],['紫色','#7c3aed'],['灰色','#64748b']];
   const initial=Object.fromEntries(fields.map(field=>[field,[]]));
   let catalogs=CommunityData.read('catalogs',initial),active=null,draft=null;
