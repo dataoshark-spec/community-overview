@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>社區總覽</title>
-<link rel="icon" type="image/png" href="icon-192.png?v=20261122I">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261122I">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261122J">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261122J">
 <link rel="manifest" id="propertyManifest">
 <script>
 (function(){
@@ -13,8 +13,8 @@
  var absolute=function(file){return new URL(file,base).href};
  var manifest={id:base.href,name:"社區總覽",short_name:"社區總覽",start_url:base.href,scope:base.href,display:"standalone",
   orientation:"portrait",background_color:"#F4F6F7",theme_color:"#AFBBC1",
-  icons:[{src:absolute("icon-192.png?v=20261122I"),sizes:"192x192",type:"image/png",purpose:"any"},
-         {src:absolute("icon-512.png?v=20261122I"),sizes:"512x512",type:"image/png",purpose:"any"}]};
+  icons:[{src:absolute("icon-192.png?v=20261122J"),sizes:"192x192",type:"image/png",purpose:"any"},
+         {src:absolute("icon-512.png?v=20261122J"),sizes:"512x512",type:"image/png",purpose:"any"}]};
  document.getElementById("propertyManifest").href="data:application/manifest+json;charset=utf-8,"+encodeURIComponent(JSON.stringify(manifest));
 })();
 </script>
@@ -2210,13 +2210,27 @@
 #tableWrap .single-property-link .tchip.single-link-empty::after{content:none;}
 #tableWrap .single-property-link .tchip .link-text{color:inherit;}
 #tableWrap .ptable.ro .single-property-link .tchip.property-link{background:transparent!important;border:0!important;box-shadow:none;border-radius:0;color:#a4adb4;font-size:12px;font-weight:400;}
-#tableWrap .ptable.ro .single-property-link .tchip.property-link.on{color:#145bbb;font-weight:600;}
-#tableWrap .ptable.ro .single-property-link .tchip.property-link.on .link-text{font-weight:inherit;line-height:1.4;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:2px;}
-#tableWrap .ptable.ro .single-property-link .tchip.property-link.on:hover{color:#0b4496;}
 #tableWrap .ptable.ro .single-property-link .tchip.property-link::after{content:none;}
 [data-theme="dark"] #tableWrap .ptable.ro .single-property-link .tchip.property-link{color:#82909a;}
-[data-theme="dark"] #tableWrap .ptable.ro .single-property-link .tchip.property-link.on{color:#79b7ee;}
-[data-theme="dark"] #tableWrap .ptable.ro .single-property-link .tchip.property-link.on:hover{color:#a4d2ff;}
+#tableWrap .ptable tbody td.single-property-link:has(.tchip.on){
+  --website-fill:#dce8ec;--website-ink:#244552;
+  padding:0;background-color:var(--website-fill);
+}
+[data-theme="dark"] #tableWrap .ptable tbody td.single-property-link:has(.tchip.on){
+  --website-fill:#314953;--website-ink:#f2f7f9;
+}
+[data-theme="dark"] #tableWrap .ptable.ro .single-property-link .tchip.property-link.on,
+#tableWrap .ptable .single-property-link .tchip.property-link.on{
+  flex:1 1 100%;width:100%;height:100%;padding:0;border:0;border-radius:0;
+  background:transparent;color:var(--website-ink);font-size:13px;font-weight:500;line-height:1.25;
+}
+#tableWrap .ptable .single-property-link .tchip.property-link.on .link-text{
+  color:inherit;font-weight:inherit;line-height:inherit;text-decoration:none;
+}
+#tableWrap .ptable.ro .single-property-link .tchip.property-link.on:hover .link-text{
+  text-decoration:underline;text-underline-offset:2px;
+}
+#tableWrap .single-property-link .tchip.on:focus-visible{outline-offset:-2px;}
 </style><style id="option-delete-style">
 /* Field option deletion with an explicit, reviewable confirmation. */
 #fieldOptionMenu{width:318px;}
@@ -3942,7 +3956,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.22I";
+const APP_VERSION = "2026.11.22J";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
