@@ -2499,11 +2499,15 @@ tr.history-highlight>td{box-shadow:inset 0 2px #60ae93,inset 0 -2px #60ae93!impo
 <style>
 #fieldOptionMenu .fo-option {user-select:none;-webkit-user-select:none;touch-action:pan-y;}
 .fo-order-list {max-height:min(52dvh,420px);overflow:auto;overscroll-behavior:contain;}
-.fo-order-row {display:grid;grid-template-columns:36px minmax(0,1fr) 36px 36px;gap:5px;align-items:center;border-bottom:1px solid var(--line);padding:4px 1px;}
-.fo-order-name {overflow-wrap:anywhere;}
-.fo-order-grip {display:grid;place-items:center;min-height:38px;border-radius:7px;color:var(--ink-soft);background:var(--surface-2);cursor:grab;touch-action:none;user-select:none;font-size:21px;}
-.fo-order-row button {min-height:34px;} .fo-order-row button:disabled {opacity:.35;}
-.fo-moving {background:var(--surface-1);} .fo-before {box-shadow:inset 0 2px var(--accent-deep);} .fo-after {box-shadow:inset 0 -2px var(--accent-deep);}
+.fo-order-row {display:flex;align-items:center;gap:6px;min-height:36px;padding:1px 6px;border-radius:8px;position:relative;box-sizing:border-box;}
+.fo-order-name {min-width:0;overflow-wrap:anywhere;}
+.fo-order-grip {display:grid;place-items:center;align-self:stretch;flex:0 0 26px;padding:0;border:0;background:transparent;color:var(--ink-soft);cursor:grab;touch-action:none;user-select:none;}
+.fo-order-grip:focus-visible {outline:2px solid var(--ink-soft);outline-offset:-2px;border-radius:6px;}
+.fo-order-list.is-dragging {user-select:none;}
+.fo-order-list.is-dragging .fo-order-row:not(.fo-moving) {transition:transform .14s ease;}
+.fo-order-row.fo-moving {z-index:2;background:var(--surface-2);}
+.fo-moving .fo-order-grip {cursor:grabbing;}
+@media (prefers-reduced-motion:reduce){.fo-order-list.is-dragging .fo-order-row:not(.fo-moving){transition:none;}}
 </style><style id="community-card-density">
 #cards .cp-card .body{padding:15px 17px;min-width:0;display:grid;gap:9px}
 #cards .cp-card.compact-card .body{padding:12px 16px;gap:8px}
@@ -4165,7 +4169,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.22P";
+const APP_VERSION = "2026.11.22Q";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -13169,7 +13173,7 @@ function paintPropertyState(state){
     window.CommunityShared?.decorateMenu(menu,item,active.field);
     menu.classList.add('show');place();
   }
-  let optionPress=null, sortDrag=null;
+  let optionPress=null;
   function cancelOptionPress(){
     if(optionPress)clearTimeout(optionPress.timer);
     optionPress=null;
@@ -13177,10 +13181,8 @@ function paintPropertyState(state){
   function renderOptionOrder(){
     menu.setAttribute('aria-label',labels[active.field]+'排序');
     menu.innerHTML=head(labels[active.field]+'排序')+
-      '<div class="fo-order-list">'+active.orderDraft.map((opt,i)=>
-        '<div class="fo-order-row"><span class="fo-order-grip" aria-hidden="true">⠿</span><span class="fo-order-name">'+esc(opt.name)+'</span>'+
-        '<button type="button" class="fo-rename" data-step="-1" aria-label="上移 '+esc(opt.name)+'" '+(i===0?'disabled':'')+'>↑</button>'+
-        '<button type="button" class="fo-rename" data-step="1" aria-label="下移 '+esc(opt.name)+'" '+(i===active.orderDraft.length-1?'disabled':'')+'>↓</button></div>').join('')+
+      '<div class="fo-order-list">'+active.orderDraft.map(opt=>
+        '<div class="fo-order-row"><button type="button" class="fo-order-grip" title="拖曳排序，或用上下方向鍵移動" aria-label="調整 '+esc(opt.name)+' 順序" aria-keyshortcuts="ArrowUp ArrowDown"><svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 5h9m-9 3h9m-9 3h9" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></button><span class="fo-order-name">'+esc(opt.name)+'</span></div>').join('')+
       '</div><p class="fo-error" role="alert"></p><div class="fo-actions"><button type="button" class="fo-secondary" data-back>取消</button><button type="button" class="fo-primary" data-order-save>完成</button></div>';
     place();
   }
@@ -13220,31 +13222,64 @@ function paintPropertyState(state){
         enterOptionOrder();
       },500)};
     }
-    const grip=event.target.closest('.fo-order-grip');
-    if(grip&&active?.mode==='order'){
-      const row=grip.closest('.fo-order-row'),from=Array.from(row.parentNode.children).indexOf(row);
-      sortDrag={id:event.pointerId,row,from,to:from};row.classList.add('fo-moving');menu.setPointerCapture(event.pointerId);event.preventDefault();
-    }
   });
   window.addEventListener('pointermove',event=>{
     if(optionPress?.id===event.pointerId&&Math.hypot(event.clientX-optionPress.x,event.clientY-optionPress.y)>8)cancelOptionPress();
-    if(sortDrag?.id!==event.pointerId||active?.mode!=='order')return;
-    const list=menu.querySelector('.fo-order-list'),rect=list.getBoundingClientRect();
-    if(event.clientY<rect.top+20)list.scrollTop-=12;
-    if(event.clientY>rect.bottom-20)list.scrollTop+=12;
-    const rows=[...list.children];
-    const index=rows.findIndex(row=>event.clientY<row.getBoundingClientRect().bottom);
-    sortDrag.to=index<0?rows.length-1:index;
-    rows.forEach((row,i)=>{row.classList.toggle('fo-before',i===sortDrag.to&&i<sortDrag.from);row.classList.toggle('fo-after',i===sortDrag.to&&i>sortDrag.from);});
   },true);
-  function endOptionPointer(event){
+  for(const type of ['pointerup','pointercancel','lostpointercapture'])window.addEventListener(type,event=>{
     if(optionPress?.id===event.pointerId)cancelOptionPress();
-    if(sortDrag?.id!==event.pointerId)return;
-    const drag=sortDrag;sortDrag=null;
-    menu.querySelectorAll('.fo-order-row').forEach(row=>row.classList.remove('fo-moving','fo-before','fo-after'));
-    if(event.type==='pointerup'&&active?.mode==='order')moveOption(drag.from,drag.to);
-  }
-  for(const type of ['pointerup','pointercancel','lostpointercapture'])window.addEventListener(type,endOptionPointer,true);
+  },true);
+
+  menu.addEventListener('pointerdown',down=>{
+    const handle=down.target.closest('.fo-order-grip');
+    if(!handle||!down.isPrimary||down.button!==0||active?.mode!=='order')return;
+    const row=handle.closest('.fo-order-row'),list=row.parentElement,rows=Array.from(list.children);
+    if(rows.length<2)return;
+    down.preventDefault();
+    const from=rows.indexOf(row),rects=rows.map(el=>el.getBoundingClientRect());
+    const height=rects[from].height,origin=rects[from].top,startScroll=list.scrollTop;
+    const stops=rects.map((rect,i)=>i<=from?rect.top:rect.bottom-height);
+    let x=down.clientX,y=down.clientY,target=from,frame=0,last=0;
+    list.classList.add('is-dragging');row.classList.add('fo-moving');handle.setPointerCapture(down.pointerId);
+    function position(){
+      const top=Math.max(stops[0],Math.min(stops.at(-1),origin+y-down.clientY+list.scrollTop-startScroll));
+      row.style.transform='translateY('+(top-origin)+'px)';
+      let next=0;
+      while(next+1<stops.length&&top>=(stops[next]+stops[next+1])/2)next++;
+      if(next===target)return;
+      target=next;
+      rows.forEach((el,i)=>{
+        if(i===from)return;
+        const shift=from<i&&i<=target?-height:target<=i&&i<from?height:0;
+        el.style.transform=shift?'translateY('+shift+'px)':'';
+      });
+    }
+    function tick(now){
+      frame=0;
+      if(active?.mode!=='order'||!row.isConnected){finish(false);return;}
+      const rect=list.getBoundingClientRect(),edge=Math.min(48,rect.height/3);
+      const speed=x<rect.left||x>rect.right?0:y<rect.top+edge?-Math.min(1,(rect.top+edge-y)/edge):Math.max(0,Math.min(1,(y-rect.bottom+edge)/edge));
+      const before=list.scrollTop,dt=last?Math.min(40,now-last):16;
+      if(speed)list.scrollTop+=Math.sign(speed)*Math.max(1,Math.abs(speed)*dt*.55);
+      position();
+      if(list.scrollTop!==before){last=now;frame=requestAnimationFrame(tick);}else last=0;
+    }
+    function move(e){if(e.pointerId===down.pointerId){x=e.clientX;y=e.clientY;if(!frame)frame=requestAnimationFrame(tick);}}
+    function up(e){if(e.pointerId===down.pointerId){y=e.clientY;position();finish(true);}}
+    function cancel(e){if(e.pointerId==null||e.pointerId===down.pointerId)finish(false);}
+    function finish(commit){
+      cancelAnimationFrame(frame);
+      document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',up);
+      document.removeEventListener('pointercancel',cancel);handle.removeEventListener('lostpointercapture',cancel);
+      window.removeEventListener('blur',cancel);
+      if(handle.hasPointerCapture(down.pointerId))handle.releasePointerCapture(down.pointerId);
+      list.classList.remove('is-dragging');row.classList.remove('fo-moving');rows.forEach(el=>el.style.transform='');
+      if(commit&&row.isConnected&&active?.mode==='order')moveOption(from,target);
+    }
+    document.addEventListener('pointermove',move);document.addEventListener('pointerup',up);
+    document.addEventListener('pointercancel',cancel);handle.addEventListener('lostpointercapture',cancel);
+    window.addEventListener('blur',cancel);
+  });
   menu.addEventListener('contextmenu',event=>{if(optionPress||active?.mode==='order')event.preventDefault();});
 
 
@@ -13472,12 +13507,6 @@ function paintPropertyState(state){
     event.stopPropagation();const b=event.target.closest('button');if(!b||!active)return;
     if(b.hasAttribute('data-close'))close();
     else if(b.hasAttribute('data-order-save'))saveOptionOrder();
-    else if(b.hasAttribute('data-step')){
-      const row=b.closest('.fo-order-row'),step=Number(b.dataset.step);
-      const from=Array.from(row.parentNode.children).indexOf(row);
-      const moved=moveOption(from,from+step);
-      (moved?.querySelector('[data-step="'+step+'"]:not(:disabled)')||moved?.querySelector('[data-step]:not(:disabled)'))?.focus({preventScroll:true});
-    }
     else if(b.hasAttribute('data-clear'))choose('');
     else if(b.hasAttribute('data-select')){
       const name=active.options[Number(b.dataset.select)].name;
@@ -13528,7 +13557,14 @@ function paintPropertyState(state){
   document.addEventListener('keydown',event=>{
     if(event.key==='Escape'&&active){event.preventDefault();event.stopImmediatePropagation();if(draft)cancelTint();else if(['rename','delete','order'].includes(active.mode))showMenu();else close();return;}
     if(menu.contains(event.target)){
-      if(event.altKey&&event.key==='ArrowDown'&&event.target.closest('[data-select]')){event.preventDefault();event.stopPropagation();enterOptionOrder();menu.querySelector('[data-order-save]').focus();return;}
+      const grip=event.target.closest('.fo-order-grip');
+      if(grip&&['ArrowUp','ArrowDown'].includes(event.key)){
+        event.preventDefault();event.stopPropagation();
+        const row=grip.closest('.fo-order-row'),from=Array.from(row.parentElement.children).indexOf(row);
+        moveOption(from,from+(event.key==='ArrowUp'?-1:1))?.querySelector('.fo-order-grip').focus();
+        return;
+      }
+      if(event.altKey&&event.key==='ArrowDown'&&event.target.closest('[data-select]')){event.preventDefault();event.stopPropagation();const index=Number(event.target.closest('[data-select]').dataset.select);enterOptionOrder();menu.querySelectorAll('.fo-order-grip')[index]?.focus();return;}
       event.stopPropagation();if(event.key==='Enter'&&!event.isComposing&&!event.repeat){if(event.target.hasAttribute('data-full-name')){event.preventDefault();saveFullName();}else if(event.target.hasAttribute('data-add-input')){event.preventDefault();add();}else if(event.target.hasAttribute('data-rename-input')){event.preventDefault();rename();}}return;
     }
     if(tint.contains(event.target)){event.stopPropagation();return;}
