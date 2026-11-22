@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>社區總覽</title>
-<link rel="icon" type="image/png" href="icon-192.png?v=20261122G">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261122G">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261122H">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261122H">
 <link rel="manifest" id="propertyManifest">
 <script>
 (function(){
@@ -13,8 +13,8 @@
  var absolute=function(file){return new URL(file,base).href};
  var manifest={id:base.href,name:"社區總覽",short_name:"社區總覽",start_url:base.href,scope:base.href,display:"standalone",
   orientation:"portrait",background_color:"#F4F6F7",theme_color:"#AFBBC1",
-  icons:[{src:absolute("icon-192.png?v=20261122G"),sizes:"192x192",type:"image/png",purpose:"any"},
-         {src:absolute("icon-512.png?v=20261122G"),sizes:"512x512",type:"image/png",purpose:"any"}]};
+  icons:[{src:absolute("icon-192.png?v=20261122H"),sizes:"192x192",type:"image/png",purpose:"any"},
+         {src:absolute("icon-512.png?v=20261122H"),sizes:"512x512",type:"image/png",purpose:"any"}]};
  document.getElementById("propertyManifest").href="data:application/manifest+json;charset=utf-8,"+encodeURIComponent(JSON.stringify(manifest));
 })();
 </script>
@@ -2369,6 +2369,53 @@
 @media(hover:hover){#formCommunityMenu .form-community-option:hover{background:var(--surface-3);color:var(--ink);}}
 @media(pointer:coarse){#formCommunityMenu .form-community-option{min-height:44px;}}
 </style>
+<style id="community-history-style">
+.history-tools{display:flex;align-items:center;margin:0 auto 0 0;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--card);flex-shrink:0}
+.history-tools button{font:600 13px/1.25 system-ui;color:var(--accent-deep);background:transparent;border:0;cursor:pointer}
+.history-tools button{width:77px;min-height:36px;padding:0 6px;display:flex;align-items:center;justify-content:center;gap:7px;white-space:nowrap}
+#app:not(.table-mode) .history-tools button{width:36px;padding:0}
+#app:not(.table-mode) .history-tools button span{display:none}
+.history-tools button+button{border-left:1px solid var(--line)}
+.history-tools svg{width:17px;height:17px;flex:none}#tryRedo svg{transform:scaleX(-1)}
+.history-tools button:disabled{color:var(--ink-soft);background:var(--surface-2);cursor:default}
+.history-tools button:enabled:hover{background:#12745d12}
+.history-tools button:focus-visible{outline:2px solid #11836c;outline-offset:-3px}
+.history-feedback{position:fixed;z-index:7000;bottom:18px;left:50%;transform:translateX(-50%);max-width:min(550px,92vw);width:max-content;border-radius:10px;padding:9px 16px;color:#fff;background:#183b32;box-shadow:0 3px 16px #122c2533;opacity:0;pointer-events:none;font:500 14px/1.5 system-ui}
+.history-feedback{display:block;overflow-wrap:anywhere;text-align:center;user-select:none;touch-action:none}
+.history-feedback.show{opacity:1;pointer-events:auto}
+.history-action{display:inline-block;vertical-align:middle;margin-inline-end:10px;font-size:12px;font-weight:700;border:1px solid #8fbfaf;border-radius:5px;padding:1px 6px;color:#e5f8f0}
+.history-object{vertical-align:middle;color:#d6e5df;font-size:13px}
+.history-result{margin-top:5px;border-top:1px solid #ffffff35;padding-top:5px}
+.history-result>div{display:flex;justify-content:center;align-items:baseline;gap:10px}
+.history-field{color:#ffda83;flex:none;font-weight:700}
+.history-value{font-weight:650;color:white}
+tr.history-highlight>td{box-shadow:inset 0 2px #60ae93,inset 0 -2px #60ae93!important;background-color:#e3f3e9!important}
+.card.history-highlight{outline:2px solid #58a58c;outline-offset:-2px}
+.needexp .history-highlight{outline:2px solid #58a58c;outline-offset:-2px}
+
+[data-theme="dark"] tr.history-highlight>td{background-color:#30444f!important}
+.history-tools{margin:0;flex:none}
+.history-feedback{background:#263e49}
+.history-tools button:enabled:hover{background:var(--surface-2)}
+.history-tools button:focus-visible{outline-color:var(--accent-deep)}
+#app:not(.table-mode) #customOrderBtn,#app:not(.table-mode) #communityDefaultsBtn{display:none!important}
+#app:not(.table-mode) .controls{flex-wrap:nowrap;gap:6px}
+#app:not(.table-mode) .sort-controls{flex:1 1 auto;flex-wrap:nowrap;gap:6px;min-width:0}
+#app:not(.table-mode) .sortsel{min-width:0}
+#app:not(.table-mode) #sortBtn{max-width:100%;gap:4px;padding-inline:8px}
+#app:not(.table-mode) #sortTxt{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#app:not(.table-mode) .ctrl-right{flex:none;gap:5px}
+@media(max-width:819px){
+ .history-tools button{width:36px;min-height:36px;padding:0}
+ .history-tools button span{display:none}
+ .history-feedback{bottom:8px}
+}
+@media(max-width:440px){
+ #app:not(.table-mode) #sortBtn .sort-ic,#app:not(.table-mode) #sortBtn .sort-label-suffix{display:none}
+ #app:not(.table-mode) #sortBtn[data-default-sort] #sortTxt{font-size:0}
+ #app:not(.table-mode) #sortBtn[data-default-sort] #sortTxt::after{content:'預設';font-size:14px}
+}
+</style>
 </head>
 <body>
 <div id="app">
@@ -3464,7 +3511,168 @@ function restore(old,imported,now){
  next.items=next.items.map(r=>{r.updatedAt=ts;r._metaAt=ts;for(const f of recordFields(r)) r._fieldUpdatedAt[f]=ts;return r});
  return next;
 }
+function historyCommunityName(row){return String(row?.name||'').split(/[／/]/,1)[0].trim();}
+function emptyHistorySection(key,state){
+ if(key==='catalogs')return Object.fromEntries(['planUnit','area','layout','status','name'].map(f=>[f,[]]));
+ if(key==='locations')return {version:2,resetAt:state.resetAt,registry:{},pending:{}};
+ if(key==='orders')return {version:1,resetAt:state.resetAt,mode:'default',orders:{property:[],planUnit:[],community:[]}};
+ return {names:['','','','','',''],communities:[],appearance:{height:32,background:null,fontSize:13,fontWeight:700,ink:'auto'}};
+}
+// Device-only history is stored in local packets and their compacted head.
+function emptyHistory(epoch){return {epoch,undo:[],redo:[],order:[]};}
+function naturalOrder(rows,ids){
+ if(!ids.length)return rows;
+ const ranks=new Map(ids.map((id,i)=>[id,i]));
+ return rows.slice().sort((a,b)=>(ranks.get(a.id)??Infinity)-(ranks.get(b.id)??Infinity));
+}
+function foldHistory(h,event){
+ if(!event||event.epoch!==h.epoch)return;
+ if(event.move){
+  const from=event.move==="undo"?h.undo:h.redo,to=event.move==="undo"?h.redo:h.undo;
+  const index=from.findIndex(s=>s.id===event.id);
+  if(index<0)return;
+  const [step]=from.splice(index,1);
+  if(event.skip)return;
+  for(const d of step.changes)if(event.deleted?.[d.id])d.deletedAt=event.deleted[d.id];
+  to.push(step);
+  if(event.order)h.order=event.order;
+  return;
+ }
+ if(!Array.isArray(event.changes)||(!event.changes.length&&!event.sections?.length))return;
+ const previous=h.undo.at(-1),change=event.changes[0];
+ if(!event.sections?.length && !previous?.sections?.length && event.group && previous?.group===event.group && previous.changes.length===1 && event.changes.length===1 &&
+    previous.changes[0].id===change.id && same(previous.changes[0].fields,change.fields) && change.before && change.after &&
+    same(previous.changes[0].after,change.before)){
+  previous.changes[0].after=change.after;
+  if(change.fields.every(k=>same(fieldValue(previous.changes[0].before,k),fieldValue(change.after,k))))h.undo.pop();
+ }else{h.undo.push(event);if(h.undo.length>20)h.undo.shift();}
+ h.redo=[];
+}
+function historyChange(base,intent,latest,saved,group,order){
+ // Record only the device's requested edits, excluding changes arriving in a merge.
+ if(!base||!latest||base.resetAt!==saved.resetAt||!same(base.cats,intent.cats)||!same(base.settings.linkSlots,intent.settings.linkSlots))return;
+ const map=list=>new Map(list.map(r=>[r.id,r]));
+ const baseMap=map(base.items),wanted=map(intent.items),old=map(latest.items),now=map(saved.items);
+ let positions;
+ const changes=[];
+ for(const id of new Set([...baseMap.keys(),...wanted.keys()])){
+  const b=baseMap.get(id),i=wanted.get(id),before=old.get(id)||null,after=now.get(id)||null;
+  if(!before&&!after)continue;
+  if(!before||!after){
+   if((!before && (b||!i))||(!after && (i||!b)))continue;
+   const list=before?latest.items:saved.items;
+   positions??=naturalOrder(list,order).map(r=>r.id);
+   const index=positions.indexOf(id);
+   changes.push({id,before,after,fields:[],index,previous:positions[index-1],following:positions[index+1],deletedAt:saved.deleted[id]||0});
+  }else if(b&&i){
+   const fields=recordFields(b,i).filter(k=>!same(fieldValue(b,k),fieldValue(i,k))&&!same(fieldValue(before,k),fieldValue(after,k))&&same(fieldValue(i,k),fieldValue(after,k)));
+   if(!fields.length)continue;
+   // Keep only fields needed for replay and to name the changed item/platform.
+   const project=r=>{
+    const out={id,name:r.name};
+    for(const k of fields){
+     if(k==="due")setDueValue(out,dueValue(r));
+     else if(own(r,k))out[k]=r[k];
+    }
+    for(const k of recordFields(r))if(/^(url|linkName|linkBaseName|linkNone)/.test(k)&&own(r,k))out[k]=r[k];
+    return out;
+   };
+   changes.push({id,before:project(before),after:project(after),fields});
+  }
+ }
+ const featureBefore=latest.settings.communityFeatures?.values||{},featureAfter=saved.settings.communityFeatures?.values||{};
+ const requestedBefore=base.settings.communityFeatures?.values||{},requestedAfter=intent.settings.communityFeatures?.values||{};
+ const sections=COMMUNITY_SECTIONS.filter(key=>!same(requestedBefore[key],requestedAfter[key])&&!same(featureBefore[key],featureAfter[key])&&same(requestedAfter[key],featureAfter[key]))
+  .map(key=>({key,before:clone(featureBefore[key]??emptyHistorySection(key,latest)),after:clone(featureAfter[key]??emptyHistorySection(key,saved))}));
+ // Appearance, sorting and catalog-only edits keep their existing behavior; property edits
+ // retain any coupled community metadata in the SAME durable history event.
+ const urlOnly=sections.length===1&&sections[0].key==='links'&&same(sections[0].before.names,sections[0].after.names)&&same(sections[0].before.appearance,sections[0].after.appearance);
+ if(changes.length||urlOnly){
+  const names=new Set();
+  for(const section of sections)if(section.key==='locations'){
+   for(const name of new Set([...Object.keys(section.before.registry),...Object.keys(section.after.registry),...Object.keys(section.before.pending),...Object.keys(section.after.pending)]))
+    if(!same(section.before.registry[name],section.after.registry[name])||!same(section.before.pending[name],section.after.pending[name]))names.add(name);
+  }
+  const members=(rows,name)=>rows.filter(r=>historyCommunityName(r)===name).map(r=>r.id).sort();
+  const groups=Array.from(names,name=>({name,before:members(latest.items,name),after:members(saved.items,name)}));
+  return {epoch:saved.resetAt,changes,group,sections,groups};
+ }
+}
+function historyMove(latest,h,request){
+ const stack=h[request.move],step=stack.at(-1);
+ if(!step||step.id!==request.id||h.epoch!==latest.resetAt)fail("操作紀錄已更新，請重新確認");
+ const back=request.move==="undo",next=clone(latest),map=new Map(next.items.map(r=>[r.id,r]));
+ const event={move:request.move,id:step.id,epoch:latest.resetAt};
+ if(request.skip)return {next,event:{...event,skip:true},time:Date.now()};
+ function conflict(message){const e=new Error(message);e.code="HISTORY_CONFLICT";throw e;}
+ for(const group of step.groups||[]){
+  const ids=latest.items.filter(r=>historyCommunityName(r)===group.name).map(r=>r.id).sort();
+  if(!same(ids,back?group.after:group.before))conflict('同社區的物件已變動，請保留目前資料。');
+ }
+ for(const section of step.sections||[]){
+  const from=back?section.after:section.before;
+  if(!same(latest.settings.communityFeatures?.values?.[section.key]??emptyHistorySection(section.key,latest),from))conflict('這項社區資料已有其他修改。');
+ }
+ const restored=[],removed=new Set();
+ let time=Date.now();
+ for(const d of step.changes){
+  const from=back?d.after:d.before,to=back?d.before:d.after,current=map.get(d.id);
+  // Resurrection and deletion concern the whole record; updates concern only edited fields.
+  if(Boolean(current)!==Boolean(from))conflict("這筆物件的狀態已改變。");
+  if(!current && latest.deleted[d.id]!==d.deletedAt)conflict("這筆物件已有更新的刪除紀錄。");
+  if(to && d.fields.some(k=>(latest.settings.deletedLinkSlots||[]).some(slot=>
+    k===(legacyUrls[slot-1]||"url"+slot)||["linkName","linkNone","linkBaseName"].some(prefix=>k===prefix+slot))))conflict("這個連結欄位已永久移除。");
+  if(from){
+   const keys=to?d.fields:recordFields(current,from);
+   // A custom platform's missing metadata can come back from storage as its empty default.
+   // Compare that default only for edited fields. Whole-record deletes still use exact values.
+   const matches=k=>{
+    const actual=fieldValue(current,k),expected=fieldValue(from,k);
+    if(same(actual,expected))return true;
+    if(!to||!customLinkFieldId(k)||!k.startsWith("link"))return false;
+    const empty=k.startsWith("linkNone")?false:"";
+    return (actual===undefined&&expected===empty)||(expected===undefined&&actual===empty);
+   };
+   if(keys.some(k=>!matches(k)))conflict("這筆物件已有其他修改。");
+  }
+  if(!to){
+   next.deleted[d.id]=deleteStamp(current.updatedAt,next.deleted[d.id],time);removed.add(d.id);
+   event.deleted??={};event.deleted[d.id]=next.deleted[d.id];
+  }else if(!current){
+   const shared=next.settings.communityFeatures?.values?.locations?.registry?.[historyCommunityName(to)];
+   if(shared&&['planUnit','area'].some(k=>shared[k]!=null&&String(to[k]??'')!==String(shared[k])))conflict('此社區的重劃區或區域已變更，請保留目前資料。');
+   time=Math.max(time,(next.deleted[d.id]||0)+1);
+   next.items.push({...clone(to),updatedAt:time});restored.push(d);
+  }else{
+   for(const k of d.fields){
+    if(k==="due")setDueValue(current,dueValue(to));
+    else if(own(to,k))current[k]=to[k];
+    else delete current[k];
+   }
+  }
+ }
+ next.items=next.items.filter(r=>!removed.has(r.id));
+ if(restored.length){
+  const ids=naturalOrder(latest.items,h.order).map(r=>r.id).filter(id=>!removed.has(id));
+  for(const d of restored.sort((a,b)=>a.index-b.index)){
+   const following=ids.indexOf(d.following),previous=ids.indexOf(d.previous);
+   ids.splice(following>=0?following:previous>=0?previous+1:Math.max(0,d.index),0,d.id);
+  }
+  event.order=ids;
+ }
+ if(step.sections?.length){
+  const feature=clone(next.settings.communityFeatures||{version:1,values:{},clocks:{}});
+  for(const section of step.sections){
+   feature.values[section.key]=clone(back?section.before:section.after);
+   feature.clocks[section.key]=Math.max(time,(feature.clocks[section.key]||0)+1);
+  }
+  next.settings.communityFeatures=communityFeatures(feature);
+ }
+ return {next,event,time};
+}
+
 function createStore(storage){
+ let history=emptyHistory(0);
  const prefix=KEY+":pending:";
  let current=null,blocked=false,seedState=null,compacting=null;
  const stable=v=>JSON.stringify((function order(x){if(Array.isArray(x))return x.map(order);if(x&&typeof x==="object"){const y={};for(const k of Object.keys(x).sort())y[k]=order(x[k]);return y;}return x})(v));
@@ -3493,7 +3701,7 @@ function createStore(storage){
  }
  function capture(allowCorrupt=false,source=null){
   const headKey=source?source.key:KEY;
-  const entries=rawEntries(headKey),valid=[],bad=[],replaced=[];
+  const entries=rawEntries(headKey),valid=[],bad=[],replaced=[],events=[];let headHistory=null,seen=new Set();
   const pendingApp=(source?source.app:"community-table-v3")+"-pending";
   function readState(value){
    if(!source)return validateState(value);
@@ -3503,10 +3711,11 @@ function createStore(storage){
   for(const e of entries){
    try{
     const p=JSON.parse(e.raw);
-    if(e.key===headKey)valid.push(readState(p));
+    if(e.key===headKey){valid.push(readState(p));if(!source){headHistory=p.localHistory||null;seen=new Set(Array.isArray(p.appliedLocalEvents)?p.appliedLocalEvents:[]);}}
     else{
      if(!p||p.app!==pendingApp||p.version!==1||!p.state)fail("待合併資料格式不正確");
      valid.push(readState(p.state));
+     if(!source&&p.localEvent)events.push({key:e.key,revision:p.state.revision,event:p.localEvent});
      if(p.recovery&&Array.isArray(p.recovery.replaced)){
       for(const r of p.recovery.replaced)if(r&&typeof r.key==="string"&&typeof r.raw==="string")replaced.push(r);
      }
@@ -3526,7 +3735,13 @@ function createStore(storage){
    }else if(previous)state=previous;
    if(!state && seedState)state=clone(seedState);
   }
-  return {state,primaryState,entries,bad:unresolved};
+  if(!source){
+   const epoch=state?.resetAt||0;
+   history=headHistory?.epoch===epoch&&Array.isArray(headHistory.undo)&&Array.isArray(headHistory.redo)&&Array.isArray(headHistory.order)?clone(headHistory):emptyHistory(epoch);
+   events.sort((a,b)=>a.revision-b.revision||a.key.localeCompare(b.key));
+   for(const e of events)if(!seen.has(e.key))foldHistory(history,e.event);
+  }
+  return {state,primaryState,entries,bad:unresolved,eventKeys:events.map(e=>e.key)};
  }
  function load(seed){
   if(current)return clone(current);
@@ -3566,7 +3781,7 @@ function createStore(storage){
     let old=null;try{old=validateState(JSON.parse(previous.raw))}catch(e){}
     if(old&&content(old)!==content(snap.state))storage.setItem(KEY+":before-merge",JSON.stringify({app:"property-local-recovery",exportedAt:new Date().toISOString(),state:old}));
    }
-   storage.setItem(KEY,JSON.stringify(snap.state));
+   storage.setItem(KEY,JSON.stringify({...snap.state,localHistory:history,appliedLocalEvents:snap.eventKeys}));
    // Keys are unique and never reused. Only the immutable entries included in
    // this head are removed; a concurrent commit remains in its own journal.
    for(const e of journals)if(storage.getItem(e.key)===e.raw)storage.removeItem(e.key);
@@ -3584,10 +3799,12 @@ function createStore(storage){
   opts=opts||{};
   if(blocked&&!opts.recover)fail("資料需要先還原，已停止覆寫");
   let submitted;
-  if(!opts.updateLatest){submitted=next.items;next=validateState(next);}
+  if(!opts.updateLatest&&!opts.move){submitted=next.items;next=validateState(next);}
   let snap;
   try{snap=capture(!!opts.recover)}catch(e){blocked=true;throw e}
-  const latest=snap.state||current,base=opts.updateLatest?latest:current;
+  const latest=snap.state||current,base=(opts.updateLatest||opts.move)?latest:current;
+  const replay=opts.move?historyMove(latest,history,opts):null;
+  if(replay){next=replay.next;submitted=next.items;}
   if(opts.updateLatest){
    // Evaluate the entire batch against the same durable snapshot used for field tracking.
    next=opts.updateLatest(clone(latest));
@@ -3606,7 +3823,7 @@ function createStore(storage){
    }}
   }
   if(opts.track!==false){
-   next.items=track(next.items,base?base.items:[],Date.now(),submitted);
+   next.items=track(next.items,base?base.items:[],replay?.time??Date.now(),submitted);
    if(!base||stable(next.cats)!==stable(base.cats))next.catsTs=Math.max(Date.now(),(base?base.catsTs:0)+1,(latest?latest.catsTs:0)+1);
    if(!base||stable(prefValue(next.settings))!==stable(prefValue(base.settings))){
     next.settingsTs=Math.max(Date.now(),(base?base.settingsTs:0)+1,(latest?latest.settingsTs:0)+1);
@@ -3619,7 +3836,7 @@ function createStore(storage){
   }else next=join(join(base,latest),next);
   next=validateState(next);
   const comparable=snap.primaryState;
-  if(!opts.recover&&comparable&&content(next)===content(comparable)&&snap.entries.length){
+  if(!replay&&!opts.recover&&comparable&&content(next)===content(comparable)&&snap.entries.length){
    current=next;blocked=false;
    if(snap.entries.some(e=>e.key!==KEY))Promise.resolve().then(()=>compact()).catch(noteError);
    return clone(current);
@@ -3631,7 +3848,11 @@ function createStore(storage){
   do{const id=root.crypto&&typeof root.crypto.randomUUID==="function"?root.crypto.randomUUID():Date.now().toString(36)+"-"+Math.random().toString(36).slice(2)+"-"+Math.random().toString(36).slice(2);key=prefix+id}while(storage.getItem(key)!==null);
   // Success is reported only after this window's immutable write is durable.
   // Concurrent windows cannot replace one another's pending writes.
+  const event=replay?.event||(opts.history&&historyChange(base,original,latest,next,opts.group,history.order));
+  if(event){if(!event.move)event.id=key;packet.localEvent=event;}
   storage.setItem(key,JSON.stringify(packet));
+  if(history.epoch!==next.resetAt)history=emptyHistory(next.resetAt);
+  if(event)foldHistory(history,event);
   current=next;blocked=false;
   Promise.resolve().then(()=>compact()).catch(noteError);
   return clone(current);
@@ -3643,10 +3864,10 @@ function createStore(storage){
   for(const k of keys){try{out.raw[k]=storage.getItem(k)}catch(e){out.raw[k]="無法讀取："+e.message}}
   return out;
  }
- return {load,commit,readLatest,acknowledge,compact,rawBackup,get current(){return current?clone(current):null},get blocked(){return blocked}};
+ return {load,commit,readLatest,acknowledge,compact,rawBackup,get history(){return clone(history)},get current(){return current?clone(current):null},get blocked(){return blocked}};
 }
 
-const api={KEY,FIELDS,communityFeatures,mergeCommunityFeatures,areaRangeFields,areaRanges,compareAreaDecimals,UNKNOWN_DUE,dueValue,setDueValue,recordFields,linkSlots,rebaseLinkSlots,price,tableDecimal,mainAreaSum,areaValue,fontSize,noteOrder,draftValues,mergeDraft,deleteStamp,record,records,categories,settings,validateState,backup,fieldMerge,track,merge,mergeLegacy:(main,previous)=>merge(main,previous,true),stateWriteKey,restore,mainFrom,stateFromMain,createStore,clone,defaults,ready:false};
+const api={KEY,FIELDS,naturalOrder,communityFeatures,mergeCommunityFeatures,areaRangeFields,areaRanges,compareAreaDecimals,UNKNOWN_DUE,dueValue,setDueValue,recordFields,linkSlots,rebaseLinkSlots,price,tableDecimal,mainAreaSum,areaValue,fontSize,noteOrder,draftValues,mergeDraft,deleteStamp,record,records,categories,settings,validateState,backup,fieldMerge,track,merge,mergeLegacy:(main,previous)=>merge(main,previous,true),stateWriteKey,restore,mainFrom,stateFromMain,createStore,clone,defaults,ready:false};
 if(typeof module==="object"&&module.exports) module.exports=api;
 root.PropertyCore=api;
 if(!root.document) return;
@@ -3720,7 +3941,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.22G";
+const APP_VERSION = "2026.11.22H";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -4025,7 +4246,8 @@ function persistLocal(opts){
     const state=PropertyCore.local().commit({
       items,cats,deleted,settings:effective,resetAt:window._resetAt||0,
       catsTs:window.__catsTs||previous.catsTs,settingsTs:window.__settingsTs||previous.settingsTs
-    },{track:opts.track!==false});
+    },{track:opts.track!==false,history:opts.track!==false,group:window.propertyUndo?.group()});
+    window.propertyUndo?.refresh();
     items=state.items;cats=state.cats;deleted=state.deleted;window._resetAt=state.resetAt;
     window.__catsTs=state.catsTs;window.__settingsTs=state.settingsTs;
     visiblePreferences=PropertyCore.clone(shown);window._saveBlocked=false;
@@ -4123,7 +4345,7 @@ async function applyCommunityMove(plan,targetKey){
     if(window._saveBlocked)throw communityMoveError("storage","請先完成目前尚未儲存的修改。");
     let moved=0;
     const store=PropertyCore.local();
-    const state=store.commit(null,{updateLatest:latest=>{
+    const state=store.commit(null,{history:true,updateLatest:latest=>{
       if(latest.resetAt!==draft.resetAt)throw communityMoveError("stale","資料已重新匯入或還原，請重新選取物件。");
       const assigned = assignedCommunityKeys(latest.cats);
       if(!assigned.has(targetKey)){
@@ -6170,7 +6392,7 @@ tableWrap.addEventListener("click", e=>{
   if (delBtn){
     const it = tFindItem(delBtn); if (!it) return;
     const tr = delBtn.closest("tr");
-    askConfirm(`刪除「${tableFields().includes("name") && it.name || "這筆"}」？`, "刪除後將無法復原。", ()=>{
+    askConfirm(`刪除「${tableFields().includes("name") && it.name || "這筆"}」？`, "刪除後可用「還原」找回最近刪除的物件。", ()=>{
       markDeleted([it.id]); saveDeleted();
       items = items.filter(x => x.id !== it.id); saveItems(); onLocalChange("data");
       tr.classList.add("trow-removing"); setTimeout(()=>applyFilter(), 220);
@@ -8018,7 +8240,7 @@ function saveForm(){
 function deleteItem(id){
   const d = items.find(x => x.id === id);
   if (!d) return;
-  askConfirm(`刪除「${d.name}」？`, "刪除後將無法復原。", () => {
+  askConfirm(`刪除「${d.name}」？`, "刪除後可用「還原」找回最近刪除的物件。", () => {
     items = items.filter(x => x.id !== id);
     markDeleted([id]); saveDeleted();
     saveItems();
@@ -10639,7 +10861,7 @@ selCancel.addEventListener("click", exitSelectMode);
 selDelete.addEventListener("click", () => {
   if (!selected.size) return;
   const n = selected.size;
-  askConfirm(`刪除所選 ${n} 筆物件？`, "刪除後無法復原，建議先做雲端備份。", () => {
+  askConfirm(`刪除所選 ${n} 筆物件？`, "刪除後可按一次「還原」找回這一批物件。", () => {
     if (openNeedId && selected.has(openNeedId) && typeof closeNeedExp === "function") closeNeedExp();
     markDeleted(selected);
     saveDeleted();
@@ -12459,6 +12681,7 @@ function showFormConflict(message){
 }
 function paintPropertyState(state){
  PropertyCore.local().acknowledge(state);
+ window.propertyUndo?.refresh();
  items=state.items;cats=state.cats;deleted=state.deleted;window._resetAt=state.resetAt;
  window.__catsTs=state.catsTs;window.__settingsTs=state.settingsTs;
  applySettings(state.settings);visiblePreferences=PropertyCore.clone(collectSettings());
@@ -12545,7 +12768,7 @@ function paintPropertyState(state){
     }
    }
    const expected=options.resetAt??(window._resetAt||0);
-   const state=core.local().commit(null,{updateLatest(latest){
+   const state=core.local().commit(null,{history:true,group:window.propertyUndo?.group(),updateLatest(latest){
     if(latest.resetAt!==expected){const error=Error('資料已完整還原，請關閉並重新開啟這個設定。');error.code='PROPERTY_RESET';throw error;}
     const feature=clone(latest.settings.communityFeatures||empty()),baseClocks=base.settings.communityFeatures?.clocks||{};
     if(options.catalogBase!=null&&options.catalogBase!==JSON.stringify(feature.values.catalogs??null))throw Error('欄位選項已更新，請取消後重新開啟社區資料。');
@@ -12578,7 +12801,7 @@ function paintPropertyState(state){
    items=state.items;cats=state.cats;deleted=state.deleted;window._resetAt=state.resetAt;
    window.__catsTs=state.catsTs;window.__settingsTs=state.settingsTs;
    visiblePreferences=core.clone(collectSettings());
-   refresh('commit');window.queuePropertyRefresh?.();window.scheduleSync?.();
+   refresh('commit');window.propertyUndo?.refresh();window.queuePropertyRefresh?.();window.scheduleSync?.();
    return true;
   }catch(error){lastError=error?.message||'尚未儲存成功，請稍後再試。';if(typeof toast==='function')toast(lastError);return false;}
  }
@@ -14612,6 +14835,195 @@ function paintPropertyState(state){
  new MutationObserver(()=>{if(DesktopQuickEdit.current?.kind==='website'&&!lpop.classList.contains('show'))DesktopQuickEdit.cancelClosedWebsite();}).observe(lpop,{attributes:true,attributeFilter:['class']});
 })();
 
+</script>
+<script id="community-history-ui">
+
+(() => {
+  const $ = id => document.getElementById(id);
+  const labels = {note:'備註',note2:'注意',note3:'其它',price:'售價',agent:'承辦',name:'案名',store:'公司',t1:'備註標題',t2:'注意標題',t3:'其它標題',addr:'門牌',layout:'格局',floor:'樓層',tel:'電話',due:'到期日',cat:'社區歸屬',planUnit:'重劃區',area:'區域',status:'狀態',totalArea:'總坪',mainPlus:'主附',mainArea:'主建',ancillaryArea:'附屬',floorPrice:'底價',cost:'成本'};
+  const tools = document.createElement('div');
+  tools.className = 'history-tools';
+  tools.innerHTML=['tryUndo','tryRedo'].map(id=>'<button id="'+id+'" type="button">'+'<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M2 11 11 3v5c6.1.2 10.3 4 11 12-2.7-4.7-6-6.5-11-6.5V19z"/></svg>'+'<span>'+(id==='tryUndo'?'還原':'重做')+'</span></button>').join('');
+  document.querySelector('.controls .sortsel').after(tools);
+  const feedback = document.createElement('div');
+  feedback.setAttribute('role','status'); feedback.className='history-feedback';
+  document.body.append(feedback);
+  let timer,focusGroup=0;
+  const session=uid();
+  document.addEventListener('focusin',e=>{if(e.target.closest('input,textarea,[contenteditable=true]'))focusGroup++;},true);
+  function subject(entry){
+    const step=entry.changes;
+    if(step.length===1)return (step[0].after||step[0].before).name||'未填案名';
+    if(step.length>1){const names=[...new Set(step.map(d=>String((d.after||d.before).name||'').split(/[／/]/,1)[0].trim()))];return names.length===1&&names[0]?names[0]+' · '+step.length+' 筆物件':step.length+' 筆物件';}
+    const link=entry.sections?.find(s=>s.key==='links');
+    if(link){const names=new Set([...link.before.communities,...link.after.communities].map(x=>x.name));return [...names].filter(name=>JSON.stringify(link.before.communities.find(x=>x.name===name))!==JSON.stringify(link.after.communities.find(x=>x.name===name))).join('、')||'社區連結';}
+    return '社區資料';
+  }
+  function resultRows(entry,back){
+    const step=entry.changes;
+    if(!step.length){
+      const rows=[];
+      for(const section of entry.sections||[]){
+        if(section.key!=='links')continue;
+        const from=back?section.after:section.before,to=back?section.before:section.after;
+        const names=new Set([...from.communities,...to.communities].map(x=>x.name));
+        for(const name of names)for(let i=0;i<5;i++){
+          const old=from.communities.find(x=>x.name===name)?.urls[i]||'',value=to.communities.find(x=>x.name===name)?.urls[i]||'';
+          if(old!==value)rows.push([to.names[i]||'第 '+(i+2)+' 格連結',value?(back?'已還原網址':old?'已換成新網址':'已填入網址'):'已清空網址']);
+        }
+      }
+      return rows.length?rows:[['社區資料','已更新']];
+    }
+    if(step.length>1&&step.every(d=>d.before&&d.after)){
+      const rows=step.flatMap(d=>resultRows({...entry,changes:[d]},back).map(([field,value])=>({field,value,name:(back?d.before:d.after).name||'未填案名'})));
+      const values=new Map();for(const row of rows){if(!values.has(row.field))values.set(row.field,new Set());values.get(row.field).add(row.value);}
+      const seen=new Set();return rows.flatMap(row=>{
+        const key=JSON.stringify([row.field,row.value,values.get(row.field).size>1?row.name:'']);if(seen.has(key))return [];seen.add(key);
+        return [[values.get(row.field).size>1?row.field+' · '+row.name:row.field,row.value]];
+      });
+    }
+    const d=step[0],from=back?d.after:d.before,to=back?d.before:d.after;
+    if(!from || !to){
+      if(step.every(x=>!x.before)||step.every(x=>!x.after))return [['物件',to?'已回到清單':'已移出清單']];
+      return [['物件','資料已更新']];
+    }
+    const rows=[];
+    const website=linkUrlField(COMMUNITY_PROPERTY_LINK_SLOT),websiteNone='linkNone'+COMMUNITY_PROPERTY_LINK_SLOT;
+    if(d.fields.includes(website)||d.fields.includes(websiteNone)){
+      const previous=linkState(from,COMMUNITY_PROPERTY_LINK_SLOT),value=linkState(to,COMMUNITY_PROPERTY_LINK_SLOT);
+      if(previous!==value)rows.push(['網站',value==='has'?(back?'已還原網址':'已填入網址'):value==='none'?'已標記為「無連結」':previous==='has'?'已清空網址':'已改為「未填」']);
+      else if(value==='has'&&from[website]!==to[website])rows.push(['網站',back?'已還原網址':'已換成新網址']);
+    }
+    for(const key of d.fields){
+      if(/^(url|linkName|linkBaseName|linkNone)/.test(key))continue;
+      if(/^noteFont[123]$/.test(key)){rows.push([needTitle(to,+key.slice(-1))+'字級',(to[key]||100)+'%']);continue;}
+      if(key==='noteOrder'){rows.push(['段落順序',needOrder(to).map(s=>needTitle(to,s)).join('、')]);continue;}
+      if(!Object.hasOwn(labels,key))continue;
+      let value=to[key];
+      if(['price','floorPrice','cost'].includes(key) && value!=='' && value!=null){const [whole,...fraction]=String(value).split('.');value=whole.replace(/\B(?=(\d{3})+(?!\d))/g,',')+(fraction.length?'.'+fraction.join('.'):'')+' 萬';}
+      if(key==='due')value=tableDueLabel(dueValue(to));
+      const full=String(value??'').trim();
+      rows.push([labels[key],full.length>100?full.slice(0,100)+'…':full||'已清空']);
+    }
+    return rows.length?rows:[['物件','顯示內容相同']];
+  }
+  function controls(){
+    const {undo,redo}=PropertyCore.local().history;
+    for(const [id,list,action] of [['tryUndo',undo,'還原'],['tryRedo',redo,'重做']]){
+      const button=$(id),entry=list.at(-1);const step=entry?.changes;
+      button.disabled=!entry;
+      const itemName=entry?subject(entry):'';
+      button.title=entry?action+' '+itemName+' · '+resultRows(entry,id==='tryUndo').map(([name])=>name).join('、'):'目前沒有可'+action+'的操作';
+      button.setAttribute('aria-label',action);
+    }
+  }
+  const heldPointers=new Set();
+  let deadline=0;
+  function dismissWhenReady(){
+    clearTimeout(timer);
+    if(heldPointers.size)return;
+    const left=deadline-performance.now();
+    if(left>0){timer=setTimeout(dismissWhenReady,Math.ceil(left));return;}
+    feedback.classList.remove('show');
+    document.querySelectorAll('.history-highlight').forEach(el=>el.classList.remove('history-highlight'));
+  }
+  feedback.addEventListener('pointerdown',e=>{
+    if(e.button!==0)return;
+    feedback.setPointerCapture(e.pointerId);heldPointers.add(e.pointerId);
+    clearTimeout(timer);
+  });
+  for(const event of ['pointerup','pointercancel','lostpointercapture']){
+    feedback.addEventListener(event,e=>{if(heldPointers.delete(e.pointerId))dismissWhenReady();});
+  }
+  function signal(entry, rev){
+    const step=entry.changes;
+    clearTimeout(timer);
+    document.getElementById('toast')?.classList.remove('show');
+    const d=step[0];
+    const part=(tag,cls,text)=>{const el=document.createElement(tag);el.className=cls;el.textContent=text;return el;};
+    const badge=part('span','history-action',rev?'已還原':'已重做');
+    const subjectEl=part('span','history-object',subject(entry));
+    const details=document.createElement('div');
+    details.className='history-result';
+    for(const [name,value] of resultRows(entry,rev)){
+      const line=document.createElement('div');
+      line.append(part('strong','history-field',name),part('span','history-value',value));
+      details.append(line);
+    }
+    feedback.replaceChildren(badge,subjectEl,details);
+    feedback.classList.add('show');
+    document.querySelectorAll('.history-highlight').forEach(el=>el.classList.remove('history-highlight'));
+    for(const change of step){
+      const row=document.querySelector((viewMode==='table'?'.tbody-wrap tr':'#cards .card')+'[data-id="'+CSS.escape(change.id)+'"]');
+      if(!row)continue;
+      const expansion=row.nextElementSibling;
+      const fields=change.fields.filter(k=>/^(note[23]?|t[123])$/.test(k));
+      if(viewMode==='table' && expansion?.matches('.needexp') && fields.length){
+        for(const field of fields){
+          const seg=field.slice(-1).match(/[123]/)?.[0]||'1';
+          const selector=field.startsWith('t')?'.nseg-t':'.nseg-ed';
+          expansion.querySelector(selector+'[data-seg="'+seg+'"]')?.classList.add('history-highlight');
+        }
+      } else row.classList.add('history-highlight');
+    }
+    deadline=performance.now()+2800;
+    dismissWhenReady();
+  }
+  function travel(rev){
+    const expandedId=openNeedId;
+    const sc=document.querySelector('.tbody-wrap'), pos=[sc?.scrollLeft||0,sc?.scrollTop||0,window.scrollX,window.scrollY];
+    if(window._saveBlocked)return;
+    if(window.DesktopQuickEdit?.finish({redraw:false})===false)return;
+    flushEditing();if(window._saveBlocked)return;
+    const expansion=tableWrap.querySelector('.needexp');
+    if(expansion)commitAllSegs(expansion);
+    if(window._saveBlocked)return;
+    const store=PropertyCore.local(),move=rev?'undo':'redo',head=store.history[move].at(-1);
+    if(!head)return;
+    const entry=PropertyCore.clone(head);
+    let state;
+    try{state=store.commit(null,{move,id:head.id});}
+    catch(e){
+      controls();
+      if(e.code!=='HISTORY_CONFLICT'){toast('未'+(rev?'還原':'重做')+'：'+e.message);return;}
+      askConfirm('保留目前資料，略過這一步？',e.message+' 略過後可繼續操作其他紀錄。',()=>{
+        try{store.commit(null,{move,id:head.id,skip:true});controls();toast('已略過這一步');}
+        catch(error){controls();toast(error.message);}
+      });
+      $('confirmOk').textContent='略過這一步';
+      return;
+    }
+    {
+      // Let pending list refreshes settle before opening a detail row from the new table.
+      openNeedId=null;
+      paintPropertyState(state);
+      window.CommunityData?.refresh('commit');
+      window.applyPropertyRefresh?.(true);
+      window.scheduleSync?.();
+      if(expandedId && viewMode==='table'){
+        const row=tableWrap.querySelector('tr[data-id="'+CSS.escape(expandedId)+'"]');
+        if(row)openNeedExp(row,false);
+      }
+      const restorePosition=()=>{
+        const s=document.querySelector('.tbody-wrap'),h=document.querySelector('.thead-wrap');
+        if(s){s.scrollLeft=pos[0];s.scrollTop=pos[1];if(h)h.scrollLeft=s.scrollLeft;}
+        window.scrollTo(pos[2],pos[3]);
+      };
+      restorePosition();requestAnimationFrame(restorePosition);signal(entry,rev);
+    }
+  }
+  tools.addEventListener('pointerdown',e=>{if(e.button===0)e.preventDefault();});
+  const originalSort=sortList;sortList=list=>originalSort(PropertyCore.naturalOrder(list,PropertyCore.local().history.order));
+  $('tryUndo').onclick=()=>travel(true);$('tryRedo').onclick=()=>travel(false);
+  window.propertyUndo={
+    refresh:controls,
+    group:()=>document.activeElement?.matches('[contenteditable=true]')?session+'-'+focusGroup:null
+  };
+  const originalSortLabel=updateSortLabel;
+  updateSortLabel=function(...args){const result=originalSortLabel(...args);$('sortBtn').toggleAttribute('data-default-sort',visibleSort()==='default');return result;};
+  updateSortLabel();controls();
+  applyFilter();
+})();
 </script>
 </body>
 </html>
