@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>社區總覽</title>
-<link rel="icon" type="image/png" href="icon-192.png?v=20261122L">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261122L">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261122K">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261122K">
 <link rel="manifest" id="propertyManifest">
 <script>
 (function(){
@@ -13,8 +13,8 @@
  var absolute=function(file){return new URL(file,base).href};
  var manifest={id:base.href,name:"社區總覽",short_name:"社區總覽",start_url:base.href,scope:base.href,display:"standalone",
   orientation:"portrait",background_color:"#F4F6F7",theme_color:"#AFBBC1",
-  icons:[{src:absolute("icon-192.png?v=20261122L"),sizes:"192x192",type:"image/png",purpose:"any"},
-         {src:absolute("icon-512.png?v=20261122L"),sizes:"512x512",type:"image/png",purpose:"any"}]};
+  icons:[{src:absolute("icon-192.png?v=20261122K"),sizes:"192x192",type:"image/png",purpose:"any"},
+         {src:absolute("icon-512.png?v=20261122K"),sizes:"512x512",type:"image/png",purpose:"any"}]};
  document.getElementById("propertyManifest").href="data:application/manifest+json;charset=utf-8,"+encodeURIComponent(JSON.stringify(manifest));
 })();
 </script>
@@ -2331,12 +2331,12 @@
 </style>
 <style id="community-field-content-style">
 /* Table contents only: keep titles, inputs in dialogs, row heights and widths. */
-#tableWrap .tcell:is([data-field="floorPrice"],[data-field="cost"],[data-field="mainArea"],[data-field="ancillaryArea"],[data-field="parkingArea"],[data-field="status"]) {
+#tableWrap .tcell:is([data-field="floorPrice"],[data-field="cost"],[data-field="mainArea"],[data-field="ancillaryArea"],[data-field="status"]) {
   font-size:.75rem;
   font-weight:400;
   color:#65747C;
 }
-[data-theme="dark"] #tableWrap .tcell:is([data-field="floorPrice"],[data-field="cost"],[data-field="mainArea"],[data-field="ancillaryArea"],[data-field="parkingArea"],[data-field="status"]) {
+[data-theme="dark"] #tableWrap .tcell:is([data-field="floorPrice"],[data-field="cost"],[data-field="mainArea"],[data-field="ancillaryArea"],[data-field="status"]) {
   color:#A1ADB4;
 }
 </style>
@@ -2938,8 +2938,8 @@ function setDueValue(item,value){
  else{item.due=value;delete item.dueUnknown;}
 }
 const fieldValue=(row,field)=>field==="due"?dueValue(row):row[field];
-const TABLE_ADDITIONS = ["planUnit","area","status","totalArea","mainPlus","mainArea","ancillaryArea","parkingType","parkingCount","parkingArea","floorPrice","cost"];
-const TABLE_DECIMALS = new Set(["totalArea","mainPlus","mainArea","ancillaryArea","parkingArea","floorPrice","cost"]);
+const TABLE_ADDITIONS = ["planUnit","area","status","totalArea","mainPlus","mainArea","ancillaryArea","floorPrice","cost"];
+const TABLE_DECIMALS = new Set(["totalArea","mainPlus","mainArea","ancillaryArea","floorPrice","cost"]);
 const FIELDS = [...TABLE_ADDITIONS,"name","cat","layout","floor","price","addr","due","agent","tel","store","url591","urlLeju","urlI","url4","linkNone1","linkNone2","linkNone3","linkNone4","linkBaseName1","linkBaseName2","linkBaseName3","linkBaseName4","linkName1","linkName2","linkName3","linkName4","note","note2","note3","t1","t2","t3","noteFont1","noteFont2","noteFont3","noteOrder"];
 const own = (o,k) => Object.prototype.hasOwnProperty.call(o,k);
 const validSlotId = id => Number.isSafeInteger(id) && id>0 && id!==591;
@@ -2976,13 +2976,6 @@ function price(value){
  if(!Number.isFinite(n) || n > 1e10) fail("售價超出可接受範圍");
  return n;
 }
-function parkingCount(value){
- if(value==null)return "";
- const raw=String(value).trim().replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xfee0));
- if(!raw)return "";
- if(!/^\d+$/.test(raw)||raw.length>5000)fail("車數請輸入 0 或正整數");
- return raw.replace(/^0+(?=\d)/,"");
-}
 function tableDecimal(value,maxLength=5000){
  if(value==null || value==="")return "";
  if(typeof value==="number"){
@@ -3014,7 +3007,7 @@ function areaValue(row,field){
  if(field==="mainPlus")return mainAreaSum(row?.mainArea,row?.ancillaryArea) ?? row?.mainPlus ?? "";
  return row?.[field] ?? "";
 }
-const areaRangeFields=Object.freeze(["totalArea","mainPlus","mainArea","ancillaryArea","parkingArea"]);
+const areaRangeFields=Object.freeze(["totalArea","mainPlus","mainArea","ancillaryArea"]);
 function compareAreaDecimals(left,right){
  const [a,af=""]=String(left).split("."),[b,bf=""]=String(right).split(".");
  const ai=a.replace(/^0+(?=\d)/,""),bi=b.replace(/^0+(?=\d)/,"");
@@ -3082,7 +3075,7 @@ function record(r,index){
  d.id = r.id || ("import-"+(root.crypto && root.crypto.randomUUID ? root.crypto.randomUUID() : Date.now().toString(36)+"-"+index+"-"+Math.random().toString(36).slice(2)));
  if(!safeId(d.id)) fail("第 "+(index+1)+" 筆物件識別碼不合法");
  const fields=recordFields(r);
- for(const f of fields) d[f]= f==="noteOrder" ? noteOrder(r[f]) : f.startsWith("linkNone") ? linkNone(r[f]) : f==="price" ? price(r[f]) : f==="parkingCount" ? parkingCount(r[f]) : TABLE_DECIMALS.has(f) ? tableDecimal(r[f],f==="mainPlus"?10002:5000) : f.startsWith("noteFont") ? fontSize(r[f]) : text(r[f],f);
+ for(const f of fields) d[f]= f==="noteOrder" ? noteOrder(r[f]) : f.startsWith("linkNone") ? linkNone(r[f]) : f==="price" ? price(r[f]) : TABLE_DECIMALS.has(f) ? tableDecimal(r[f],f==="mainPlus"?10002:5000) : f.startsWith("noteFont") ? fontSize(r[f]) : text(r[f],f);
  if(r.dueUnknown!=null && typeof r.dueUnknown!=="boolean")fail("到期日不確定狀態不正確");
  if(!d.due && r.dueUnknown===true)d.dueUnknown=true;
  if(d.due){
@@ -3270,8 +3263,8 @@ function settings(value){
   if(value[key]!=null){
    if(!obj(value[key])) fail("篩選設定格式不正確");s[key]={};
    const fields = key==="colFilter" ? ["cat","layout","floor","agent","store"]
-    : key==="tableColFilter" ? ["planUnit","area","layout","status","floor","parkingType","parkingCount","agent","store"]
-    : ["cat","planUnit","area","layout","status","floor","parkingType","parkingCount","agent","store"];
+    : key==="tableColFilter" ? ["planUnit","area","layout","status","floor","agent","store"]
+    : ["cat","planUnit","area","layout","status","floor","agent","store"];
    for(const f of fields){
     const a=value[key][f];if(a==null){if(key!=="fltorder") s[key][f]=null;continue;}
     if(!Array.isArray(a)||a.length>5000||a.some(x=>typeof x!=="string"||x.length>5000)) fail("篩選選項格式不正確");
@@ -3892,7 +3885,7 @@ function createStore(storage){
  return {load,commit,readLatest,acknowledge,compact,rawBackup,get history(){return clone(history)},get current(){return current?clone(current):null},get blocked(){return blocked}};
 }
 
-const api={KEY,FIELDS,naturalOrder,communityFeatures,mergeCommunityFeatures,areaRangeFields,areaRanges,compareAreaDecimals,parkingCount,UNKNOWN_DUE,dueValue,setDueValue,recordFields,linkSlots,rebaseLinkSlots,price,tableDecimal,mainAreaSum,areaValue,fontSize,noteOrder,draftValues,mergeDraft,deleteStamp,record,records,categories,settings,validateState,backup,fieldMerge,track,merge,mergeLegacy:(main,previous)=>merge(main,previous,true),stateWriteKey,restore,mainFrom,stateFromMain,createStore,clone,defaults,ready:false};
+const api={KEY,FIELDS,naturalOrder,communityFeatures,mergeCommunityFeatures,areaRangeFields,areaRanges,compareAreaDecimals,UNKNOWN_DUE,dueValue,setDueValue,recordFields,linkSlots,rebaseLinkSlots,price,tableDecimal,mainAreaSum,areaValue,fontSize,noteOrder,draftValues,mergeDraft,deleteStamp,record,records,categories,settings,validateState,backup,fieldMerge,track,merge,mergeLegacy:(main,previous)=>merge(main,previous,true),stateWriteKey,restore,mainFrom,stateFromMain,createStore,clone,defaults,ready:false};
 if(typeof module==="object"&&module.exports) module.exports=api;
 root.PropertyCore=api;
 if(!root.document) return;
@@ -3966,7 +3959,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.22L";
+const APP_VERSION = "2026.11.22K";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -3980,7 +3973,7 @@ const layoutText = g => ({"322":"3房2廳2衛","221":"2房2廳1衛","3改2/22":"
 // 搜尋比對用的字串來源:各欄位之間夾一個分隔字元(U+001F),避免「甲欄結尾＋乙欄開頭」被拼成假命中
 const SEARCH_FIELDS = ["planUnit","name","addr","agent","store","cat","layout","floor","price","note","note2","note3","t1","t2","t3"];   // 不含 due(到期日):關鍵字搜尋不比對到期
 const SEARCH_URL_RE = /https?:\/\/[A-Za-z0-9\-._~:\/?#\[\]@!$&'()*+,;=%]+/gi;   // 與 linkify 同一套;搜尋略過連結網址
-const TABLE_SEARCH_FIELDS = ["planUnit","area","layout","status","name","addr","floor","price","floorPrice","cost","totalArea","mainPlus","mainArea","ancillaryArea","parkingType","parkingCount","parkingArea","agent","store","note","note2","note3","t1","t2","t3"];
+const TABLE_SEARCH_FIELDS = ["planUnit","area","layout","status","name","addr","floor","price","floorPrice","cost","totalArea","mainPlus","mainArea","ancillaryArea","agent","store","note","note2","note3","t1","t2","t3"];
 function searchHay(d){
   let s = "";
   const NOTE_KEYS = { note:1, note2:1, note3:1 };
@@ -4895,7 +4888,7 @@ function saveNav(screen, cat){
 // ==== 表格欄位標題篩選(參考客戶總覽:類別/格局/樓層/承辦/門市=勾選;售價=範圍) ====
 const AREA_FILTER_CACHE_KEY="community_table_v3_app_area_ranges_v1";
 const FLOOR_FILTER_CACHE_KEY="community_table_v3_app_floor_ranges_v1";
-const AREA_LABELS={totalArea:"總坪",mainPlus:"主附",mainArea:"主建",ancillaryArea:"附屬",parkingArea:"車坪"};
+const AREA_LABELS={totalArea:"總坪",mainPlus:"主附",mainArea:"主建",ancillaryArea:"附屬"};
 const isAreaRangeField=field=>PropertyCore.areaRangeFields.includes(field);
 const hasRange=range=>range.lo!==null || range.hi!==null;
 function activeAreaRanges(filters=listFilters()){
@@ -4921,7 +4914,7 @@ function refreshAreaFilteredRow(cell){
 function createListFilters(){
   return {
     colFilter:{cat:null, layout:null, floor:null, agent:null, store:null},
-    tableColFilter:{planUnit:null, area:null, layout:null, status:null, floor:null, parkingType:null, parkingCount:null, agent:null, store:null},
+    tableColFilter:{planUnit:null, area:null, layout:null, status:null, floor:null, agent:null, store:null},
     fltP:{lo:null, hi:null}, tableFltP:{lo:null, hi:null}, tableAreaRanges:PropertyCore.areaRanges(), tableFloorRanges:FloorRangePreview.empty(), due:new Set(), links:{}
   };
 }
@@ -4942,7 +4935,7 @@ function matchesDueFilter(item){
   return dueFilter.has(filterOptionKey(item,"due"));
 }
 let fltField = null;
-const FLT_NAME = { parkingType:"車類", parkingCount:"車數", planUnit:"重劃區", area:"區域", status:"狀態", due:"到期", cat:"類別", layout:"格局", floor:"樓層", price:"售價（萬）", agent:"承辦", store:"門市" };
+const FLT_NAME = { planUnit:"重劃區", area:"區域", status:"狀態", due:"到期", cat:"類別", layout:"格局", floor:"樓層", price:"售價（萬）", agent:"承辦", store:"門市" };
 const numOrNull = v => { try { const n = PropertyCore.price(v); return n === "" ? null : n; } catch(_){ return NaN; } };
 // link-filter:start
 const LINK_FILTER_KEY = "community_table_v3_app_linkfilters_v1";
@@ -5462,9 +5455,9 @@ function setViewMode(vm){
 }
 
 // ---- table rendering ----
-const T_COLS = ["重劃區","區域","格局","狀態","案名","門牌","樓層","網站","售價","底價","成本","總坪","主附","主建","附屬","車類","車數","車坪","承辦","電話","公司","註"];
+const T_COLS = ["重劃區","區域","格局","狀態","案名","門牌","樓層","網站","售價","底價","成本","總坪","主附","主建","附屬","承辦","電話","公司","註"];
 // ---- 表格欄寬調整(拖曳 + 雙擊自適應 + 記憶/同步)。表格填滿容器，最後可見欄承接剩餘寬度。 ----
-const T_FIELDS = ["planUnit","area","layout","status","name","addr","floor","links","price","floorPrice","cost","totalArea","mainPlus","mainArea","ancillaryArea","parkingType","parkingCount","parkingArea","agent","tel","store","note"];
+const T_FIELDS = ["planUnit","area","layout","status","name","addr","floor","links","price","floorPrice","cost","totalArea","mainPlus","mainArea","ancillaryArea","agent","tel","store","note"];
 const DISCREET_KEY = STORE_KEY.replace(/data_v4$/, "discreet_v1");
 function loadDiscreet(){
   try {
@@ -5480,7 +5473,7 @@ let discreet = loadDiscreet();
 function tableFields(){ return discreet.on ? T_FIELDS.filter(f => !discreet.fields.includes(f)) : T_FIELDS; }
 function tableColumnCount(){ return tableFields().length + (editMode ? 1 : 0); }
 // 緊湊欄寬；註下限依標題量測，並依原本操作承接剩餘寬度。
-const DEFAULT_COLW = {"planUnit":64,"area":48,"layout":48,"status":48,"name":104,"addr":84,"floor":48,"links":52,"price":52,"floorPrice":52,"cost":52,"totalArea":48,"mainPlus":48,"mainArea":48,"ancillaryArea":48,"parkingType":52,"parkingCount":48,"parkingArea":48,"agent":48,"tel":60,"store":76,"note":64};
+const DEFAULT_COLW = {"planUnit":64,"area":48,"layout":48,"status":48,"name":104,"addr":84,"floor":48,"links":52,"price":52,"floorPrice":52,"cost":52,"totalArea":48,"mainPlus":48,"mainArea":48,"ancillaryArea":48,"agent":48,"tel":60,"store":76,"note":64};
 const COLW_MIN = 48, COLW_MAX = 640, FLEX_MIN_FALLBACK = 36, DEL_W = 40;
 function loadColW(){ if (storageOK){ try { const s = JSON.parse(localStorage.getItem("community_table_v3_app_colw_v2") || "null"); if (s && typeof s === "object") return {...DEFAULT_COLW, ...s, note:64}; } catch(e){} } return {...DEFAULT_COLW}; }
 function saveColW(){ if (storageOK){ try { localStorage.setItem("community_table_v3_app_colw_v2", JSON.stringify(colW)); } catch(e){} } }
@@ -5509,11 +5502,11 @@ function colGroupHTML(){
     + (editMode ? `<col data-field="_del" style="width:${DEL_W}px">` : "");
 }
 // 彈性欄與刪除欄不放調整把手，其餘欄保留原本操作。
-const FILTERABLE = {totalArea:1,mainPlus:1,mainArea:1,ancillaryArea:1,parkingType:1,parkingCount:1,parkingArea:1,planUnit:1,area:1,layout:1,status:1,floor:1,price:1,agent:1,store:1};
+const FILTERABLE = {totalArea:1,mainPlus:1,mainArea:1,ancillaryArea:1,planUnit:1,area:1,layout:1,status:1,floor:1,price:1,agent:1,store:1};
 function tHeadHTML(){
   const fields = tableFields(), flex = tableFlexField(fields);
   return fields.map(f => {
-    const h = f === "planUnit" ? "重劃" : T_COLS[T_FIELDS.indexOf(f)];
+    const h = T_COLS[T_FIELDS.indexOf(f)];
     const rz = (f && f !== flex) ? `<span class="col-resize" data-field="${f}"></span>` : "";
     const lab = (f && FILTERABLE[f])
       ? `<button type="button" class="th-flt${colFilterOn(f) ? " on" : ""}" data-flt="${f}" aria-haspopup="dialog" aria-controls="fltBg"><span class="th-label">${h}</span><span class="fmk" aria-hidden="true">▾</span></button>`
@@ -5688,7 +5681,7 @@ function observeTableLinks(){
   if(observedLinkGroup){tableLinkObserver?.observe(observedLinkGroup);queueTableLinkFit();}
 }
 if(!tableLinkObserver)window.addEventListener("resize",queueTableLinkFit);
-const TABLE_NUMBERS = new Set(["price","totalArea","mainPlus","mainArea","ancillaryArea","parkingCount","parkingArea","floorPrice","cost"]);
+const TABLE_NUMBERS = new Set(["price","totalArea","mainPlus","mainArea","ancillaryArea","floorPrice","cost"]);
 function tableFileNameAvailable(){
   return !discreet.on || !["addr","name","price","agent"].some(field => discreet.fields.includes(field));
 }
@@ -5978,7 +5971,7 @@ function tCommitCell(cell){                       // 回傳 true=值有變更(�
   let val = cell.textContent.trim();
   if (field === "name") val = normalizeName(val);
   if (TABLE_NUMBERS.has(field)){
-    try { val=field === "price" ? PropertyCore.price(val) : field==="parkingCount" ? PropertyCore.parkingCount(val) : PropertyCore.tableDecimal(val); cell.removeAttribute("aria-invalid"); }
+    try { val=field === "price" ? PropertyCore.price(val) : PropertyCore.tableDecimal(val); cell.removeAttribute("aria-invalid"); }
     catch(e){
       const label = T_COLS[T_FIELDS.indexOf(field)];
       cell.setAttribute("aria-invalid","true"); toast(e.message.replace(/售價/g,label));
@@ -7736,7 +7729,7 @@ document.addEventListener("keydown", e => {
 
 // ---- Add / Edit / Delete ----
 const modalBg = document.getElementById("modalBg");
-const FORM_INPUT_KEYS = T_FIELDS.filter(field => !["note","links","parkingType","parkingCount","parkingArea"].includes(field));
+const FORM_INPUT_KEYS = T_FIELDS.filter(field => field !== "note" && field !== "links");
 const F = Object.fromEntries([...FORM_INPUT_KEYS,"note","note2","note3","t1","t2","t3"].map(k=>[k,document.getElementById("f_"+k)]));
 const formCommunity = document.getElementById("formCommunity");
 const formCommunityUI=(()=>{
@@ -14637,7 +14630,7 @@ function paintPropertyState(state){
   open(spec){const el=Array.from(tableWrap.querySelectorAll('.tcell[data-field]')).find(cell=>tFindItem(cell)?.id===spec.id&&cell.dataset.field===spec.field);if(!el)return null;if(el.querySelector('.area-extra'))el.textContent=el.textContent;el.dataset.quickEdit='cell';el.contentEditable='true';el.tabIndex=0;el.focus({preventScroll:true});caretEnd(el);tScrollFieldIntoView(el);return {...spec,el,kind:'cell'};},
   commit(state){
    const {el,field}=state;let value=el.textContent.trim();
-   if(TABLE_NUMBERS.has(field))try{value=field==='price'?PropertyCore.price(value):field==='parkingCount'?PropertyCore.parkingCount(value):PropertyCore.tableDecimal(value);el.removeAttribute('aria-invalid');}catch(error){el.setAttribute('aria-invalid','true');toast(error.message.replace(/售價/g,T_COLS[T_FIELDS.indexOf(field)]));return false;}
+   if(TABLE_NUMBERS.has(field))try{value=field==='price'?PropertyCore.price(value):PropertyCore.tableDecimal(value);el.removeAttribute('aria-invalid');}catch(error){el.setAttribute('aria-invalid','true');toast(error.message.replace(/售價/g,T_COLS[T_FIELDS.indexOf(field)]));return false;}
    const before=state.baseItems.find(item=>item.id===state.id);const values={[field]:value};
    if((field==='mainArea'||field==='ancillaryArea')&&value==='')values.mainPlus=PropertyCore.areaValue(before,'mainPlus');
    const ok=patch(state,values);if(ok)updateTableAreaCell(el,items.find(item=>item.id===state.id));return ok;
@@ -14903,7 +14896,7 @@ function paintPropertyState(state){
 
 (() => {
   const $ = id => document.getElementById(id);
-  const labels = {note:'備註',note2:'注意',note3:'其它',price:'售價',agent:'承辦',name:'案名',store:'公司',t1:'備註標題',t2:'注意標題',t3:'其它標題',addr:'門牌',layout:'格局',floor:'樓層',tel:'電話',due:'到期日',cat:'社區歸屬',planUnit:'重劃區',area:'區域',status:'狀態',totalArea:'總坪',mainPlus:'主附',mainArea:'主建',ancillaryArea:'附屬',parkingType:'車類',parkingCount:'車數',parkingArea:'車坪',floorPrice:'底價',cost:'成本'};
+  const labels = {note:'備註',note2:'注意',note3:'其它',price:'售價',agent:'承辦',name:'案名',store:'公司',t1:'備註標題',t2:'注意標題',t3:'其它標題',addr:'門牌',layout:'格局',floor:'樓層',tel:'電話',due:'到期日',cat:'社區歸屬',planUnit:'重劃區',area:'區域',status:'狀態',totalArea:'總坪',mainPlus:'主附',mainArea:'主建',ancillaryArea:'附屬',floorPrice:'底價',cost:'成本'};
   const tools = document.createElement('div');
   tools.className = 'history-tools';
   tools.innerHTML=['tryUndo','tryRedo'].map(id=>'<button id="'+id+'" type="button">'+'<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M2 11 11 3v5c6.1.2 10.3 4 11 12-2.7-4.7-6-6.5-11-6.5V19z"/></svg>'+'<span>'+(id==='tryUndo'?'還原':'重做')+'</span></button>').join('');
