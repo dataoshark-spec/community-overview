@@ -1197,6 +1197,7 @@ async function openCommunityTarget(value){
   body.col-resizing{cursor:col-resize !important;}
   body.col-resizing *{cursor:col-resize !important;user-select:none !important;}
   .ptable .tcell[data-field="due"],
+  .ptable .tcell[data-field="parkingType"],
   .ptable .tcell[data-field="layout"],
   .ptable .tcell[data-field="floor"],
   .ptable .tcell[data-field="agent"],
@@ -3383,7 +3384,7 @@ function communityFeatures(value){
   const source=value.values[section];let result;
   if(section==='catalogs'){
    if(!obj(source))fail('欄位選項設定不正確');result={};
-   for(const field of ['planUnit','area','layout','status','name']){
+   for(const field of ['planUnit','area','layout','status','parkingType','name']){
     const list=source[field]??[];if(!Array.isArray(list)||list.length>5000)fail('欄位選項清單不正確');
     const seen=new Set();result[field]=list.map(entry=>{
      if(!obj(entry))fail('欄位選項不正確');const name=text(entry.name,80,false).trim();if(seen.has(name))fail('欄位選項名稱重複');seen.add(name);
@@ -3738,7 +3739,7 @@ function restore(old,imported,now){
 }
 function historyCommunityName(row){return String(row?.name||'').split(/[／/]/,1)[0].trim();}
 function emptyHistorySection(key,state){
- if(key==='catalogs')return Object.fromEntries(['planUnit','area','layout','status','name'].map(f=>[f,[]]));
+ if(key==='catalogs')return Object.fromEntries(['planUnit','area','layout','status','parkingType','name'].map(f=>[f,[]]));
  if(key==='locations')return {version:2,resetAt:state.resetAt,registry:{},pending:{}};
  if(key==='orders')return {version:1,resetAt:state.resetAt,mode:'default',orders:{property:[],planUnit:[],community:[]}};
  return {names:['','','','','',''],communities:[],appearance:{height:32,background:null,fontSize:13,fontWeight:700,ink:'auto'}};
@@ -4166,7 +4167,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.22N";
+const APP_VERSION = "2026.11.22O";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -13091,7 +13092,7 @@ function paintPropertyState(state){
 /* Community field choices, appearance and links. */
 (() => {
   'use strict';
-  const labels={planUnit:'重劃區',area:'區域',layout:'格局',status:'狀態',name:'社區名稱'};
+  const labels={planUnit:'重劃區',area:'區域',layout:'格局',status:'狀態',parkingType:'車類',name:'社區名稱'};
   const fields=Object.keys(labels), colored=new Set(['planUnit','area','name']);
   const palette=[['紅色','#ef4444'],['橙色','#f97316'],['黃色','#eab308'],['綠色','#16a34a'],['青色','#0891b2'],['藍色','#2563eb'],['紫色','#7c3aed'],['灰色','#64748b']];
   const initial=Object.fromEntries(fields.map(field=>[field,[]]));
@@ -13336,10 +13337,10 @@ function paintPropertyState(state){
       return {itemCount:affectedRows.length,communityCount:groups.size,communities:[...groups],linkCount,used:affectedRows.length>0||groups.size>0||linkCount>0};
     }
     function plan(records,features,field,from,to,resetAt,createState,orderFallback){
-      if(!['planUnit','area','layout','status','name'].includes(field)||!from||from===to)throw Error('請選擇不同的替代選項，或選擇清空。');
+      if(!['planUnit','area','layout','status','parkingType','name'].includes(field)||!from||from===to)throw Error('請選擇不同的替代選項，或選擇清空。');
       const next=copy(features),beforeById=new Map(records.map(item=>[item.id,item]));
       const after=records.map(copy),use=usage(records,features,field,from);
-      next.catalogs=copy(next.catalogs||Object.fromEntries(['planUnit','area','layout','status','name'].map(key=>[key,[]])));
+      next.catalogs=copy(next.catalogs||Object.fromEntries(['planUnit','area','layout','status','parkingType','name'].map(key=>[key,[]])));
       next.catalogs[field]=(next.catalogs[field]||[]).filter(entry=>entry.name!==from);
       if(field==='name'||field==='planUnit'||field==='area'){
         const resolved=createState(records,resetAt,features.locations||null);
@@ -14009,7 +14010,7 @@ function paintPropertyState(state){
   function retainLocationChoices(features,changes,beforeItems,nextLocations){
     const previous=features.locations?.registry||{},following=nextLocations.registry||{};
     const beforeById=new Map(beforeItems.map(item=>[item.id,item]));
-    const catalogs=copy(features.catalogs||Object.fromEntries(['planUnit','area','layout','status','name'].map(field=>[field,[]])));
+    const catalogs=copy(features.catalogs||Object.fromEntries(['planUnit','area','layout','status','parkingType','name'].map(field=>[field,[]])));
     let added=false;
     for(const field of ['planUnit','area']){
       const names=new Set(),remember=value=>{if(typeof value==='string'&&value.trim())names.add(value.trim());};
@@ -14941,7 +14942,7 @@ function paintPropertyState(state){
   indicator();return true;
  }
  const scalar={
-  target(target){const el=target.closest('.tcell[data-field]');return el&&tableWrap.contains(el)&&!['planUnit','area','layout','status','name'].includes(el.dataset.field)&&el.getAttribute('aria-readonly')!=='true'?{id:tFindItem(el)?.id,field:el.dataset.field}:null;},
+  target(target){const el=target.closest('.tcell[data-field]');return el&&tableWrap.contains(el)&&!['planUnit','area','layout','status','parkingType','name'].includes(el.dataset.field)&&el.getAttribute('aria-readonly')!=='true'?{id:tFindItem(el)?.id,field:el.dataset.field}:null;},
   open(spec){const el=Array.from(tableWrap.querySelectorAll('.tcell[data-field]')).find(cell=>tFindItem(cell)?.id===spec.id&&cell.dataset.field===spec.field);if(!el)return null;if(el.querySelector('.area-extra'))el.textContent=el.textContent;el.dataset.quickEdit='cell';el.contentEditable='true';el.tabIndex=0;el.focus({preventScroll:true});caretEnd(el);tScrollFieldIntoView(el);return {...spec,el,kind:'cell'};},
   commit(state){
    const {el,field}=state;let value=el.textContent.trim();
@@ -14957,7 +14958,7 @@ function paintPropertyState(state){
   contains(state,target){return state.el.contains(target);}
  };
  const option={
-  target(target){const el=target.closest('.tcell[data-field]');return el&&tableWrap.contains(el)&&['planUnit','area','layout','status','name'].includes(el.dataset.field)?{id:tFindItem(el)?.id,field:el.dataset.field}:null;},
+  target(target){const el=target.closest('.tcell[data-field]');return el&&tableWrap.contains(el)&&['planUnit','area','layout','status','parkingType','name'].includes(el.dataset.field)?{id:tFindItem(el)?.id,field:el.dataset.field}:null;},
   open(spec){const el=Array.from(tableWrap.querySelectorAll('.tcell[data-field]')).find(cell=>tFindItem(cell)?.id===spec.id&&cell.dataset.field===spec.field);if(!el)return null;CommunityFields.open(el);return CommunityFields.getActive()?{...spec,el,kind:'option'}:null;},
   commit(){return CommunityFields.finish();},
   contains(state,target){return !!target.closest('#fieldOptionMenu,#fieldTintPanel,#communityDefaultsBg');}
