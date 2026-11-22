@@ -4157,7 +4157,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.22R";
+const APP_VERSION = "2026.11.22S";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -14766,9 +14766,13 @@ function paintPropertyState(state){
     bind(nextBody,nextBody?.querySelector('.ptable')||null);
     if(!body||!table)return;
     const width=Math.max(0,body.offsetWidth-body.clientWidth);
+    const scrolling=body.scrollHeight>body.clientHeight;
+    // Only the pinned strip above the native track may extend into an occupied gutter.
+    const trackTop=scrolling?(parseFloat(body.style.getPropertyValue('--cl-community-scrollbar-top'))||0):body.clientHeight;
+    if(!width||trackTop<=0||(scrolling&&!body.classList.contains('cl-community-scrollbar'))){clear(body);return;}
     const rows=table.querySelectorAll('tbody > .cl-community-row');
-    if(!width||!rows.length||!body.clientHeight){clear(body);return;}
-    const bounds=body.getBoundingClientRect(),top=body.clientTop,bottom=top+body.clientHeight;
+    if(!rows.length){clear(body);return;}
+    const bounds=body.getBoundingClientRect(),top=body.clientTop,bottom=top+Math.min(trackTop,body.clientHeight);
     const stops=['transparent 0px'];
     let hasBand=false;
     function band(color,start,end){
@@ -14777,7 +14781,7 @@ function paintPropertyState(state){
       stops.push(`${color} ${px(start)} ${px(end)}`);hasBand=true;
     }
     for(const row of rows){
-      const cell=row.firstElementChild;if(!cell)continue;
+      const cell=row.firstElementChild;if(!cell||(scrolling&&!cell.classList.contains('cl-community-pinned')))continue;
       const rect=cell.getBoundingClientRect(),start=rect.top-bounds.top,end=rect.bottom-bounds.top;
       if(end<=top||start>=bottom)continue;
       const style=getComputedStyle(cell),slot=cell.querySelector('.cl-link-slot:last-child');
