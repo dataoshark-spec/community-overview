@@ -1225,9 +1225,8 @@ async function openCommunityTarget(value){
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .ptable:not(.ro) .tcell[data-field]{transition:background .04s ease;}
   .ptable:not(.ro) .tcell[data-field]:focus{transition:none;}
-  .tcell[data-field="due"],.tcell[data-field="addr"],.tcell[data-field="tel"],.tcell[data-field="store"]{font-size:.77rem;}
   .tcell[data-field="due"]{font-size:.66rem;}
-  .tcell[data-field="layout"],.tcell[data-field="floor"],.tcell[data-field="agent"],.tcell[data-field="store"],.tcell[data-field="tel"]{font-size:.72rem;}
+  .tcell[data-field="addr"],.tcell[data-field="layout"],.tcell[data-field="floor"],.tcell[data-field="agent"],.tcell[data-field="store"],.tcell[data-field="tel"]{font-size:.72rem;}
   /* 外圈焦框(勿用 inset:易被相鄰格/gen-edge 蓋成「缺一邊」);z-index 高於 gen-edge(3) */
   /* 內縮焦框:外圈會被 overflow／下一列 hover 裁掉;聚焦時藏 gen-edge */
   .tcell:focus{background:var(--card);box-shadow:inset 0 0 0 2px var(--accent);border-radius:5px;overflow:hidden;text-overflow:clip;position:relative;z-index:6;}
@@ -4326,7 +4325,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.24L";
+const APP_VERSION = "2026.11.24M";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
