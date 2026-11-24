@@ -4211,7 +4211,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.24D";
+const APP_VERSION = "2026.11.24E";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -12108,10 +12108,39 @@ document.addEventListener("pointercancel", endCatDrag);
    滑動返回:在列表頁/設定頁，水平滑動(左或右)即返回上一頁(回到封面)。
    忽略:類別橫向捲動列、輸入框、下拉選單、以及任何彈窗開啟時。
    ========================================================================= */
+function horizontalBackSwipe(dx,dy,elapsed){
+  return Math.abs(dx)>=70 && Math.abs(dx)>1.5*Math.abs(dy) && elapsed<=800;
+}
+// A toolbar panel owns touches started inside it, including its native editing controls.
+function bindTablePanelSwipe(panel,isOpen,cancel){
+  let start=null;
+  panel.addEventListener('touchstart',event=>{
+    start=null;
+    if(!isOpen())return;
+    event.stopPropagation();
+    if(event.touches.length!==1||event.target.closest('input,textarea,select,[contenteditable="true"],[role="slider"],[data-order-grip]'))return;
+    const t=event.touches[0];
+    start={x:t.clientX,y:t.clientY,id:t.identifier,time:event.timeStamp};
+  },{passive:true});
+  panel.addEventListener('touchmove',event=>{
+    if(!start)return;
+    const t=event.touches[0];
+    if(event.touches.length!==1||Math.abs(t.clientY-start.y)>Math.max(16,Math.abs(t.clientX-start.x)))start=null;
+  },{passive:true});
+  panel.addEventListener('touchcancel',()=>{start=null;},{passive:true});
+  panel.addEventListener('touchend',event=>{
+    const origin=start;start=null;
+    if(!isOpen())return;
+    event.stopPropagation();
+    if(!origin||event.touches.length||event.changedTouches.length!==1||document.getElementById('dataSafetyPanel'))return;
+    const t=event.changedTouches[0];
+    if(t.identifier!==origin.id||!horizontalBackSwipe(t.clientX-origin.x,t.clientY-origin.y,event.timeStamp-origin.time))return;
+    if(event.cancelable)event.preventDefault();
+    cancel();
+  },{passive:false});
+}
+bindTablePanelSwipe(customOrderUI.bg,customOrderOpen,()=>closeCustomOrder());
 (function(){
-  const H_MIN = 70;     // 觸發返回所需的最小水平距離(px)
-  const RATIO = 1.5;    // 水平位移須明顯大於垂直(避免和上下捲動衝突)
-  const T_MAX = 800;    // 手勢最長時間(ms)
   let sx = 0, sy = 0, st = 0, track = false, skip = false, detailWasOpen = false;
 
   function overlayOpen(){
@@ -12173,8 +12202,7 @@ document.addEventListener("pointercancel", endCatDrag);
     if (e.changedTouches.length !== 1) return;
     const t = e.changedTouches[0];
     const dx = t.clientX - sx, dy = t.clientY - sy, dt = Date.now() - st;
-    const ax = Math.abs(dx), ay = Math.abs(dy);
-    if (ax >= H_MIN && ax > ay * RATIO && dt <= T_MAX){
+    if (horizontalBackSwipe(dx,dy,dt)){
       if (bulkCommunityOpen()){
         e.preventDefault(); suppressClick=true;
         setTimeout(()=>{suppressClick=false;},500);
@@ -14056,6 +14084,7 @@ function paintPropertyState(state){
     if(event.key==='Escape'){event.preventDefault();event.stopImmediatePropagation();close();}
     else if(event.key==='Enter'&&!event.isComposing&&!event.target.closest('.clcp-inline')&&event.target.matches('input')){event.preventDefault();event.stopImmediatePropagation();commit();}
   },true);
+  bindTablePanelSwipe(backdrop,()=>editor?.kind==='names',close);
   backdrop.addEventListener('touchstart',event=>event.stopPropagation(),{passive:true});
   function renameFeatures(features,from,to){
     if(!from||!to||from===to||!features.links)return;
@@ -14419,6 +14448,7 @@ function paintPropertyState(state){
   document.addEventListener('focusin',event=>{if(cafPickerState&&!cafPickerState.wrap.contains(event.target))cafClosePicker();});
   window.addEventListener('resize',cafPositionPicker,{passive:true});
 
+  bindTablePanelSwipe(backdrop,()=>overlay?.kind==='defaults',close);
   button.addEventListener('click',()=>openDefaults());
   backdrop.addEventListener('click',event=>{
     const target=event.target.closest('button');if(!target||!overlay)return;
@@ -14716,6 +14746,7 @@ function paintPropertyState(state){
     else if(event.key==='Escape'&&opened){event.preventDefault();event.stopImmediatePropagation();closeToTrigger();}
   },true);
   document.addEventListener('pointerdown',event=>{if(!control.contains(event.target))hide();},true);
+  bindTablePanelSwipe(control,()=>opened,closeToTrigger);
   window.addEventListener('resize',position);
   window.addEventListener('storage',event=>{if(event.key===storageKey)apply(event.newValue);});
   window.CommunityRowHeight={key:storageKey,get value(){return height;}};
