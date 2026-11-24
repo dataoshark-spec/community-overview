@@ -3574,7 +3574,11 @@ function communityFeatures(value){
   }else{
    if(!obj(source)||source.version!==1||!stamp(source.resetAt)||!['default','price_desc','price_asc','due_asc','due_desc','group_plan_unit','group_community','custom'].includes(source.mode)||!obj(source.orders))fail('獨立排序設定不正確');
    result={version:1,resetAt:source.resetAt,mode:source.mode,orders:{}};
-   for(const kind of ['property','planUnit','community']){result.orders[kind]=strings(source.orders[kind],5000,5000,true);if(kind==='property'&&result.orders[kind].some(id=>!safeId(id)))fail('物件排序識別碼不正確');}
+   for(const kind of ['property','planUnit','community','planRows','communityRows']){
+    if((kind==='planRows'||kind==='communityRows')&&!own(source.orders,kind))continue;
+    result.orders[kind]=strings(source.orders[kind],5000,5000,true);
+    if(['property','planRows','communityRows'].includes(kind)&&result.orders[kind].some(id=>!safeId(id)))fail('物件排序識別碼不正確');
+   }
   }
   out.values[section]=result;out.clocks[section]=value.clocks[section];
  }
@@ -4325,7 +4329,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.24N";
+const APP_VERSION = "2026.11.24O";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -11608,8 +11612,8 @@ settingsBack.addEventListener("click",closeSettings);
 })();
 
 // Tab preferences are shared by both views and synced separately from property data.
-function dragOrderRow(down,handle,row,isCurrent,onMove){
-  const list=row.parentElement,rows=Array.from(list.children);
+function dragOrderRow(down,handle,row,isCurrent,onMove,scope={}){
+  const list=scope.scroller||row.parentElement,rows=scope.rows||Array.from(list.children);
   if(rows.length<2)return;
   down.preventDefault();
   const from=rows.indexOf(row),rects=rows.map(el=>el.getBoundingClientRect());
@@ -11641,7 +11645,7 @@ function dragOrderRow(down,handle,row,isCurrent,onMove){
     if(list.scrollTop!==before){last=now;frame=requestAnimationFrame(tick);}else last=0;
   }
   function move(e){if(e.pointerId===down.pointerId){x=e.clientX;y=e.clientY;if(!frame)frame=requestAnimationFrame(tick);}}
-  function up(e){if(e.pointerId===down.pointerId){y=e.clientY;position();finish(true);}}
+  function up(e){if(e.pointerId===down.pointerId){y=e.clientY;position();finish(!scope.canDrop||scope.canDrop(e,rects,startScroll));}}
   function cancel(e){if(e.pointerId==null||e.pointerId===down.pointerId)finish(false);}
   let finished=false;
   function finish(commit){
@@ -11653,6 +11657,7 @@ function dragOrderRow(down,handle,row,isCurrent,onMove){
     window.removeEventListener('blur',cancel);
     if(handle.hasPointerCapture(down.pointerId))handle.releasePointerCapture(down.pointerId);
     list.classList.remove('is-dragging');row.classList.remove('fo-moving');rows.forEach(el=>el.style.transform='');
+    scope.onEnd?.();
     if(commit&&row.isConnected&&isCurrent())onMove(from,target);
   }
   document.addEventListener('pointermove',move);document.addEventListener('pointerup',up);
@@ -13466,6 +13471,7 @@ function paintPropertyState(state){
    const expected=options.resetAt??(window._resetAt||0);
    const state=core.local().commit(null,{history:true,group:window.propertyUndo?.group(),updateLatest(latest){
     if(latest.resetAt!==expected){const error=Error('資料已完整還原，請關閉並重新開啟這個設定。');error.code='PROPERTY_RESET';throw error;}
+    options.checkLatest?.(latest);
     const feature=clone(latest.settings.communityFeatures||empty()),baseClocks=base.settings.communityFeatures?.clocks||{};
     if(options.catalogBase!=null&&options.catalogBase!==JSON.stringify(feature.values.catalogs??null))throw Error('欄位選項已更新，請取消後重新開啟社區資料。');
     for(const name of affectedCommunities){
@@ -14831,6 +14837,7 @@ function paintPropertyState(state){
       if(!Array.isArray(saved.orders[kind])||saved.orders[kind].some(key=>typeof key!=='string'))throw new Error('排序清單格式不正確。');
       result.orders[kind]=[...new Set(saved.orders[kind])];
     }
+    for(const key of ['planRows','communityRows'])if(Array.isArray(saved.orders[key]))result.orders[key]=saved.orders[key].slice();
     return result;
   }
   function complete(saved,available){
@@ -14885,7 +14892,8 @@ function paintPropertyState(state){
   }
   function orderList(list,mode){
     const kind=kinds[mode];
-    const base=kind==='property'?list.slice():sortCommunityGroups(list,kind==='planUnit');
+    const rows=viewMode==='table'?profiles.orders[mode==='group_plan_unit'?'planRows':'communityRows']:null;
+    const base=kind==='property'?list.slice():sortCommunityGroups(rows?PropertyCore.naturalOrder(list,rows):list,kind==='planUnit');
     const available=customOrderValues(items)[kind];
     const ranks=new Map(completeCustomOrder(profiles.orders[kind],available).map((key,index)=>[key,index]));
     return base.map((item,index)=>({item,index,key:customOrderKeys(item)[kind]}))
@@ -16116,6 +16124,127 @@ function paintPropertyState(state){
     const th=e.target.closest('.thead-wrap th[data-col]');if(!th)return;
     e.preventDefault();open(th);
   });
+})();
+</script>
+<style>
+#communityRowDrag{min-height:36px;padding:8px 11px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink-soft);line-height:1.2;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;white-space:nowrap;}
+#communityRowDrag[aria-pressed=true]{background:var(--ink);color:var(--card);border-color:transparent;}
+#communityRowDrag[hidden]{display:none;}
+#tableWrap td.row-grip-cell{position:relative;}
+#tableWrap td.row-grip-cell>.tcell{padding-inline-start:25px;}
+#tableWrap .community-row-grip{position:absolute;inset:0 auto 0 0;z-index:1;width:23px;border:0;background:transparent;color:inherit;font:700 16px/1 sans-serif;cursor:grab;touch-action:none;user-select:none;}
+#tableWrap .community-row-grip:hover,#tableWrap .community-row-grip:focus-visible{background:var(--surface-2);border-radius:4px;}
+#tableWrap .tbody-wrap.is-dragging tr[data-id]{position:relative;transition:transform .13s ease-out;}
+#tableWrap .tbody-wrap.is-dragging tr.fo-moving{z-index:3;transition:none;filter:drop-shadow(0 2px 3px #17232c38);}
+#tableWrap .tbody-wrap.is-dragging tr.fo-moving td{background-color:var(--card);}
+#tableWrap .fo-moving .community-row-grip{cursor:grabbing;}
+@media(prefers-reduced-motion:reduce){#tableWrap .tbody-wrap.is-dragging tr[data-id]{transition:none;}}
+</style>
+<script>
+(()=>{
+  const button=document.createElement('button');
+  button.id='communityRowDrag';button.type='button';button.textContent='拖曳模式';
+  button.title='拖曳案名前的把手，調整同社區內的物件順序';
+  document.getElementById('rowHeightControl').after(button);
+  let activeMode=null,cancelDrag=null;
+  function mode(){
+    const sort=visibleSort();
+    return viewMode==='table'&&listView.classList.contains('active')&&!tselMode&&tableFields().includes('name')
+      &&(sort==='group_plan_unit'||sort==='group_community')?sort:null;
+  }
+  function toolbar(){
+    const available=mode();
+    if(activeMode!==available){cancelDrag?.();activeMode=null;}
+    button.hidden=!available;button.setAttribute('aria-pressed',String(!!activeMode));
+  }
+  function addHandles(){
+    toolbar();if(!activeMode)return;
+    let batch=[];
+    function finish(){
+      if(batch.length>1)for(const row of batch){
+        const name=row.querySelector('.tcell[data-field="name"]');
+        if(!name||name.parentElement.querySelector('.community-row-grip'))continue;
+        const grip=document.createElement('button');grip.type='button';grip.className='community-row-grip';grip.textContent='⠿';
+        grip.title='拖曳排序，也可按 ↑ 或 ↓';grip.setAttribute('aria-label','移動'+name.textContent);
+        name.parentElement.classList.add('row-grip-cell');name.before(grip);
+      }
+      batch=[];
+    }
+    let named=false;
+    for(const row of tableWrap.querySelectorAll('.tbody-wrap tbody>tr')){
+      if(row.matches('.cl-community-row,.cl-plan-row')){finish();named=!!row.dataset.community;}
+      else if(named&&row.dataset.id)batch.push(row);
+    }
+    finish();
+  }
+  const previousRender=renderTable;
+  renderTable=function(...args){cancelDrag?.();const result=previousRender(...args);addHandles();return result;};
+  const previousMode=syncTableMode;
+  syncTableMode=function(...args){const result=previousMode(...args);toolbar();return result;};
+  toolbar();
+  button.addEventListener('click',()=>{
+    if(!mode()||flushEditing()===false||window._saveBlocked)return;
+    activeMode=activeMode?null:mode();applyFilter();
+    if(activeMode)toast('拖曳案名前的把手，調整同社區內的物件順序');
+  });
+  function begin(grip){
+    const sort=activeMode;
+    if(!sort||sort!==mode()||window._saveBlocked)return;
+    const row=grip.closest('tr'),item=items.find(x=>x.id===row.dataset.id);
+    if(!item)return;
+    const name=namedCommunity(item),plan=String(item.planUnit||'').trim(),byPlan=sort==='group_plan_unit';
+    const belongs=x=>namedCommunity(x)===name&&(!byPlan||String(x.planUnit||'').trim()===plan);
+    const key=byPlan?'planRows':'communityRows',epoch=window._resetAt||0;
+    const full=sortList(items.filter(belongs)).map(x=>x.id);
+    let first=row;while(first.previousElementSibling?.dataset.id)first=first.previousElementSibling;
+    const rows=[];
+    for(let r=first;r?.dataset.id;r=r.nextElementSibling)rows.push(r);
+    const shown=rows.map(r=>r.dataset.id),visible=new Set(shown);
+    if(!name||JSON.stringify(full.filter(id=>visible.has(id)))!==JSON.stringify(shown))return;
+    function move(from,to){
+      if(from===to||to<0||to>=shown.length)return;
+      const changed=shown.slice();changed.splice(to,0,changed.splice(from,1)[0]);
+      const next=replaceCustomOrderSlots(full,changed),members=new Set(full);
+      const ok=CommunityData.transaction(features=>{
+        const profile=CommunitySortModel.read(features.orders,epoch,CommunitySortModel.legacy(PropertyCore.local().current.settings,epoch,sort));
+        const live=new Set(items.map(x=>x.id));
+        profile.orders[key]=[...(profile.orders[key]||[]).filter(id=>!members.has(id)&&live.has(id)),...next];
+        features.orders=profile;
+      },[],{resetAt:epoch,checkLatest(latest){
+        const profile=latest.settings.communityFeatures?.values.orders;
+        const natural=PropertyCore.naturalOrder(latest.items.filter(belongs),PropertyCore.local().history.order);
+        const check=PropertyCore.naturalOrder(natural,profile?.orders[key]||[]).map(x=>x.id);
+        if((profile&&profile.mode!==sort)||JSON.stringify(check)!==JSON.stringify(full))throw Error('這個社區的物件或順序已更新，請重新拖曳。');
+      }});
+      if(ok){CommunitySortProfiles.refresh();toast('已儲存「'+name+'」的物件順序');}
+    }
+    return {row,rows,move};
+  }
+  tableWrap.addEventListener('pointerdown',event=>{
+    const grip=event.target.closest('.community-row-grip');
+    if(!grip||event.button!==0||!event.isPrimary)return;
+    event.stopImmediatePropagation();cancelDrag?.();
+    const group=begin(grip);if(!group)return;
+    const {rows,row,move}=group,scroller=row.closest('.tbody-wrap'),sort=activeMode;
+    cancelDrag=dragOrderRow(event,grip,row,()=>activeMode===sort&&mode()===sort,move,{
+      rows,scroller,onEnd(){cancelDrag=null;},
+      canDrop(e,rects,initialScroll){
+        const r=scroller.getBoundingClientRect(),y=e.clientY+scroller.scrollTop-initialScroll;
+        const target=document.elementFromPoint(e.clientX,e.clientY);
+        return e.clientX>=r.left&&e.clientX<r.left+scroller.clientWidth&&e.clientY>=r.top&&e.clientY<r.top+scroller.clientHeight
+          &&y>=rects[0].top&&y<rects.at(-1).bottom&&!target?.closest('.cl-community-row,.cl-plan-row');
+      }
+    });
+  },true);
+  tableWrap.addEventListener('click',e=>{if(e.target.closest('.community-row-grip')){e.preventDefault();e.stopImmediatePropagation();}},true);
+  window.addEventListener('keydown',e=>{
+    if(e.key==='Escape'&&cancelDrag){e.preventDefault();e.stopImmediatePropagation();cancelDrag();return;}
+    const grip=e.target.closest?.('.community-row-grip');
+    if(!grip||!['ArrowUp','ArrowDown'].includes(e.key))return;
+    e.preventDefault();e.stopImmediatePropagation();const group=begin(grip);if(!group)return;
+    const from=group.rows.indexOf(group.row),id=group.row.dataset.id;group.move(from,from+(e.key==='ArrowUp'?-1:1));
+    requestAnimationFrame(()=>tableWrap.querySelector('tr[data-id="'+CSS.escape(id)+'"] .community-row-grip')?.focus({preventScroll:true}));
+  },true);
 })();
 </script>
 </body>
