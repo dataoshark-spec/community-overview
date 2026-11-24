@@ -1972,7 +1972,6 @@ button.cl-district-bar{cursor:pointer;}
 .cl-appearance-preview .cl-link-slot.is-blank:not(.has-link) .cl-slot-name{opacity:.35;}
 
 .cl-community-row .cl-link-grid:not(.cl-editable) .cl-link-slot:not(.has-link){cursor:default;}
-.cl-community-row .cl-slot-mark:empty{display:none;}
 .cl-community-row .cl-link-slot::after{content:"";position:absolute;inset:0;pointer-events:none;background:transparent;z-index:-1;}
 @media(hover:hover){.cl-community-row .cl-editable .cl-link-slot:hover::after{background:rgba(0,0,0,.075);}[data-theme="dark"] .cl-community-row .cl-editable .cl-link-slot:hover::after{background:rgba(255,255,255,.10);}}
 .ptable .cl-community-row .cl-unnamed{height:calc(var(--cl-row-height,32px) - 2px);line-height:calc(var(--cl-row-height,32px) - 2px);}
@@ -2161,11 +2160,9 @@ button.cl-district-bar{cursor:pointer;}
 
 /* Selected inward chevron, centered with link text. */
 
-.cl-community-row .cl-link-slot:not(.has-link):not(.is-blank) .cl-slot-name{opacity:.55;}
+.cl-community-row .cl-link-slot:not(.has-link):not(.is-blank) .cl-slot-name{opacity:.43;}
 .cl-community-row .cl-link-open{gap:.35em;}
 .cl-community-row .cl-link-open .cl-slot-name{line-height:1;}
-.cl-community-row .cl-link-slot.has-link .cl-slot-mark{display:inline-flex;align-items:center;justify-content:center;flex:none;opacity:1;font-size:inherit;line-height:1;width:1em;height:1em;align-self:center;}
-.cl-community-row .cl-slot-mark svg{display:block;width:1em;height:1em;}
 
 /* Keep the original ordering dialog; each toolbar mode has one fixed list. */
 #customOrderBg.community-sort-profiles .custom-order-types{display:none;}
@@ -4247,7 +4244,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.24G";
+const APP_VERSION = "2026.11.24H";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -14027,16 +14024,13 @@ function paintPropertyState(state){
       }
       styleSlot(link,look);
       const text=document.createElement('span');text.className='cl-slot-name';text.textContent=name||'－';
-      const mark=document.createElement('span');mark.className='cl-slot-mark';mark.setAttribute('aria-hidden','true');
-      if(url){mark.classList.add('cl-ready-mark');mark.innerHTML='<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m10 4-4 4 4 4"/></svg>';}
-      else mark.textContent=name&&(editable||preview)?'＋':'';
       if(!preview&&url){
         link.classList.add('cl-link-filled');
         const openLink=document.createElement('a');openLink.className='cl-link-open';
         openLink.href=url;openLink.target='_blank';openLink.rel='noopener noreferrer';openLink.dataset.clLinkAction='open';
         openLink.dataset.community=community;openLink.dataset.slot=String(slot);
         openLink.setAttribute('aria-label',community+' · '+label+'，開啟連結');openLink.title=localLinkPath(url)||url;
-        openLink.append(text,mark);
+        openLink.appendChild(text);
         link.appendChild(openLink);
         if(editable){
           const edit=document.createElement('button');edit.type='button';edit.className='cl-link-edit';edit.textContent='編輯';
@@ -14044,7 +14038,13 @@ function paintPropertyState(state){
           edit.setAttribute('aria-label',community+' · '+label+'，編輯此社區連結');edit.setAttribute('aria-haspopup','dialog');edit.title='編輯此社區連結';
           link.appendChild(edit);
         }
-      }else link.append(text,mark);
+      }else{
+        link.appendChild(text);
+        if(!url&&name&&(editable||preview)){
+          const mark=document.createElement('span');mark.className='cl-slot-mark';mark.setAttribute('aria-hidden','true');mark.textContent='＋';
+          link.appendChild(mark);
+        }
+      }
       bar.appendChild(link);
     });
 
