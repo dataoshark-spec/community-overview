@@ -2487,6 +2487,24 @@ tr.history-highlight>td{box-shadow:inset 0 2px #60ae93,inset 0 -2px #60ae93!impo
 #app:not(.table-mode) #sortBtn{max-width:100%;gap:4px;padding-inline:8px}
 #app:not(.table-mode) #sortTxt{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #app:not(.table-mode) .ctrl-right{flex:none;gap:5px}
+#districtTabSettings{padding:8px 10px;border-radius:9px;font-size:.8rem;}
+#districtTabSettings[hidden]{display:none;}
+#districtTabDialog .cl-dialog{display:flex;flex-direction:column;max-width:430px;overflow:hidden;}
+#districtTabRows{min-height:0;overflow:auto;overscroll-behavior:contain;}
+.district-tab-head,.district-tab-row{display:grid;grid-template-columns:74px minmax(0,1fr) auto;align-items:center;gap:8px;}
+.district-tab-head{font-size:12px;color:var(--ink-soft);padding:8px 0;}
+.district-tab-head :last-child{text-align:center;min-width:76px;}
+.district-tab-row{min-height:44px;border-top:1px solid var(--line);}
+.district-tab-row input{justify-self:center;width:18px;height:18px;accent-color:var(--accent-deep);}
+.district-tab-row label{overflow-wrap:anywhere;cursor:pointer;}
+.district-tab-row button{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink-soft);cursor:pointer;}
+.district-tab-row button+button{margin-left:6px;}
+.district-tab-row button:disabled{opacity:.35;}
+.column-drag-label{position:fixed;z-index:12000;pointer-events:none;max-width:160px;padding:6px 12px;border-radius:8px;background:var(--ink);color:var(--card);font-family:inherit;font-size:14px;font-weight:600;line-height:1.4;box-shadow:0 3px 14px #0003;}
+.thead-wrap th.column-before{box-shadow:inset 3px 0 var(--ink);}
+.thead-wrap th.column-after{box-shadow:inset -3px 0 var(--ink);}
+body.column-moving,body.column-moving *{cursor:grabbing!important;user-select:none!important;}
+@media(min-width:820px){.thead-wrap .th-label{user-select:none;}}
 .table-setup-tools,.sort-primary{display:contents;}
 @media(max-width:819px){
  #app.table-mode .controls{display:grid;grid-template-columns:minmax(0,1fr) max-content;gap:8px 6px;}
@@ -2707,6 +2725,7 @@ tr.history-highlight>td{box-shadow:inset 0 2px #60ae93,inset 0 -2px #60ae93!impo
         <div class="tabs" id="tabs">
           <button type="button" id="allListTab" class="tab active" data-cat="" aria-pressed="true">全部</button>
         </div>
+        <button type="button" id="districtTabSettings" class="tab" aria-haspopup="dialog" aria-controls="districtTabDialog">分頁設定</button>
         <button class="cat-manage" id="catManage" aria-label="管理社區" title="管理社區" aria-haspopup="dialog" aria-controls="catBg">＋</button>
       </div>
       <div class="search">
@@ -2931,6 +2950,14 @@ tr.history-highlight>td{box-shadow:inset 0 2px #60ae93,inset 0 -2px #60ae93!impo
     </div>
   </div>
   <!-- ===== Manage categories dialog ===== -->
+  <div class="cl-backdrop" id="districtTabDialog">
+    <section class="cl-dialog" role="dialog" aria-modal="true" aria-labelledby="districtTabTitle">
+      <div class="cl-editor-head"><h2 id="districtTabTitle">重劃區分頁設定</h2><button type="button" class="fo-close" data-tabs-cancel aria-label="關閉">×</button></div>
+      <div class="district-tab-head"><span>開啟時預設</span><span>分頁名稱</span><span>顯示順序</span></div>
+      <div id="districtTabRows"></div>
+      <div class="cl-editor-footer"><p class="cl-error" role="alert"></p><div class="cl-editor-actions"><button type="button" class="fo-secondary" data-tabs-reset>恢復預設</button><button type="button" class="fo-secondary" data-tabs-cancel>取消</button><button type="button" class="fo-primary" data-tabs-save>儲存</button></div></div>
+    </section>
+  </div>
   <div class="modal-bg" id="catBg" role="dialog" aria-modal="true" aria-labelledby="catManagerTitle">
     <div class="modal">
       <div class="modal-head">
@@ -3400,7 +3427,7 @@ function trackSlotSettings(next,previous,previousTime,now){
 }
 /* Durable community settings. The enclosing PropertyCore supplies validation helpers. */
 function defaultDistrictBars(){return {shared:{height:24,fontSize:13,fontWeight:600,ink:'auto',inkColor:'#16222A'},backgrounds:[]};}
-const COMMUNITY_SECTIONS=Object.freeze(['catalogs','links','locations','orders','districtBars']);
+const COMMUNITY_SECTIONS=Object.freeze(['catalogs','links','locations','orders','districtBars','columnOrder','districtTabs']);
 function communityFeatures(value){
  if(!obj(value)||value.version!==1||!obj(value.values)||!obj(value.clocks))fail('社區功能設定格式不正確');
  const out={version:1,values:{},clocks:{}};
@@ -3429,6 +3456,11 @@ function communityFeatures(value){
      return item;
     });
    }
+  }else if(section==='columnOrder'){
+   result=strings(source,80,128,true);
+  }else if(section==='districtTabs'){
+   if(!obj(source))fail('重劃區分頁設定不正確');
+   result={order:strings(source.order,5000,5001,true),initial:text(source.initial,5000)};
   }else if(section==='districtBars'){
    const hex=v=>typeof v==='string'&&/^#[0-9a-f]{6}$/i.test(v);
    if(!obj(source)||!obj(source.shared)||!Array.isArray(source.backgrounds)||source.backgrounds.length>5000)fail('重劃區橫桿設定不正確');
@@ -3782,6 +3814,8 @@ function restore(old,imported,now){
 }
 function historyCommunityName(row){return String(row?.name||'').split(/[／/]/,1)[0].trim();}
 function emptyHistorySection(key,state){
+ if(key==='columnOrder')return [];
+ if(key==='districtTabs')return {order:[],initial:''};
  if(key==='districtBars')return defaultDistrictBars();
  if(key==='catalogs')return Object.fromEntries(['planUnit','area','layout','status','parkingType','name'].map(f=>[f,[]]));
  if(key==='locations')return {version:2,resetAt:state.resetAt,registry:{},pending:{}};
@@ -4211,7 +4245,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.24E";
+const APP_VERSION = "2026.11.24F";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -4749,6 +4783,44 @@ function refreshCategories(onSaved,onCommunityRetry,retry){
 renderCover();
 
 // ---- State + rendering ----
+function loadDistrictTabs(){return PropertyCore.local().current.settings.communityFeatures?.values.districtTabs||{order:[],initial:''};}
+let districtTabs=loadDistrictTabs(),activeDistrict='',tabSignature=null,tabDraft=null;
+const districtOf=row=>String(row.planUnit||'').trim();
+function naturalDistrictTabs(){
+  const names=new Set(items.map(districtOf));names.delete('');
+  return ['',...Array.from(names).sort((a,b)=>a.localeCompare(b,'zh-Hant',{numeric:true}))];
+}
+function orderedDistrictTabs(){
+  const names=naturalDistrictTabs(),present=new Set(names);
+  return [...new Set([...districtTabs.order.filter(name=>present.has(name)),...names])];
+}
+function districtTabsVisible(){return !discreet.on||!discreet.fields.includes('planUnit');}
+function renderDistrictTabs(){
+  const visible=districtTabsVisible(),names=visible?orderedDistrictTabs():[''];
+  if(!names.includes(activeDistrict))activeDistrict='';
+  document.getElementById('districtTabSettings').hidden=!visible;
+  const host=allListTab.parentNode,signature=JSON.stringify(names);
+  const layoutChanged=signature!==tabSignature;
+  if(layoutChanged){
+    tabSignature=signature;
+    host.replaceChildren(...names.map(name=>{
+      if(!name)return allListTab;
+      const button=document.createElement('button');button.type='button';button.className='tab';button.dataset.district=name;button.textContent=name;return button;
+    }));
+  }
+  for(const button of host.children){
+    const on=!currentCat&&!unassignedOnly&&(button.dataset.district||'')===activeDistrict;
+    if(on&&(layoutChanged||!button.classList.contains('active'))){
+      requestAnimationFrame(()=>{
+        if(!button.isConnected||!button.classList.contains('active')||!host.clientWidth)return;
+        const tab=button.getBoundingClientRect(),strip=host.getBoundingClientRect();
+        if(tab.left<strip.left)host.scrollLeft+=tab.left-strip.left;
+        else if(tab.right>strip.right)host.scrollLeft+=tab.right-strip.right;
+      });
+    }
+    button.classList.toggle('active',on);button.setAttribute('aria-pressed',String(on));
+  }
+}
 let currentCat = "";
 let unassignedOnly = false;
 function isUnassignedCommunityFilterActive(){
@@ -5147,6 +5219,7 @@ const NAV_KEY = "community_table_v3_app_lastview_v1";
 function saveNav(screen, cat){
   if (!storageOK) return;
   const nav = {screen, cat:cat || "", communityByName:true};
+  if(screen==="list"&&!cat&&!unassignedOnly)nav.district=activeDistrict;
   if (screen === "list" && !nav.cat && isUnassignedCommunityFilterActive()) nav.unassignedOnly = true;
   if (nav.unassignedOnly && shortcutFilters) nav.fromUnassignedShortcut = true;
   try { localStorage.setItem(NAV_KEY, JSON.stringify(nav)); } catch(e){}
@@ -5682,7 +5755,7 @@ function loadEditMode(){
   return true;
 }
 function saveEditMode(){ if (storageOK){ try { localStorage.setItem("community_table_v3_app_editmode_v1", editMode ? "1" : "0"); } catch(e){} } }
-let editMode = loadEditMode();
+let editMode = loadEditMode(),manualTableEdit=false;
 
 const ICON_TRASH = '<svg class="tdi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>';
 
@@ -5737,7 +5810,11 @@ function loadDiscreet(){
   return {on:false, fields:["cost"]};
 }
 let discreet = loadDiscreet();
-function tableFields(){ return discreet.on ? T_FIELDS.filter(f => !discreet.fields.includes(f)) : T_FIELDS; }
+function resolveColumnOrder(saved){
+  return [...new Set([...(saved||[]).filter(field=>T_FIELDS.includes(field)),...T_FIELDS])];
+}
+let columnOrder=resolveColumnOrder(PropertyCore.local().current.settings.communityFeatures?.values.columnOrder);
+function tableFields(){return discreet.on?columnOrder.filter(field=>!discreet.fields.includes(field)):columnOrder;}
 function tableColumnCount(){ return tableFields().length + (editMode ? 1 : 0); }
 // 緊湊欄寬；註下限依標題量測，並依原本操作承接剩餘寬度。
 const DEFAULT_COLW = {"planUnit":64,"area":48,"layout":48,"status":48,"name":104,"addr":84,"floor":48,"links":52,"price":52,"floorPrice":52,"cost":52,"totalArea":48,"mainPlus":48,"mainArea":48,"ancillaryArea":48,"parkingType":52,"parkingCount":48,"parkingArea":48,"agent":48,"tel":60,"store":76,"note":64};
@@ -6168,7 +6245,7 @@ function isNeedExpEditing(){
 // 注意:唯讀詳情(detailBg)不算忙碌——雲端合併已走 _pendingMerge,關詳情再套用;
 // 若把 detail 算 busy,瀏覽卡片時燈會一直橘黃閃(pending)、同步也被卡住。
 window.isTableBusy = function(){
-  if(customOrderOpen())return true;
+  if(customOrderOpen()||tabDraft)return true;
   if (bulkCommunityOpen() || document.getElementById("discreetDialog").open) return true;
   if (needOrderBusy) return true;
   if (modalBg.classList.contains("open")) return true;   // 編輯/新增表單才算忙碌
@@ -6770,7 +6847,7 @@ function copyFieldText(el){
 
 // ---- 編輯 / 正常 模式切換(卡片與表格共用單一狀態) ----
 function setEditMode(on){
-  editMode = !!on; saveEditMode();
+  editMode = !!on; manualTableEdit=editMode; saveEditMode();
   if (!editMode) exitSelectMode();       // 離開編輯模式時取消卡片多選
   closeCatMenu();closeTableMoreLinks();
   if(lpTableTarget)commitLink(false);else closeLinkPop();
@@ -6852,7 +6929,7 @@ function addTableRow(){
       }
     }catch(error){toast("無法取得最新社區："+error.message);return;}
   }
-  const it = { id: uid(), name:community, cat, planUnit:"", area:"", status:"", totalArea:"", mainPlus:"", mainArea:"", ancillaryArea:"", floorPrice:"", cost:"", layout:"", floor:"", price:"", addr:"", due:"", agent:"", tel:"", store:"", note:"", note2:"", note3:"", t1:"", t2:"", t3:"", url591:null, urlLeju:null, urlI:null, url4:null, ...newLinkNames(), updatedAt: Date.now() };
+  const it = { id: uid(), name:community, cat, planUnit:activeDistrict, area:"", status:"", totalArea:"", mainPlus:"", mainArea:"", ancillaryArea:"", floorPrice:"", cost:"", layout:"", floor:"", price:"", addr:"", due:"", agent:"", tel:"", store:"", note:"", note2:"", note3:"", t1:"", t2:"", t3:"", url591:null, urlLeju:null, urlI:null, url4:null, ...newLinkNames(), updatedAt: Date.now() };
   const filtersCleared = applyColFilters([it]).length === 0;
   if (filtersCleared) clearAllColFilters();
   items.push(it); saveItems(); onLocalChange("data");
@@ -7128,7 +7205,7 @@ document.getElementById("coverVT").addEventListener("click", e=>{
 });
 document.getElementById("viewBtn").addEventListener("click", () => {
   const vm = (viewMode === "table") ? "card" : "table";   // 一顆按鈕:在卡片/表格之間切換
-  editMode = false; saveEditMode();     // 切換檢視一律恢復正常模式
+  editMode = false; manualTableEdit=false; saveEditMode();     // 切換檢視一律恢復正常模式
   exitSelectMode();                      // 並退出卡片多選(避免刪除列殘留浮在表格上)
   closeCatMenu();
   if (lpop.classList.contains("show")) commitLink(); else closeLinkPop();
@@ -7279,7 +7356,8 @@ function unassignedCommunityItems(){
 }
 function itemsInCommunityScope(){
   if (currentCat) return items.filter(row => namedCommunity(row) === currentCat && isOnSale(row));
-  return unassignedOnly ? unassignedCommunityItems() : items.slice();
+  if(unassignedOnly)return unassignedCommunityItems();
+  return activeDistrict&&districtTabsVisible()?items.filter(row=>districtOf(row)===activeDistrict):items.slice();
 }
 function getFilteredItems(linkSelections = listFilters().links, scope = itemsInCommunityScope(), skipField){
   // 多關鍵字搜尋:用「/」(半形或全形「／」皆可)分隔多個條件,「全部命中」才顯示(AND)。
@@ -7305,6 +7383,7 @@ function applyFilter(){
     currentCat = "";
     if (document.getElementById("list").classList.contains("active")) saveNav("list", "");
   }
+  renderDistrictTabs();
   const scope = itemsInCommunityScope();
   if (isUnassignedCommunityFilterActive() && selected.size){
     // Search can hide a checked row. Only discard it when it leaves the unassigned group.
@@ -7326,9 +7405,7 @@ function applyFilter(){
   titleEl.textContent = currentCat || "全部物件";
   titleEl.title=titleEl.textContent;
   listCounter.refresh(list);
-  const allActive = !currentCat && !unassignedOnly;
-  allListTab.classList.toggle("active", allActive);
-  allListTab.setAttribute("aria-pressed", String(allActive));
+
   if (viewMode === "table"){
     cardsEl.style.display = "none"; tableWrap.style.display = "";
     renderTable(list, emptyText);
@@ -7351,15 +7428,16 @@ function updateLH(){
 }
 window.addEventListener("resize", function(){ requestAnimationFrame(updateLH); });
 let returnToUnassignedShortcut = false;
-function openList(cat, {unassignedOnly:restoreUnassigned, fromUnassignedShortcut} = {}){
+function openList(cat, {unassignedOnly:restoreUnassigned, fromUnassignedShortcut, district=districtTabs.initial} = {}){
   returnToUnassignedShortcut = false;
   listCounter.firstPage();
   /* search-help:start */ closeSearchHelp(); /* search-help:end */
   exitSelectMode();
-  editMode = false; saveEditMode();     // 進入列表一律預設「正常」模式;要編輯需先選檢視再點編輯
+  editMode = false; manualTableEdit=false; saveEditMode();     // 進入列表一律預設「正常」模式;要編輯需先選檢視再點編輯
   currentCat = activeCommunity(cat);
   shortcutFilters = !cat && fromUnassignedShortcut === true ? createListFilters() : null;
   unassignedOnly = !cat && (restoreUnassigned === true || !!shortcutFilters);
+  activeDistrict=!cat&&!unassignedOnly&&districtTabsVisible()&&items.some(row=>districtOf(row)===district)?district:"";
   saveNav("list", currentCat);   // 記住:目前在列表(含分類)
   searchEl.value = "";
   tableWrap.classList.remove("gen-open");   // 重新進列表:收起手機生成面板
@@ -7413,9 +7491,12 @@ document.getElementById("cats").addEventListener("click", e => {
   if (btn){ viewMode = "card"; saveViewMode(); openList(btn.dataset.cat); }   // 首頁點類別一律進卡片檢視
 });
 document.getElementById("allBtn").addEventListener("click", () => { viewMode = "card"; saveViewMode(); openList(""); });
-document.getElementById("coverSearch").addEventListener("click", function(){ viewMode = "card"; saveViewMode(); openList(""); searchEl.focus(); });
-allListTab.addEventListener("click", () => {
-  exitSelectMode();
+document.getElementById("coverSearch").addEventListener("click", function(){ viewMode = "card"; saveViewMode(); openList("",{district:""}); searchEl.focus(); });
+allListTab.parentNode.addEventListener("click",event=>{
+  const button=event.target.closest('.tab');if(!button)return;
+  flushEditing();if(window._saveBlocked||tableWrap.querySelector('[aria-invalid="true"]')||document.getElementById('saveErrorRetry'))return;
+  activeDistrict=button.dataset.district||'';
+  listCounter.firstPage();exitSelectMode();
   unassignedOnly = false;
   shortcutFilters = null;
   currentCat = "";
@@ -7868,6 +7949,7 @@ function trapFocusKey(e, container){
   try { nodes[j].focus(); } catch(err){}
 }
 function tabTrapTarget(){
+  if(tabDraft)return document.querySelector("#districtTabDialog .cl-dialog");
   if(customOrderOpen())return document.querySelector("#customOrderBg .modal");
   if (bulkCommunityOpen()) return document.getElementById("bulkCommunityDialog");
   if (discreetDialog.open) return discreetDialog;
@@ -7918,7 +8000,7 @@ confirmBg.addEventListener("click", e => { if (e.target === confirmBg && _confir
 /* TAB 切換「正常 / 編輯」模式:只在列表頁(卡片或表格)且沒有任何浮層/對話框時作用;
    其餘情況(封面、設定頁、表單、日曆、選單…)與 Shift+TAB 一律維持原本的欄位切換 */
 function tabModeToggleAllowed(){
-  if(!currentCat && document.activeElement === allListTab)return false;
+  if(tabDraft||document.activeElement?.closest('#tabs,#districtTabSettings'))return false;
   if (bulkCommunityOpen() || (!currentCat && (selectMode || tselMode) && document.activeElement?.closest("#selbar"))) return false;
   if (discreetDialog.open) return false;
   /* search-help:start */ if (!document.getElementById("searchHelpPop").hidden || document.activeElement === document.getElementById("searchHelpBtn")) return false; /* search-help:end */
@@ -8248,6 +8330,7 @@ function openForm(id){
   fillFormInputs(d);
   const scopeName=d?"":activeCommunity();
   if(scopeName)F.name.value=scopeName;
+  if(!id&&activeDistrict)F.planUnit.value=activeDistrict;
   fillFormCommunity(d ? d.cat : managedCommunityKey(scopeName));
   F.note.innerHTML  = (d && d.note)  ? needToFormHTML(d.note)  : "<div><br></div>";
   F.note2.innerHTML = (d && d.note2) ? needToFormHTML(d.note2) : "<div><br></div>";
@@ -11418,6 +11501,54 @@ settingsBack.addEventListener("click",closeSettings);
   }
 })();
 
+// Tab preferences are shared by both views and synced separately from property data.
+(()=>{
+  const trigger=document.getElementById('districtTabSettings'),panel=document.getElementById('districtTabDialog');
+  const rows=document.getElementById('districtTabRows'),message=panel.querySelector('.cl-error');
+  function render(){
+    rows.innerHTML=tabDraft.order.map((name,i)=>{
+      const label=esc(name||'全部');
+      return `<div class="district-tab-row"><input type="radio" name="districtTabDefault" id="district-tab-choice-${i}" value="${i}" aria-label="預設開啟${label}" ${tabDraft.initial===name?'checked':''}><label for="district-tab-choice-${i}">${label}</label><span><button type="button" data-step="-1" data-idx="${i}" aria-label="上移${label}" ${i===0?'disabled':''}>↑</button><button type="button" data-step="1" data-idx="${i}" aria-label="下移${label}" ${i===tabDraft.order.length-1?'disabled':''}>↓</button></span></div>`;
+    }).join('');
+  }
+  function close(){
+    if(!tabDraft)return;
+    tabDraft=null;panel.classList.remove('open');trigger.setAttribute('aria-expanded','false');unlockOverlay();applyPendingMergeIfAny();
+  }
+  trigger.addEventListener('click',()=>{
+    flushEditing();if(window._saveBlocked||tabDraft||tableWrap.querySelector('[aria-invalid="true"]')||document.getElementById('saveErrorRetry'))return;
+    districtTabs=loadDistrictTabs();
+    const order=orderedDistrictTabs();
+    tabDraft={order,resetAt:window._resetAt||0,initial:order.includes(districtTabs.initial)?districtTabs.initial:'',base:JSON.stringify(districtTabs)};
+    message.textContent='';render();lockOverlay(trigger);panel.classList.add('open');trigger.setAttribute('aria-expanded','true');
+    rows.querySelector(':checked')?.focus({preventScroll:true});
+  });
+  rows.addEventListener('change',event=>{if(tabDraft&&event.target.type==='radio')tabDraft.initial=tabDraft.order[Number(event.target.value)];});
+  panel.addEventListener('click',event=>{
+    if(!tabDraft)return;
+    const button=event.target.closest('button');
+    if(event.target===panel||button?.hasAttribute('data-tabs-cancel')){close();return;}
+    if(!button)return;
+    if(button.hasAttribute('data-step')){
+      const i=Number(button.dataset.idx),target=i+Number(button.dataset.step),list=tabDraft.order;
+      if(target<0||target>=list.length)return;
+      [list[i],list[target]]=[list[target],list[i]];render();
+      const row=rows.children[target];(row.querySelector('[data-step="'+button.dataset.step+'"]:not(:disabled)')||row.querySelector('button:not(:disabled)'))?.focus();return;
+    }
+    if(button.hasAttribute('data-tabs-reset')){tabDraft.order=naturalDistrictTabs();tabDraft.initial='';render();return;}
+    if(!button.hasAttribute('data-tabs-save'))return;
+    if(JSON.stringify(loadDistrictTabs())!==tabDraft.base){message.textContent='分頁設定已在其他視窗變更，請關閉後重新開啟。';return;}
+    const natural=naturalDistrictTabs(),available=new Set(natural),order=[...new Set([...tabDraft.order.filter(name=>available.has(name)),...natural])];
+    const next={order:JSON.stringify(order)===JSON.stringify(natural)?[]:order,initial:available.has(tabDraft.initial)?tabDraft.initial:''};
+    if(!CommunityData.write('districtTabs',next,[],{resetAt:tabDraft.resetAt})){message.textContent=CommunityData.lastError||'尚未儲存';return;}
+    districtTabs=next;close();applyFilter();toast('已儲存重劃區分頁設定');
+  });
+  window.addEventListener('keydown',event=>{
+    if(tabDraft&&event.key==='Escape'){event.preventDefault();event.stopImmediatePropagation();close();}
+  },true);
+  bindTablePanelSwipe(panel,()=>!!tabDraft,close);
+})();
+
 // ===== 外觀主題 (淺色 / 深色) =====
 function loadTheme(){ if (storageOK){ try { const t = localStorage.getItem("community_table_v3_app_theme_v1"); if (t === "dark") return "dark"; } catch(e){} } return "light"; }
 function saveTheme(){ if (storageOK){ try { localStorage.setItem("community_table_v3_app_theme_v1", theme); } catch(e){} } }
@@ -11611,6 +11742,8 @@ function collectSettings(){
 function applySettings(s){
   if (!s || typeof s !== "object") return;
   s=PropertyCore.settings(s);
+  districtTabs=s.communityFeatures?.values.districtTabs||{order:[],initial:''};
+  columnOrder=resolveColumnOrder(s.communityFeatures?.values.columnOrder);
   linkPreferences={linkSlots:PropertyCore.linkSlots(s),deletedLinkSlots:(s.deletedLinkSlots||[]).slice(),renamedLinkColor:s.renamedLinkColor||"#687f95",renamedLinkTextColor:s.renamedLinkTextColor||"auto"};
   renderLinkSettings();
   refreshLinkSlotConsumers();
@@ -13097,7 +13230,7 @@ function paintPropertyState(state){
 (() => {
  'use strict';
  if(window.CommunityData)return;
- const core=PropertyCore,sections=['catalogs','links','locations','orders','districtBars'],listeners=new Set();
+ const core=PropertyCore,sections=['catalogs','links','locations','orders','districtBars','columnOrder','districtTabs'],listeners=new Set();
  const clone=value=>value===undefined?undefined:core.clone(value);
  const equal=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
  const empty=()=>({version:1,values:{},clocks:{}});
@@ -13420,6 +13553,11 @@ function paintPropertyState(state){
     const ok=CommunityData.transaction(features=>{
       features.catalogs=nextCatalogs;
       window.CommunityShared.renameFeatures(features,field,old,name);
+      if(field==='planUnit'&&features.districtTabs){
+        const tabs=features.districtTabs;
+        tabs.order=[...new Set(tabs.order.map(value=>value===old?name:value))];
+        if(tabs.initial===old)tabs.initial=name;
+      }
       if(field==='planUnit'&&features.districtBars){
         const bar=features.districtBars.backgrounds.find(entry=>entry.name===old);
         if(bar)bar.name=name;
@@ -13430,6 +13568,7 @@ function paintPropertyState(state){
     },changes,saveOptions());
     if(!ok){error(CommunityData.lastError||'尚未儲存成功，請重試。');return;}
     refreshCatalogs();
+    if(field==='planUnit'){if(activeDistrict===old)activeDistrict=name;districtTabs=loadDistrictTabs();saveNav('list',currentCat);}
     if(field==='name'&&String(active.fullNameDraft||'').split(/[／/]/,1)[0].trim()===old)active.fullNameDraft=name+suffixOf(active.fullNameDraft);
     active.baseItems=clone(items);active.catalogBase=JSON.stringify(catalogs);showMenu();applyFilter();toast('已重新命名，同名物件一起更新');
   }
@@ -13469,6 +13608,10 @@ function paintPropertyState(state){
       const after=records.map(copy),use=usage(records,features,field,from);
       next.catalogs=copy(next.catalogs||Object.fromEntries(['planUnit','area','layout','status','parkingType','name'].map(key=>[key,[]])));
       next.catalogs[field]=(next.catalogs[field]||[]).filter(entry=>entry.name!==from);
+      if(field==='planUnit'&&next.districtTabs){
+        next.districtTabs.order=next.districtTabs.order.filter(name=>name!==from);
+        if(next.districtTabs.initial===from)next.districtTabs.initial='';
+      }
       if(field==='planUnit'&&next.districtBars)next.districtBars.backgrounds=next.districtBars.backgrounds.filter(entry=>entry.name!==from);
       if(field==='name'||field==='planUnit'||field==='area'){
         const resolved=createState(records,resetAt,features.locations||null);
@@ -13569,7 +13712,7 @@ function paintPropertyState(state){
       const fallback=CommunitySortModel.legacy(base.settings,base.resetAt,currentSort);
       const proposal=optionDeleteModel.plan(base.items,base.features,field,from,to,base.resetAt,CommunityShared.model.createState,fallback);
       const ok=CommunityData.transaction(features=>{
-        for(const section of ['catalogs','locations','links','orders','districtBars'])if(Object.hasOwn(proposal.features,section))features[section]=proposal.features[section];
+        for(const section of ['catalogs','locations','links','orders','districtBars','districtTabs'])if(Object.hasOwn(proposal.features,section))features[section]=proposal.features[section];
       },proposal.changes,{...saveOptions(),baseItems:base.items,baseFeatures:base.features});
       if(!ok){error(CommunityData.lastError||'尚未刪除成功，請重試。');return;}
       close();refreshCatalogs();applyFilter();CommunityShared.formSuggestions();toast('已刪除「'+from+'」選項');
@@ -15634,6 +15777,91 @@ function paintPropertyState(state){
   updateSortLabel=function(...args){const result=originalSortLabel(...args);$('sortBtn').toggleAttribute('data-default-sort',visibleSort()==='default');return result;};
   updateSortLabel();controls();
   applyFilter();
+})();
+</script>
+<script>
+(()=>{
+  const desktop=matchMedia('(min-width:820px)');
+  let drag=null,swallowClick=false;
+  function allowed(){return desktop.matches&&viewMode==='table'&&editMode&&manualTableEdit&&!tselMode&&!window.DesktopQuickEdit?.current&&!window._saveBlocked;}
+  function mark(state,target,after=false){
+    if(target===state.target&&after===state.after)return;
+    state.target?.classList.remove('column-before','column-after');
+    state.target=target;state.after=after;
+    if(target&&target!==state.source)target.classList.add(after?'column-after':'column-before');
+  }
+  function locate(state){
+    const target=document.elementFromPoint(state.x,state.y)?.closest('.thead-wrap th[data-col]');
+    if(!target||!state.head.contains(target)){mark(state,null);return;}
+    const bounds=target.getBoundingClientRect();
+    mark(state,target,state.x>=bounds.left+bounds.width/2);
+  }
+  function frame(){
+    const state=drag;
+    if(!state?.label)return;
+    if(!allowed()||!state.source.isConnected){finish(false);return;}
+    const bounds=state.head.getBoundingClientRect();
+    if(state.moved&&state.y>=bounds.top&&state.y<=bounds.bottom&&state.x>=bounds.left&&state.x<=bounds.right){
+      if(state.x<bounds.left+22)state.head.scrollLeft-=8;
+      else if(state.x>bounds.right-22)state.head.scrollLeft+=8;
+    }
+    locate(state);
+    state.label.style.left=Math.min(innerWidth-state.label.offsetWidth-4,state.x+8)+'px';
+    state.label.style.top=(bounds.bottom+4)+'px';
+    state.frame=requestAnimationFrame(frame);
+  }
+  function finish(drop){
+    const state=drag;if(!state)return;
+    drag=null;clearTimeout(state.timer);cancelAnimationFrame(state.frame);
+    const target=state.target?.dataset.col,after=state.after;
+    mark(state,null);state.label?.remove();document.body.classList.remove('column-moving');
+    if(tableWrap.hasPointerCapture(state.id))tableWrap.releasePointerCapture(state.id);
+    if(!drop||!state.label||!state.moved||!target||target===state.key||!allowed())return;
+    const next=state.order.filter(key=>key!==state.key);
+    next.splice(next.indexOf(target)+(after?1:0),0,state.key);
+    if(next.every((field,i)=>field===state.order[i]))return;
+    const ok=CommunityData.transaction(features=>{
+      if(JSON.stringify(resolveColumnOrder(features.columnOrder))!==JSON.stringify(state.order))throw Error('欄位順序已更新，請重新拖曳。');
+      features.columnOrder=next;
+    },[],{resetAt:state.resetAt});
+    if(ok){columnOrder=next;applyFilter();toast('已儲存欄位順序');}
+  }
+  document.addEventListener('pointerdown',e=>{
+    swallowClick=false;finish(false);
+    if(e.pointerType!=='mouse'||e.button!==0||!allowed())return;
+    const label=e.target.closest('.th-label'),source=label?.closest('.thead-wrap th[data-col]');
+    if(!source)return;
+    const state=drag={id:e.pointerId,key:source.dataset.col,source,head:source.closest('.thead-wrap'),x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY,order:columnOrder.slice(),resetAt:window._resetAt||0};
+    state.timer=setTimeout(()=>{
+      if(drag!==state||!source.isConnected||!allowed()){finish(false);return;}
+      state.label=document.createElement('div');state.label.className='column-drag-label';state.label.textContent=label.textContent;state.label.setAttribute('aria-hidden','true');
+      document.body.append(state.label);document.body.classList.add('column-moving');
+      swallowClick=true;tableWrap.setPointerCapture(state.id);frame();
+    },1000);
+  },true);
+  document.addEventListener('pointermove',e=>{
+    if(!drag||e.pointerId!==drag.id)return;
+    drag.x=e.clientX;drag.y=e.clientY;
+    if(Math.hypot(drag.x-drag.startX,drag.y-drag.startY)>5){
+      if(!drag.label){finish(false);return;}
+      drag.moved=true;locate(drag);
+    }
+  },true);
+  document.addEventListener('pointerup',e=>{
+    if(!drag||e.pointerId!==drag.id)return;
+    if(drag.label){drag.x=e.clientX;drag.y=e.clientY;locate(drag);}
+    finish(true);
+  },true);
+  document.addEventListener('click',e=>{if(swallowClick&&e.detail){swallowClick=false;e.preventDefault();e.stopImmediatePropagation();}},true);
+  document.addEventListener('pointercancel',()=>finish(false),true);
+  tableWrap.addEventListener('lostpointercapture',e=>{if(drag?.id===e.pointerId)finish(false);});
+  window.addEventListener('blur',()=>finish(false));
+  window.addEventListener('keydown',e=>{if(drag&&e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();finish(false);}},true);
+  CommunityData.subscribe(()=>{
+    const order=resolveColumnOrder(CommunityData.read('columnOrder',[])),tabs=loadDistrictTabs();
+    const changed=order.some((f,i)=>columnOrder[i]!==f)||JSON.stringify(tabs)!==JSON.stringify(districtTabs);
+    if(changed){finish(false);columnOrder=order;districtTabs=tabs;if(listView.classList.contains('active'))applyFilter();}
+  });
 })();
 </script>
 </body>
