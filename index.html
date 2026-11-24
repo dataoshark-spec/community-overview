@@ -2483,10 +2483,31 @@ tr.history-highlight>td{box-shadow:inset 0 2px #60ae93,inset 0 -2px #60ae93!impo
 #app:not(.table-mode) #sortBtn{max-width:100%;gap:4px;padding-inline:8px}
 #app:not(.table-mode) #sortTxt{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #app:not(.table-mode) .ctrl-right{flex:none;gap:5px}
+.table-setup-tools,.sort-primary{display:contents;}
 @media(max-width:819px){
+ #app.table-mode .controls{display:grid;grid-template-columns:minmax(0,1fr) max-content;gap:8px 6px;}
+ #app.table-mode .sort-controls{display:contents;}
+ #app.table-mode .sort-primary{grid-area:1/1;display:flex;align-items:center;gap:6px;min-width:0;}
+ #app.table-mode #sortSel{min-width:0;}
+ #app.table-mode #sortBtn{max-width:100%;padding-inline:8px;gap:4px;}
+ #app.table-mode #sortTxt{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+ #app.table-mode .ctrl-right{grid-area:1/2;justify-self:end;gap:5px;}
+ #app.table-mode .table-setup-tools{grid-column:1/-1;grid-row:2;display:flex;flex-wrap:wrap;gap:5px;}
+ #app.table-mode .table-setup-tools>*{flex:1 0 calc((100% - 20px)/5);min-width:0;box-sizing:border-box;justify-content:center;}
+ #app.table-mode .table-setup-tools>button,#app.table-mode #rowHeightLabel{min-height:38px;padding:6px 2px;justify-content:center;white-space:nowrap;}
+ #app.table-mode #rowHeightLabel{width:100%;}
  .history-tools button{width:36px;min-height:36px;padding:0}
  .history-tools button span{display:none}
  .history-feedback{bottom:8px}
+}
+@media(max-width:380px){
+ #app.table-mode .controls{column-gap:4px;}
+ #app.table-mode .ctrl-right{gap:3px;}
+ #app.table-mode .sort-primary{gap:4px;}
+ #app.table-mode .history-tools button{width:30px;}
+ #app.table-mode .ctrl-right:has(.flt-clear-btn.on)>button{width:30px;}
+ #app.table-mode #sortBtn .sort-ic,#app.table-mode #sortBtn .sort-label-suffix{display:none;}
+ #app.table-mode .table-setup-tools>button,#app.table-mode #rowHeightLabel{font-size:clamp(11px,3.3vw,13px);}
 }
 @media(max-width:440px){
  #app:not(.table-mode) #sortBtn .sort-ic,#app:not(.table-mode) #sortBtn .sort-label-suffix{display:none}
@@ -2701,6 +2722,7 @@ tr.history-highlight>td{box-shadow:inset 0 2px #60ae93,inset 0 -2px #60ae93!impo
       </div>
       <div class="controls">
         <div class="sort-controls">
+        <div class="sort-primary">
         <div class="cselect sortsel" id="sortSel">
           <button type="button" class="cselect-btn" id="sortBtn" aria-haspopup="listbox" aria-expanded="false">
             <span class="sort-ic">⇅</span>
@@ -2709,7 +2731,10 @@ tr.history-highlight>td{box-shadow:inset 0 2px #60ae93,inset 0 -2px #60ae93!impo
           </button>
           <div class="cselect-menu" id="sortMenu" role="listbox"></div>
         </div>
-        <button type="button" id="customOrderBtn" aria-haspopup="dialog" aria-controls="customOrderBg" aria-expanded="false" hidden><span aria-hidden="true">☷</span>調整順序</button>
+        </div>
+        <div class="table-setup-tools">
+          <button type="button" id="customOrderBtn" aria-haspopup="dialog" aria-controls="customOrderBg" aria-expanded="false" hidden><span aria-hidden="true">☷</span>調整順序</button>
+        </div>
         </div>
         <div class="ctrl-right">
           <!-- link-filter:start -->
@@ -4182,7 +4207,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.24B";
+const APP_VERSION = "2026.11.24C";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -14631,7 +14656,7 @@ function paintPropertyState(state){
 (() => {
   'use strict';
   if(window.CommunityRowHeight||document.getElementById('rowHeightControl'))return;
-  const host=document.querySelector('#list .controls .sort-controls'),table=document.getElementById('tableWrap');
+  const host=document.querySelector('#list .table-setup-tools'),table=document.getElementById('tableWrap');
   if(!host||!table)return;
   const storageKey='community_table_row_height_v1',choices=[32,28,26,24,22];
   const normalize=value=>choices.includes(Number(value))?Number(value):26;
