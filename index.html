@@ -1861,6 +1861,7 @@ button.cl-district-bar{cursor:pointer;}
 .cl-district-bar:focus-visible{outline:2px solid currentColor;outline-offset:-2px;}
 .cl-district-edit{position:absolute;inset:0 0 0 auto;display:grid;place-items:center;width:42px;border-inline-start:1px solid color-mix(in srgb,currentColor 20%,transparent);font-size:12px;font-weight:600;opacity:0;pointer-events:none;}
 @media(hover:hover){button.cl-district-bar:hover .cl-district-edit{opacity:1;}}
+@media(hover:none){button.cl-district-bar .cl-district-edit{opacity:1;}}
 .cl-district-bar:focus-visible .cl-district-edit{opacity:1;}
 .cl-district-colors{margin:10px 0 0;}
 .cl-district-colors .cl-inline-color-host{margin-top:10px;}
@@ -2490,15 +2491,21 @@ tr.history-highlight>td{box-shadow:inset 0 2px #60ae93,inset 0 -2px #60ae93!impo
 #districtTabSettings[hidden]{display:none;}
 #districtTabDialog .cl-dialog{display:flex;flex-direction:column;max-width:430px;overflow:hidden;}
 #districtTabRows{min-height:0;overflow:auto;overscroll-behavior:contain;}
-.district-tab-head,.district-tab-row{display:grid;grid-template-columns:74px minmax(0,1fr) auto;align-items:center;gap:8px;}
+.district-tab-head,.district-tab-row{display:grid;grid-template-columns:32px 66px minmax(0,1fr) auto;align-items:center;gap:8px;}
 .district-tab-head{font-size:12px;color:var(--ink-soft);padding:8px 0;}
 .district-tab-head :last-child{text-align:center;min-width:76px;}
-.district-tab-row{min-height:44px;border-top:1px solid var(--line);}
+.district-tab-row{position:relative;min-height:44px;border-top:1px solid var(--line);}
 .district-tab-row input{justify-self:center;width:18px;height:18px;accent-color:var(--accent-deep);}
 .district-tab-row label{overflow-wrap:anywhere;cursor:pointer;}
 .district-tab-row button{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink-soft);cursor:pointer;}
 .district-tab-row button+button{margin-left:6px;}
 .district-tab-row button:disabled{opacity:.35;}
+.district-tab-row .district-tab-grip{width:100%;height:40px;border:0;background:transparent;cursor:grab;touch-action:none;user-select:none;}
+#districtTabRows.is-dragging{user-select:none;}
+#districtTabRows.is-dragging .district-tab-row:not(.fo-moving){transition:transform .14s ease;}
+#districtTabRows .fo-moving{z-index:1;background:var(--surface-2);border-radius:6px;}
+#districtTabRows .fo-moving .district-tab-grip{cursor:grabbing;}
+@media(prefers-reduced-motion:reduce){#districtTabRows.is-dragging .district-tab-row:not(.fo-moving){transition:none;}}
 .column-drag-label{position:fixed;z-index:12000;pointer-events:none;max-width:160px;padding:6px 12px;border-radius:8px;background:var(--ink);color:var(--card);font-family:inherit;font-size:14px;font-weight:600;line-height:1.4;box-shadow:0 3px 14px #0003;}
 .thead-wrap th.column-before{box-shadow:inset 3px 0 var(--ink);}
 .thead-wrap th.column-after{box-shadow:inset -3px 0 var(--ink);}
@@ -2952,7 +2959,7 @@ body.column-moving,body.column-moving *{cursor:grabbing!important;user-select:no
   <div class="cl-backdrop" id="districtTabDialog">
     <section class="cl-dialog" role="dialog" aria-modal="true" aria-labelledby="districtTabTitle">
       <div class="cl-editor-head"><h2 id="districtTabTitle">重劃區分頁設定</h2><button type="button" class="fo-close" data-tabs-cancel aria-label="關閉">×</button></div>
-      <div class="district-tab-head"><span>開啟時預設</span><span>分頁名稱</span><span>顯示順序</span></div>
+      <div class="district-tab-head"><span aria-hidden="true"></span><span>開啟時預設</span><span>分頁名稱</span><span>顯示順序</span></div>
       <div id="districtTabRows"></div>
       <div class="cl-editor-footer"><p class="cl-error" role="alert"></p><div class="cl-editor-actions"><button type="button" class="fo-secondary" data-tabs-reset>恢復預設</button><button type="button" class="fo-secondary" data-tabs-cancel>取消</button><button type="button" class="fo-primary" data-tabs-save>儲存</button></div></div>
     </section>
@@ -4244,7 +4251,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.24H";
+const APP_VERSION = "2026.11.24I";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -11501,17 +11508,84 @@ settingsBack.addEventListener("click",closeSettings);
 })();
 
 // Tab preferences are shared by both views and synced separately from property data.
+function dragOrderRow(down,handle,row,isCurrent,onMove){
+  const list=row.parentElement,rows=Array.from(list.children);
+  if(rows.length<2)return;
+  down.preventDefault();
+  const from=rows.indexOf(row),rects=rows.map(el=>el.getBoundingClientRect());
+  const height=rects[from].height,origin=rects[from].top,startScroll=list.scrollTop;
+  const stops=rects.map((rect,i)=>i<=from?rect.top:rect.bottom-height);
+  let x=down.clientX,y=down.clientY,target=from,frame=0,last=0;
+  list.classList.add('is-dragging');row.classList.add('fo-moving');handle.setPointerCapture(down.pointerId);
+  function position(){
+    const top=Math.max(stops[0],Math.min(stops.at(-1),origin+y-down.clientY+list.scrollTop-startScroll));
+    row.style.transform='translateY('+(top-origin)+'px)';
+    let next=0;
+    while(next+1<stops.length&&top>=(stops[next]+stops[next+1])/2)next++;
+    if(next===target)return;
+    target=next;
+    rows.forEach((el,i)=>{
+      if(i===from)return;
+      const shift=from<i&&i<=target?-height:target<=i&&i<from?height:0;
+      el.style.transform=shift?'translateY('+shift+'px)':'';
+    });
+  }
+  function tick(now){
+    frame=0;
+    if(!isCurrent()||!row.isConnected){finish(false);return;}
+    const rect=list.getBoundingClientRect(),edge=Math.min(48,rect.height/3);
+    const speed=x<rect.left||x>rect.right?0:y<rect.top+edge?-Math.min(1,(rect.top+edge-y)/edge):Math.max(0,Math.min(1,(y-rect.bottom+edge)/edge));
+    const before=list.scrollTop,dt=last?Math.min(40,now-last):16;
+    if(speed)list.scrollTop+=Math.sign(speed)*Math.max(1,Math.abs(speed)*dt*.55);
+    position();
+    if(list.scrollTop!==before){last=now;frame=requestAnimationFrame(tick);}else last=0;
+  }
+  function move(e){if(e.pointerId===down.pointerId){x=e.clientX;y=e.clientY;if(!frame)frame=requestAnimationFrame(tick);}}
+  function up(e){if(e.pointerId===down.pointerId){y=e.clientY;position();finish(true);}}
+  function cancel(e){if(e.pointerId==null||e.pointerId===down.pointerId)finish(false);}
+  let finished=false;
+  function finish(commit){
+    if(finished)return;
+    finished=true;
+    cancelAnimationFrame(frame);
+    document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',up);
+    document.removeEventListener('pointercancel',cancel);handle.removeEventListener('lostpointercapture',cancel);
+    window.removeEventListener('blur',cancel);
+    if(handle.hasPointerCapture(down.pointerId))handle.releasePointerCapture(down.pointerId);
+    list.classList.remove('is-dragging');row.classList.remove('fo-moving');rows.forEach(el=>el.style.transform='');
+    if(commit&&row.isConnected&&isCurrent())onMove(from,target);
+  }
+  document.addEventListener('pointermove',move);document.addEventListener('pointerup',up);
+  document.addEventListener('pointercancel',cancel);handle.addEventListener('lostpointercapture',cancel);
+  window.addEventListener('blur',cancel);
+  return ()=>finish(false);
+}
 (()=>{
   const trigger=document.getElementById('districtTabSettings'),panel=document.getElementById('districtTabDialog');
   const rows=document.getElementById('districtTabRows'),message=panel.querySelector('.cl-error');
   function render(){
     rows.innerHTML=tabDraft.order.map((name,i)=>{
       const label=esc(name||'全部');
-      return `<div class="district-tab-row"><input type="radio" name="districtTabDefault" id="district-tab-choice-${i}" value="${i}" aria-label="預設開啟${label}" ${tabDraft.initial===name?'checked':''}><label for="district-tab-choice-${i}">${label}</label><span><button type="button" data-step="-1" data-idx="${i}" aria-label="上移${label}" ${i===0?'disabled':''}>↑</button><button type="button" data-step="1" data-idx="${i}" aria-label="下移${label}" ${i===tabDraft.order.length-1?'disabled':''}>↓</button></span></div>`;
+      return `<div class="district-tab-row"><button type="button" class="district-tab-grip" data-order-grip aria-label="拖曳${label}調整順序" title="拖曳調整順序">⠿</button><input type="radio" name="districtTabDefault" id="district-tab-choice-${i}" value="${i}" aria-label="預設開啟${label}" ${tabDraft.initial===name?'checked':''}><label for="district-tab-choice-${i}">${label}</label><span><button type="button" data-step="-1" data-idx="${i}" aria-label="上移${label}" ${i===0?'disabled':''}>↑</button><button type="button" data-step="1" data-idx="${i}" aria-label="下移${label}" ${i===tabDraft.order.length-1?'disabled':''}>↓</button></span></div>`;
     }).join('');
   }
+  let cancelDrag=null;
+  rows.addEventListener('pointerdown',event=>{
+    const handle=event.target.closest('.district-tab-grip');
+    if(!handle||!tabDraft||event.button!==0||!event.isPrimary)return;
+    cancelDrag?.();
+    const draft=tabDraft;
+    cancelDrag=dragOrderRow(event,handle,handle.parentElement,()=>tabDraft===draft,(from,to)=>{
+      if(from===to)return;
+      const [name]=draft.order.splice(from,1);
+      draft.order.splice(to,0,name);
+      const scroll=rows.scrollTop;render();rows.scrollTop=scroll;
+      rows.children[to].querySelector('.district-tab-grip').focus({preventScroll:true});
+    });
+  });
   function close(){
     if(!tabDraft)return;
+    cancelDrag?.();cancelDrag=null;
     tabDraft=null;panel.classList.remove('open');trigger.setAttribute('aria-expanded','false');unlockOverlay();applyPendingMergeIfAny();
   }
   trigger.addEventListener('click',()=>{
@@ -13455,52 +13529,7 @@ function paintPropertyState(state){
   menu.addEventListener('pointerdown',down=>{
     const handle=down.target.closest('.fo-order-grip');
     if(!handle||!down.isPrimary||down.button!==0||active?.mode!=='order')return;
-    const row=handle.closest('.fo-order-row'),list=row.parentElement,rows=Array.from(list.children);
-    if(rows.length<2)return;
-    down.preventDefault();
-    const from=rows.indexOf(row),rects=rows.map(el=>el.getBoundingClientRect());
-    const height=rects[from].height,origin=rects[from].top,startScroll=list.scrollTop;
-    const stops=rects.map((rect,i)=>i<=from?rect.top:rect.bottom-height);
-    let x=down.clientX,y=down.clientY,target=from,frame=0,last=0;
-    list.classList.add('is-dragging');row.classList.add('fo-moving');handle.setPointerCapture(down.pointerId);
-    function position(){
-      const top=Math.max(stops[0],Math.min(stops.at(-1),origin+y-down.clientY+list.scrollTop-startScroll));
-      row.style.transform='translateY('+(top-origin)+'px)';
-      let next=0;
-      while(next+1<stops.length&&top>=(stops[next]+stops[next+1])/2)next++;
-      if(next===target)return;
-      target=next;
-      rows.forEach((el,i)=>{
-        if(i===from)return;
-        const shift=from<i&&i<=target?-height:target<=i&&i<from?height:0;
-        el.style.transform=shift?'translateY('+shift+'px)':'';
-      });
-    }
-    function tick(now){
-      frame=0;
-      if(active?.mode!=='order'||!row.isConnected){finish(false);return;}
-      const rect=list.getBoundingClientRect(),edge=Math.min(48,rect.height/3);
-      const speed=x<rect.left||x>rect.right?0:y<rect.top+edge?-Math.min(1,(rect.top+edge-y)/edge):Math.max(0,Math.min(1,(y-rect.bottom+edge)/edge));
-      const before=list.scrollTop,dt=last?Math.min(40,now-last):16;
-      if(speed)list.scrollTop+=Math.sign(speed)*Math.max(1,Math.abs(speed)*dt*.55);
-      position();
-      if(list.scrollTop!==before){last=now;frame=requestAnimationFrame(tick);}else last=0;
-    }
-    function move(e){if(e.pointerId===down.pointerId){x=e.clientX;y=e.clientY;if(!frame)frame=requestAnimationFrame(tick);}}
-    function up(e){if(e.pointerId===down.pointerId){y=e.clientY;position();finish(true);}}
-    function cancel(e){if(e.pointerId==null||e.pointerId===down.pointerId)finish(false);}
-    function finish(commit){
-      cancelAnimationFrame(frame);
-      document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',up);
-      document.removeEventListener('pointercancel',cancel);handle.removeEventListener('lostpointercapture',cancel);
-      window.removeEventListener('blur',cancel);
-      if(handle.hasPointerCapture(down.pointerId))handle.releasePointerCapture(down.pointerId);
-      list.classList.remove('is-dragging');row.classList.remove('fo-moving');rows.forEach(el=>el.style.transform='');
-      if(commit&&row.isConnected&&active?.mode==='order')moveOption(from,target);
-    }
-    document.addEventListener('pointermove',move);document.addEventListener('pointerup',up);
-    document.addEventListener('pointercancel',cancel);handle.addEventListener('lostpointercapture',cancel);
-    window.addEventListener('blur',cancel);
+    dragOrderRow(down,handle,handle.closest('.fo-order-row'),()=>active?.mode==='order',moveOption);
   });
   menu.addEventListener('contextmenu',event=>{if(optionPress||active?.mode==='order')event.preventDefault();});
 
@@ -13973,9 +14002,10 @@ function paintPropertyState(state){
     element.style.setProperty('--district-ink',ink[look.ink]);
   }
   function districtControl(name,preview=false){
-    const bar=document.createElement(preview?'div':'button');bar.className='cl-district-bar';
+    const editable=!preview&&editMode&&manualTableEdit;
+    const bar=document.createElement(editable?'button':'div');bar.className='cl-district-bar';
     bar.textContent=name||'未填寫';
-    if(!preview){
+    if(editable){
       bar.type='button';bar.dataset.clDistrict=name;bar.setAttribute('aria-haspopup','dialog');
       bar.title='編輯重劃區橫桿';bar.setAttribute('aria-label','編輯「'+(name||'未填寫')+'」重劃區橫桿');
       const edit=document.createElement('span');edit.className='cl-district-edit';edit.setAttribute('aria-hidden','true');edit.textContent='編輯';bar.append(edit);
@@ -14195,7 +14225,7 @@ function paintPropertyState(state){
   namesButton.addEventListener('click',()=>open('names'));
   tableWrap.addEventListener('click',event=>{
     const district=event.target.closest('[data-cl-district]');
-    if(district&&!tselMode){event.stopImmediatePropagation();event.preventDefault();open('district',district.dataset.clDistrict);return;}
+    if(district&&!tselMode){event.stopImmediatePropagation();event.preventDefault();if(editMode&&manualTableEdit)open('district',district.dataset.clDistrict);return;}
     const action=event.target.closest('[data-cl-link-action]');if(!action||tselMode)return;
     // Native anchors retain normal opening, modifier keys and a separate edit target.
     event.stopImmediatePropagation();
