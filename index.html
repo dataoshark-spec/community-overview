@@ -1971,8 +1971,10 @@ button.cl-district-bar{cursor:pointer;}
 .cl-community-row .cl-link-slot.is-blank:not(.has-link) .cl-slot-name,
 .cl-appearance-preview .cl-link-slot.is-blank:not(.has-link) .cl-slot-name{opacity:.35;}
 
+.cl-community-row .cl-link-grid:not(.cl-editable) .cl-link-slot:not(.has-link){cursor:default;}
+.cl-community-row .cl-slot-mark:empty{display:none;}
 .cl-community-row .cl-link-slot::after{content:"";position:absolute;inset:0;pointer-events:none;background:transparent;z-index:-1;}
-@media(hover:hover){.cl-community-row .cl-link-slot:hover::after{background:rgba(0,0,0,.075);}[data-theme="dark"] .cl-community-row .cl-link-slot:hover::after{background:rgba(255,255,255,.10);}}
+@media(hover:hover){.cl-community-row .cl-editable .cl-link-slot:hover::after{background:rgba(0,0,0,.075);}[data-theme="dark"] .cl-community-row .cl-editable .cl-link-slot:hover::after{background:rgba(255,255,255,.10);}}
 .ptable .cl-community-row .cl-unnamed{height:calc(var(--cl-row-height,32px) - 2px);line-height:calc(var(--cl-row-height,32px) - 2px);}
 .cl-dialog.cl-settings-dialog{display:flex;flex-direction:column;max-width:610px;overflow:hidden;}
 .cl-settings-dialog>.cl-editor-head,.cl-settings-dialog>.cl-settings-help,.cl-settings-dialog>.cl-preview-section,.cl-settings-dialog>.cl-editor-footer{flex:0 0 auto;}
@@ -2019,7 +2021,7 @@ button.cl-district-bar{cursor:pointer;}
 @media(max-width:560px){.cl-settings-columns{grid-template-columns:1fr;gap:16px;}.cl-inline-color-host{padding:14px 0 0;border-left:0;border-top:1px solid var(--line);}.cl-name-section .cl-link-name-fields{gap:8px;}}
 
 /* Opening and editing are separate sibling targets; the row keeps its chosen height. */
-.cl-community-row .cl-link-slot.cl-link-with-edit{display:flex;align-items:stretch;gap:0;padding:0;}
+.cl-community-row .cl-link-slot.cl-link-filled{display:flex;align-items:stretch;gap:0;padding:0;}
 .cl-community-row .cl-link-open{
   flex:1 1 auto;min-width:0;min-height:0;height:100%;box-sizing:border-box;
   display:flex;align-items:center;justify-content:center;gap:7px;padding:0 6px;
@@ -2041,8 +2043,8 @@ button.cl-district-bar{cursor:pointer;}
     opacity:0;overflow:hidden;pointer-events:none;
     transition:flex-basis 150ms ease,width 150ms ease,padding 150ms ease,border-left-width 150ms ease,opacity 150ms ease;
   }
-  .cl-community-row .cl-link-with-edit:hover .cl-link-edit,
-  .cl-community-row .cl-link-with-edit:has(.cl-link-open:focus-visible, .cl-link-edit:focus-visible) .cl-link-edit{
+  .cl-community-row .cl-link-filled:hover .cl-link-edit,
+  .cl-community-row .cl-link-filled:has(.cl-link-open:focus-visible, .cl-link-edit:focus-visible) .cl-link-edit{
     flex-basis:38px;width:38px;padding-left:3px;padding-right:3px;border-left-width:1px;
     opacity:1;pointer-events:auto;
   }
@@ -4245,7 +4247,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.24F";
+const APP_VERSION = "2026.11.24G";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -14003,6 +14005,8 @@ function paintPropertyState(state){
   }
   function buildBar(community,labels,urls,look,preview=false){
     const bar=document.createElement('div');bar.className='cl-link-grid';bar.style.setProperty('--cl-row-height',look.height+'px');
+    const editable=!preview&&editMode&&manualTableEdit;
+    bar.classList.toggle('cl-editable',editable);
     bar.setAttribute('role','group');bar.setAttribute('aria-label',preview?'六格連結外觀預覽':community+'的社區連結');
     const communityCell=document.createElement('div');
     communityCell.className='cl-link-slot cl-community-name';styleSlot(communityCell,look);
@@ -14010,33 +14014,36 @@ function paintPropertyState(state){
     communityText.textContent=preview?'社區名稱':community;communityCell.title=preview?'社區名稱':community;
     communityCell.appendChild(communityText);bar.appendChild(communityCell);
     labels.slice(0,5).forEach((raw,slot)=>{
-      const name=raw.trim(),url=urls[slot],link=document.createElement(preview||url?'div':'button');
+      const name=raw.trim(),url=urls[slot],link=document.createElement(editable&&!url?'button':'div');
       link.className='cl-link-slot'+(url?' has-link':'')+(!name?' is-blank':'');
       const label=name||'第 '+(slot+2)+' 格';
       if(!preview){
         link.dataset.community=community;link.dataset.slot=String(slot);
         link.title=community+' · '+label+(url?'\n'+(localLinkPath(url)||url):'\n尚未設定網址');
-        if(!url){
+        if(editable&&!url){
           link.type='button';link.dataset.clLinkAction='add';link.setAttribute('aria-haspopup','dialog');
           link.setAttribute('aria-label',community+' · '+label+'，新增連結');
-        }else{link.setAttribute('role','group');link.setAttribute('aria-label',community+' · '+label);}
+        }else if(url){link.setAttribute('role','group');link.setAttribute('aria-label',community+' · '+label);}
       }
       styleSlot(link,look);
       const text=document.createElement('span');text.className='cl-slot-name';text.textContent=name||'－';
       const mark=document.createElement('span');mark.className='cl-slot-mark';mark.setAttribute('aria-hidden','true');
       if(url){mark.classList.add('cl-ready-mark');mark.innerHTML='<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m10 4-4 4 4 4"/></svg>';}
-      else mark.textContent=name?'＋':'';
+      else mark.textContent=name&&(editable||preview)?'＋':'';
       if(!preview&&url){
-        link.classList.add('cl-link-with-edit');
+        link.classList.add('cl-link-filled');
         const openLink=document.createElement('a');openLink.className='cl-link-open';
         openLink.href=url;openLink.target='_blank';openLink.rel='noopener noreferrer';openLink.dataset.clLinkAction='open';
         openLink.dataset.community=community;openLink.dataset.slot=String(slot);
         openLink.setAttribute('aria-label',community+' · '+label+'，開啟連結');openLink.title=localLinkPath(url)||url;
         openLink.append(text,mark);
-        const edit=document.createElement('button');edit.type='button';edit.className='cl-link-edit';edit.textContent='編輯';
-        edit.dataset.clLinkAction='edit';edit.dataset.community=community;edit.dataset.slot=String(slot);
-        edit.setAttribute('aria-label',community+' · '+label+'，編輯此社區連結');edit.setAttribute('aria-haspopup','dialog');edit.title='編輯此社區連結';
-        link.append(openLink,edit);
+        link.appendChild(openLink);
+        if(editable){
+          const edit=document.createElement('button');edit.type='button';edit.className='cl-link-edit';edit.textContent='編輯';
+          edit.dataset.clLinkAction='edit';edit.dataset.community=community;edit.dataset.slot=String(slot);
+          edit.setAttribute('aria-label',community+' · '+label+'，編輯此社區連結');edit.setAttribute('aria-haspopup','dialog');edit.title='編輯此社區連結';
+          link.appendChild(edit);
+        }
       }else link.append(text,mark);
       bar.appendChild(link);
     });
@@ -14197,7 +14204,7 @@ function paintPropertyState(state){
       if(localLinkPath(target)){event.preventDefault();openCommunityTarget(target);}
       return;
     }
-    event.preventDefault();open('url',action.dataset.community,Number(action.dataset.slot));
+    event.preventDefault();if(editMode&&manualTableEdit)open('url',action.dataset.community,Number(action.dataset.slot));
   },true);
   let downOnBackground=false;
   backdrop.addEventListener('pointerdown',event=>{downOnBackground=event.target===backdrop;});
