@@ -1855,6 +1855,8 @@ async function openCommunityTarget(value){
 
 #communityLinkNames{display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:8px 11px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink-soft);font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;white-space:nowrap;}
 #communityLinkNames[hidden]{display:none;}
+.ptable tbody .cl-plan-row > td{height:24px;padding:0 10px;background:var(--surface-2);color:var(--ink);border-block:1px solid var(--line);text-align:left;font-size:.8rem;font-weight:600;}
+.cl-plan-label{margin-right:.6em;font-size:.7rem;color:var(--ink-soft);font-weight:400;}
 .ptable tbody .cl-community-row{height:32px;}
 .ptable tbody .cl-community-row>td{padding:0;border-top:1px solid var(--border-2);border-bottom:1px solid var(--border-2);background:var(--surface-3)!important;}
 .cl-link-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));height:30px;width:100%;}
@@ -4158,7 +4160,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.22T";
+const APP_VERSION = "2026.11.24A";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -13724,7 +13726,14 @@ function paintPropertyState(state){
     }catch(failure){error(failure.message||'尚未儲存成功，請檢查設定後再試一次。');return false;}
   }
   const communityOf=item=>customOrderKeys(item).community;
-  function visible(){return viewMode==='table'&&tableFields().includes('name')&&currentSort==='group_community';}
+  function groupedTable(){return viewMode==='table'&&(currentSort==='group_community'||currentSort==='group_plan_unit');}
+  function visible(){return groupedTable()&&tableFields().includes('name');}
+  function districtBar(name,columns){
+    const row=document.createElement('tr');row.className='cl-plan-row';
+    const cell=row.insertCell();cell.colSpan=columns;
+    const label=document.createElement('span');label.className='cl-plan-label';label.textContent='重劃區';
+    cell.append(label,document.createTextNode(name||'未填寫'));return row;
+  }
   const namesButton=document.createElement('button');
   namesButton.type='button';namesButton.id='communityLinkNames';namesButton.textContent='連結設定';namesButton.hidden=true;namesButton.setAttribute('aria-haspopup','dialog');namesButton.title='設定全部社區共用的六格名稱與外觀';
   document.getElementById('customOrderBtn').after(namesButton);
@@ -13779,11 +13788,18 @@ function paintPropertyState(state){
     return bar;
   }
   function drawGroups(){
-    tableWrap.querySelectorAll('.cl-community-row').forEach(row=>row.remove());
-    namesButton.hidden=!visible();if(!visible())return;
-    const byId=new Map(items.map(item=>[item.id,item]));let previous=null;
+    tableWrap.querySelectorAll('.cl-plan-row,.cl-community-row').forEach(row=>row.remove());
+    const showCommunity=visible(),showDistrict=groupedTable()&&tableFields().includes('planUnit');
+    namesButton.hidden=!showCommunity;if(!showCommunity&&!showDistrict)return;
+    const columns=tableColumnCount(),byId=new Map(items.map(item=>[item.id,item]));
+    let previousDistrict=null,previous=null;
     for(const row of Array.from(tableWrap.querySelectorAll('.tbody-wrap tr[data-id]'))){
       const item=byId.get(row.dataset.id);if(!item)continue;
+      if(showDistrict){
+        const district=String(item.planUnit||'').trim();
+        if(district!==previousDistrict){row.before(districtBar(district,columns));previousDistrict=district;previous=null;}
+      }
+      if(!showCommunity)continue;
       const community=communityOf(item);if(community===previous)continue;previous=community;
       const group=document.createElement('tr');group.className='cl-community-row';group.dataset.community=community;group.style.setProperty('--cl-row-height',appearance.height+'px');
       const cell=document.createElement('td');cell.colSpan=tableColumnCount();group.appendChild(cell);
@@ -14893,7 +14909,7 @@ function paintPropertyState(state){
     unpin(active);active=null;groups=[];
     if(!body||!table)return;
     const origin=body.getBoundingClientRect().top+body.clientTop;
-    groups=Array.from(table.querySelectorAll('tbody > .cl-community-row'),row=>{
+    groups=Array.from(table.querySelectorAll('tbody > .cl-community-row,tbody > .cl-plan-row'),row=>{
       const cell=row.firstElementChild,rect=row.getBoundingClientRect();
       return {row,cell,top:rect.top-origin+body.scrollTop,height:rect.height};
     });
@@ -14915,7 +14931,11 @@ function paintPropertyState(state){
     const line=table.querySelector('tr[data-id]')?.getBoundingClientRect().height||26;
     const delta=event.deltaY*(event.deltaMode===1?line:event.deltaMode===2?body.clientHeight:1);
     const maximum=body.scrollHeight-body.clientHeight;
-    const boundary=groups.find(entry=>entry.row.dataset.community&&entry.top>top+1&&entry.top<=top+delta&&entry.top<=maximum);
+    const boundary=groups.find((entry,i)=>{
+      const startsDistrict=entry.row.classList.contains('cl-plan-row');
+      const startsCommunity=entry.row.dataset.community&&!groups[i-1]?.row.classList.contains('cl-plan-row');
+      return (startsDistrict||startsCommunity)&&entry.top>top+1&&entry.top<=top+delta&&entry.top<=maximum;
+    });
     if(!boundary)return;
     event.preventDefault();
     wheelStop={top:boundary.top,until:now+pauseMs};
