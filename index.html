@@ -586,9 +586,8 @@ async function openCommunityTarget(value){
     white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;line-height:1;
     transition:background .15s ease,color .15s ease,border-color .15s ease;}
   .tab:hover{border-color:var(--border-2);}
-  #tabs .tab[data-tinted]{background:var(--district-tab-bg);color:var(--district-tab-ink);}
-  #tabs .tab[data-tinted].active{border-color:currentColor;box-shadow:inset 0 0 0 1px currentColor;}
-  #tabs .tab[data-tinted]:focus-visible{outline:2px solid var(--ink-soft);outline-offset:-3px;}
+  #tabs .tab[data-tinted].active{background:var(--district-tab-bg);color:var(--district-tab-ink);border-color:transparent;}
+  #tabs .tab[data-tinted].active:focus-visible{outline:2px solid var(--ink-soft);outline-offset:-3px;}
   .tab.active{background:var(--ink);color:#fff;border-color:var(--ink);}
 
   .cards{padding:14px 18px 40px;display:flex;flex-direction:column;gap:14px;}
@@ -2166,6 +2165,7 @@ button.cl-district-bar{cursor:pointer;}
 
 /* Selected inward chevron, centered with link text. */
 
+.cl-link-grid .cl-link-slot:not(.has-link):not(.cl-community-name){font-weight:400;}
 .cl-community-row .cl-link-slot:not(.has-link):not(.is-blank) .cl-slot-name{opacity:.43;}
 .cl-community-row .cl-link-open{gap:.35em;}
 .cl-community-row .cl-link-open .cl-slot-name{line-height:1;}
@@ -4256,7 +4256,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.24J";
+const APP_VERSION = "2026.11.24K";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
