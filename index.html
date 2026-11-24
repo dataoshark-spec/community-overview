@@ -586,6 +586,9 @@ async function openCommunityTarget(value){
     white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;line-height:1;
     transition:background .15s ease,color .15s ease,border-color .15s ease;}
   .tab:hover{border-color:var(--border-2);}
+  #tabs .tab[data-tinted]{background:var(--district-tab-bg);color:var(--district-tab-ink);}
+  #tabs .tab[data-tinted].active{border-color:currentColor;box-shadow:inset 0 0 0 1px currentColor;}
+  #tabs .tab[data-tinted]:focus-visible{outline:2px solid var(--ink-soft);outline-offset:-3px;}
   .tab.active{background:var(--ink);color:#fff;border-color:var(--ink);}
 
   .cards{padding:14px 18px 40px;display:flex;flex-direction:column;gap:14px;}
@@ -965,6 +968,8 @@ async function openCommunityTarget(value){
   .cat-item .cat-name{flex:1;min-width:0;font-family:inherit;font-size:1rem;font-weight:600;color:var(--ink);
     background:var(--card);border:1px solid var(--line);border-radius:8px;padding:9px 11px;outline:none;transition:border-color .15s ease;}
   .cat-item .cat-name:focus{border-color:var(--accent);}
+  .cat-derived{min-height:44px;padding-inline:14px;}
+  .cat-derived strong{flex:1;min-width:0;font-size:1rem;overflow-wrap:anywhere;}
   .cat-item .cat-count{flex:none;font-size:.76rem;color:var(--ink-soft);font-variant-numeric:tabular-nums;}
   .cat-item .cat-del{flex:none;width:34px;height:34px;border-radius:8px;border:1px solid var(--line);background:var(--card);
     color:var(--ink-soft);font-size:1rem;cursor:pointer;display:grid;place-items:center;transition:background .15s ease,color .15s ease,border-color .15s ease;}
@@ -4251,7 +4256,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.24I";
+const APP_VERSION = "2026.11.24J";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -4744,7 +4749,7 @@ async function applyCommunityMove(plan,targetKey){
 }
 function activeCommunity(key = currentCat){ return key && homeCommunities().has(key) ? key : ""; }
 
-const catCount = key => items.filter(d => d.cat === key).length;
+
 const catColor = key => { const c = cats.find(x => x.key === key); return c ? safeColor(c.color) : "#8494A0"; };
 const nextColor = () => {
   const groups=communityGroups();
@@ -4826,6 +4831,7 @@ function renderDistrictTabs(){
     }
     button.classList.toggle('active',on);button.setAttribute('aria-pressed',String(on));
   }
+  window.CommunityFields?.paintDistrictTabs();
 }
 let currentCat = "";
 let unassignedOnly = false;
@@ -11893,15 +11899,37 @@ const catBg = document.getElementById("catBg");
 const catListEl = document.getElementById("catList");
 const catNewEl = document.getElementById("catNew");
 
+function managerCommunityList(){
+  const list=new Map();
+  function include(name){
+    if(!list.has(name))list.set(name,{name,count:0,managed:null});
+    return list.get(name);
+  }
+  for(const c of communityGroups()){
+    const name=communityLabel(c.key).trim();
+    if(name)include(name).managed=c;
+  }
+  for(const item of items){
+    const name=namedCommunity(item);
+    if(name)include(name).count++;
+  }
+  const settings=PropertyCore.local().current.settings.communityFeatures?.values;
+  for(const entry of settings?.catalogs?.name||[])include(entry.name);
+  for(const name of Object.keys(settings?.locations?.registry||{}))include(name);
+  return Array.from(list.values());
+}
 function renderCatList(){
-  catListEl.innerHTML = communityGroups().map(c => `
+  catListEl.innerHTML=managerCommunityList().map(({name,count,managed:c})=>{
+    if(!c)return `<div class="cat-item cat-derived"><strong>${esc(name)}</strong><span class="cat-count">${count} 筆</span></div>`;
+    return `
     <div class="cat-item" data-key="${esc(c.key)}">
       <span class="cat-drag" aria-label="拖曳排序" title="拖曳排序"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><g fill="currentColor"><circle cx="6" cy="4" r="1.25"/><circle cx="10" cy="4" r="1.25"/><circle cx="6" cy="8" r="1.25"/><circle cx="10" cy="8" r="1.25"/><circle cx="6" cy="12" r="1.25"/><circle cx="10" cy="12" r="1.25"/></g></svg></span>
       <button type="button" class="cat-color" data-color="${c.color}" style="--cc:${c.color}" aria-label="選擇顏色" title="選擇顏色"></button>
       <input type="text" class="cat-name" value="${esc(communityLabel(c.key))}" aria-label="社區名稱" maxlength="80">
-      <span class="cat-count">${catCount(c.key)} 筆</span>
+      <span class="cat-count">${count} 筆</span>
       <button type="button" class="cat-del" aria-label="刪除社區">🗑</button>
-    </div>`).join("");
+    </div>`;
+  }).join("");
 }
 function openCatManager(e){
   if (catBg.classList.contains("open")) return;
@@ -12176,7 +12204,7 @@ function changeCommunity(change){
 }
 function duplicateCommunityName(name, exceptKey){
   const compare=value=>value.trim().normalize("NFKC").toLowerCase();
-  return communityGroups().some(c=>c.key!==exceptKey && compare(communityLabel(c.key))===compare(name));
+  return managerCommunityList().some(entry=>(!exceptKey||entry.managed?.key!==exceptKey)&&compare(entry.name)===compare(name));
 }
 function addCategory(){
   const name=catNewEl.value.trim();
@@ -12184,7 +12212,7 @@ function addCategory(){
   if(name.length>80){toast("社區名稱最多 80 字元");return;}
   const key=makeCommunityKey();
   changeCommunity(save=>{
-    if(duplicateCommunityName(name)){toast("社區名稱重複");return;}
+    if(duplicateCommunityName(name)){toast("這個社區已在清單中");return;}
     if(cats.length>=200){toast("社區清單已達容量上限");return;}
     cats.push({key,label:name,color:nextColor()});
     save(()=>{
@@ -12212,8 +12240,7 @@ catListEl.addEventListener("change",e=>{
     if(duplicateCommunityName(name,key)){field.value=oldName;toast("社區名稱重複");return;}
     c.label=name; c.community=true;
     save(()=>{
-      const input=Array.from(catListEl.querySelectorAll(".cat-name")).find(el=>el.closest(".cat-item").dataset.key===key);
-      if(input){if(input.value.trim()===name || input.value===oldName)input.value=name;input.defaultValue=name;}
+      renderCatList();
       toast("已更改社區名稱");
     });
   });
@@ -12258,7 +12285,7 @@ catListEl.addEventListener("pointerdown", e => {
   const row = handle.closest(".cat-item");
   if (!row) return;
   e.preventDefault();
-  const rows = Array.from(catListEl.children);
+  const rows = Array.from(catListEl.querySelectorAll(".cat-item[data-key]"));
   const index = rows.indexOf(row);
   const rowH = rows.length > 1
     ? (rows[1].getBoundingClientRect().top - rows[0].getBoundingClientRect().top)
@@ -13423,7 +13450,21 @@ function paintPropertyState(state){
     const luminance=mixed.map(n=>n/255).map(n=>n<=.04045?n/12.92:Math.pow((n+.055)/1.055,2.4)).reduce((sum,n,i)=>sum+n*[.2126,.7152,.0722][i],0);
     return {bg:spec.alpha?`rgb(${mixed.join(',')})`:'transparent',ink:spec.text==='black'?'#000000':spec.text==='white'?'#ffffff':luminance>.179?'#16222a':'#ffffff'};
   }
+  function paintDistrictTabs(){
+    const entries=new Map(catalogs.planUnit.map(option=>[option.name,option]));
+    for(const tab of document.querySelectorAll('#tabs [data-district]')){
+      const entry=entries.get(tab.dataset.district),color=entry?.alpha>0?appearance(entry):null;
+      tab.toggleAttribute('data-tinted',!!color);
+      if(color){
+        tab.style.setProperty('--district-tab-bg',color.bg);
+        tab.style.setProperty('--district-tab-ink',color.ink);
+      }else{
+        tab.style.removeProperty('--district-tab-bg');tab.style.removeProperty('--district-tab-ink');
+      }
+    }
+  }
   function paint(){
+    paintDistrictTabs();
     const byId=new Map(items.map(x=>[x.id,x]));
     tableWrap.querySelectorAll('.tbody-wrap tr[data-id]').forEach(row=>{
       const item=byId.get(row.dataset.id);if(!item)return;
@@ -13839,7 +13880,7 @@ function paintPropertyState(state){
   window.addEventListener('resize',()=>{if(active)place();});
   tableWrap.addEventListener('scroll',()=>{if(active)close();},true);
   CommunityData.subscribe(()=>{refreshCatalogs();if(active&&active.resetAt!==(window._resetAt||0)){close();toast('資料已還原，請重新開啟欄位設定。');}paint();});
-  window.CommunityFields={appearance,paint,close,open,getActive(){return active?{id:active.id,field:active.field,mode:active.mode,tint:!!draft}:null;},finish(){
+  window.CommunityFields={appearance,paint,paintDistrictTabs,close,open,getActive(){return active?{id:active.id,field:active.field,mode:active.mode,tint:!!draft}:null;},finish(){
     if(!active)return true;
     if(window._saveBlocked)return false;
     if(document.getElementById('communityDefaultsBg')?.classList.contains('open'))return false;
