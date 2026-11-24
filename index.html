@@ -1855,8 +1855,16 @@ async function openCommunityTarget(value){
 
 #communityLinkNames{display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:8px 11px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink-soft);font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;white-space:nowrap;}
 #communityLinkNames[hidden]{display:none;}
-.ptable tbody .cl-plan-row > td{height:24px;padding:0 10px;background:var(--surface-2);color:var(--ink);border-block:1px solid var(--line);text-align:left;font-size:.8rem;font-weight:600;}
-.cl-plan-label{margin-right:.6em;font-size:.7rem;color:var(--ink-soft);font-weight:400;}
+.ptable tbody .cl-plan-row > td{padding:0;height:var(--district-height);border-block:1px solid var(--line);background:var(--district-bg,var(--surface-2));}
+.cl-district-bar{position:relative;box-sizing:border-box;display:block;width:100%;height:calc(var(--district-height) - 2px);margin:0;padding:0 48px;border:0;border-radius:0;background:var(--district-bg,var(--surface-2));color:var(--district-ink,var(--ink));font:inherit;font-size:var(--district-size);font-weight:var(--district-weight);line-height:calc(var(--district-height) - 2px);text-align:center;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;}
+button.cl-district-bar{cursor:pointer;}
+.cl-district-bar:focus-visible{outline:2px solid currentColor;outline-offset:-2px;}
+.cl-district-edit{position:absolute;inset:0 0 0 auto;display:grid;place-items:center;width:42px;border-inline-start:1px solid color-mix(in srgb,currentColor 20%,transparent);font-size:12px;font-weight:600;opacity:0;pointer-events:none;}
+@media(hover:hover){button.cl-district-bar:hover .cl-district-edit{opacity:1;}}
+.cl-district-bar:focus-visible .cl-district-edit{opacity:1;}
+.cl-district-colors{margin:10px 0 0;}
+.cl-district-colors .cl-inline-color-host{margin-top:10px;}
+.cl-district-colors [hidden],.cl-shared-appearance [data-district-text][hidden]{display:none;}
 .ptable tbody .cl-community-row{height:32px;}
 .ptable tbody .cl-community-row>td{padding:0;border-top:1px solid var(--border-2);border-bottom:1px solid var(--border-2);background:var(--surface-3)!important;}
 .cl-link-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));height:30px;width:100%;}
@@ -3362,7 +3370,8 @@ function trackSlotSettings(next,previous,previousTime,now){
  next.linkSlotMeta={order:slotOrderChanged(before,next.linkSlots)?now:(previous.linkSlotMeta?.order??previousTime),fields};
 }
 /* Durable community settings. The enclosing PropertyCore supplies validation helpers. */
-const COMMUNITY_SECTIONS=Object.freeze(['catalogs','links','locations','orders']);
+function defaultDistrictBars(){return {shared:{height:24,fontSize:13,fontWeight:600,ink:'auto',inkColor:'#16222A'},backgrounds:[]};}
+const COMMUNITY_SECTIONS=Object.freeze(['catalogs','links','locations','orders','districtBars']);
 function communityFeatures(value){
  if(!obj(value)||value.version!==1||!obj(value.values)||!obj(value.clocks))fail('社區功能設定格式不正確');
  const out={version:1,values:{},clocks:{}};
@@ -3391,6 +3400,18 @@ function communityFeatures(value){
      return item;
     });
    }
+  }else if(section==='districtBars'){
+   const hex=v=>typeof v==='string'&&/^#[0-9a-f]{6}$/i.test(v);
+   if(!obj(source)||!obj(source.shared)||!Array.isArray(source.backgrounds)||source.backgrounds.length>5000)fail('重劃區橫桿設定不正確');
+   const {height,fontSize,fontWeight,ink,inkColor}=source.shared;
+   if(![22,24,26,28,32].includes(height)||![12,13,14,15,16].includes(fontSize)||![400,600,700].includes(fontWeight)||!['auto','black','white','custom'].includes(ink)||!hex(inkColor))fail('重劃區橫桿共用外觀不正確');
+   const seen=new Set();
+   const backgrounds=source.backgrounds.map(entry=>{
+    if(!obj(entry)||!['follow','custom'].includes(entry.mode)||(entry.background!==null&&!hex(entry.background)))fail('重劃區橫桿底色不正確');
+    const name=text(entry.name,5000);if(seen.has(name))fail('重劃區橫桿名稱重複');seen.add(name);
+    return {name,mode:entry.mode,background:entry.background};
+   });
+   result={shared:{height,fontSize,fontWeight,ink,inkColor},backgrounds};
   }else if(section==='links'){
    if(!obj(source))fail('社區連結設定不正確');const names=strings(source.names,24,6);if(names.length!==6)fail('社區連結需要六格名稱');
    if(!Array.isArray(source.communities)||source.communities.length>5000)fail('社區連結清單不正確');const seen=new Set();
@@ -3732,6 +3753,7 @@ function restore(old,imported,now){
 }
 function historyCommunityName(row){return String(row?.name||'').split(/[／/]/,1)[0].trim();}
 function emptyHistorySection(key,state){
+ if(key==='districtBars')return defaultDistrictBars();
  if(key==='catalogs')return Object.fromEntries(['planUnit','area','layout','status','parkingType','name'].map(f=>[f,[]]));
  if(key==='locations')return {version:2,resetAt:state.resetAt,registry:{},pending:{}};
  if(key==='orders')return {version:1,resetAt:state.resetAt,mode:'default',orders:{property:[],planUnit:[],community:[]}};
@@ -4086,7 +4108,7 @@ function createStore(storage){
  return {load,commit,readLatest,acknowledge,compact,rawBackup,get history(){return clone(history)},get current(){return current?clone(current):null},get blocked(){return blocked}};
 }
 
-const api={KEY,FIELDS,naturalOrder,communityFeatures,mergeCommunityFeatures,areaRangeFields,areaRanges,compareAreaDecimals,parkingCount,UNKNOWN_DUE,dueValue,setDueValue,recordFields,linkSlots,rebaseLinkSlots,price,tableDecimal,mainAreaSum,areaTrio,dependentArea,linkedArea,areaValue,fontSize,noteOrder,draftValues,mergeDraft,deleteStamp,record,records,categories,settings,validateState,backup,fieldMerge,track,merge,mergeLegacy:(main,previous)=>merge(main,previous,true),stateWriteKey,restore,mainFrom,stateFromMain,createStore,clone,defaults,ready:false};
+const api={KEY,FIELDS,naturalOrder,emptyDistrictBars:defaultDistrictBars,communityFeatures,mergeCommunityFeatures,areaRangeFields,areaRanges,compareAreaDecimals,parkingCount,UNKNOWN_DUE,dueValue,setDueValue,recordFields,linkSlots,rebaseLinkSlots,price,tableDecimal,mainAreaSum,areaTrio,dependentArea,linkedArea,areaValue,fontSize,noteOrder,draftValues,mergeDraft,deleteStamp,record,records,categories,settings,validateState,backup,fieldMerge,track,merge,mergeLegacy:(main,previous)=>merge(main,previous,true),stateWriteKey,restore,mainFrom,stateFromMain,createStore,clone,defaults,ready:false};
 if(typeof module==="object"&&module.exports) module.exports=api;
 root.PropertyCore=api;
 if(!root.document) return;
@@ -4160,7 +4182,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.24A";
+const APP_VERSION = "2026.11.24B";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -13018,7 +13040,7 @@ function paintPropertyState(state){
 (() => {
  'use strict';
  if(window.CommunityData)return;
- const core=PropertyCore,sections=['catalogs','links','locations','orders'],listeners=new Set();
+ const core=PropertyCore,sections=['catalogs','links','locations','orders','districtBars'],listeners=new Set();
  const clone=value=>value===undefined?undefined:core.clone(value);
  const equal=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
  const empty=()=>({version:1,values:{},clocks:{}});
@@ -13341,6 +13363,10 @@ function paintPropertyState(state){
     const ok=CommunityData.transaction(features=>{
       features.catalogs=nextCatalogs;
       window.CommunityShared.renameFeatures(features,field,old,name);
+      if(field==='planUnit'&&features.districtBars){
+        const bar=features.districtBars.backgrounds.find(entry=>entry.name===old);
+        if(bar)bar.name=name;
+      }
       if(field==='name')window.CommunityLinks.renameFeatures(features,old,name);
       const kind=field==='name'?'community':field==='planUnit'?'planUnit':null;
       if(kind&&features.orders?.orders?.[kind])features.orders.orders[kind]=[...new Set(features.orders.orders[kind].map(value=>value===old?name:value))];
@@ -13386,6 +13412,7 @@ function paintPropertyState(state){
       const after=records.map(copy),use=usage(records,features,field,from);
       next.catalogs=copy(next.catalogs||Object.fromEntries(['planUnit','area','layout','status','parkingType','name'].map(key=>[key,[]])));
       next.catalogs[field]=(next.catalogs[field]||[]).filter(entry=>entry.name!==from);
+      if(field==='planUnit'&&next.districtBars)next.districtBars.backgrounds=next.districtBars.backgrounds.filter(entry=>entry.name!==from);
       if(field==='name'||field==='planUnit'||field==='area'){
         const resolved=createState(records,resetAt,features.locations||null);
         const locations=copy(features.locations||{version:2,resetAt,registry:{},pending:{}});
@@ -13485,7 +13512,7 @@ function paintPropertyState(state){
       const fallback=CommunitySortModel.legacy(base.settings,base.resetAt,currentSort);
       const proposal=optionDeleteModel.plan(base.items,base.features,field,from,to,base.resetAt,CommunityShared.model.createState,fallback);
       const ok=CommunityData.transaction(features=>{
-        for(const section of ['catalogs','locations','links','orders'])if(Object.hasOwn(proposal.features,section))features[section]=proposal.features[section];
+        for(const section of ['catalogs','locations','links','orders','districtBars'])if(Object.hasOwn(proposal.features,section))features[section]=proposal.features[section];
       },proposal.changes,{...saveOptions(),baseItems:base.items,baseFeatures:base.features});
       if(!ok){error(CommunityData.lastError||'尚未刪除成功，請重試。');return;}
       close();refreshCatalogs();applyFilter();CommunityShared.formSuggestions();toast('已刪除「'+from+'」選項');
@@ -13584,7 +13611,7 @@ function paintPropertyState(state){
   window.addEventListener('resize',()=>{if(active)place();});
   tableWrap.addEventListener('scroll',()=>{if(active)close();},true);
   CommunityData.subscribe(()=>{refreshCatalogs();if(active&&active.resetAt!==(window._resetAt||0)){close();toast('資料已還原，請重新開啟欄位設定。');}paint();});
-  window.CommunityFields={paint,close,open,getActive(){return active?{id:active.id,field:active.field,mode:active.mode,tint:!!draft}:null;},finish(){
+  window.CommunityFields={appearance,paint,close,open,getActive(){return active?{id:active.id,field:active.field,mode:active.mode,tint:!!draft}:null;},finish(){
     if(!active)return true;
     if(window._saveBlocked)return false;
     if(document.getElementById('communityDefaultsBg')?.classList.contains('open'))return false;
@@ -13728,12 +13755,41 @@ function paintPropertyState(state){
   const communityOf=item=>customOrderKeys(item).community;
   function groupedTable(){return viewMode==='table'&&(currentSort==='group_community'||currentSort==='group_plan_unit');}
   function visible(){return groupedTable()&&tableFields().includes('name');}
+  const defaultDistrictColor=()=>({mode:'follow',background:null});
+  const districtBase=()=>PropertyCore.emptyDistrictBars();
+  let districtLooks=new Map(),districtTints=new Map(),districtShared;
+  function loadDistricts(){
+    const settings=CommunityData.read('districtBars',districtBase());
+    districtShared=settings.shared;districtLooks=new Map(settings.backgrounds.map(entry=>[entry.name,entry]));
+    districtTints=new Map((CommunityData.read('catalogs',{}).planUnit||[]).map(entry=>[entry.name,entry]));
+  }
+  function paintDistrict(element,name,look){
+    const tint=look.mode==='follow'?districtTints.get(name):{hex:look.background,alpha:100};
+    const resolved=tint?.hex&&tint.alpha>0?CommunityFields.appearance({hex:tint.hex,alpha:tint.alpha}):null;
+    const ink={auto:resolved?.ink||'var(--ink)',black:'#000000',white:'#FFFFFF',custom:look.inkColor};
+    element.style.setProperty('--district-height',look.height+'px');
+    element.style.setProperty('--district-size',look.fontSize+'px');
+    element.style.setProperty('--district-weight',String(look.fontWeight));
+    element.style.setProperty('--district-bg',resolved?.bg||'var(--surface-2)');
+    element.style.setProperty('--district-ink',ink[look.ink]);
+  }
+  function districtControl(name,preview=false){
+    const bar=document.createElement(preview?'div':'button');bar.className='cl-district-bar';
+    bar.textContent=name||'未填寫';
+    if(!preview){
+      bar.type='button';bar.dataset.clDistrict=name;bar.setAttribute('aria-haspopup','dialog');
+      bar.title='編輯重劃區橫桿';bar.setAttribute('aria-label','編輯「'+(name||'未填寫')+'」重劃區橫桿');
+      const edit=document.createElement('span');edit.className='cl-district-edit';edit.setAttribute('aria-hidden','true');edit.textContent='編輯';bar.append(edit);
+    }
+    return bar;
+  }
   function districtBar(name,columns){
     const row=document.createElement('tr');row.className='cl-plan-row';
     const cell=row.insertCell();cell.colSpan=columns;
-    const label=document.createElement('span');label.className='cl-plan-label';label.textContent='重劃區';
-    cell.append(label,document.createTextNode(name||'未填寫'));return row;
+    paintDistrict(row,name,{...districtShared,...(districtLooks.get(name)||defaultDistrictColor())});cell.append(districtControl(name));return row;
   }
+  loadDistricts();
+  new MutationObserver(()=>{drawGroups();if(editor?.kind==='district')updatePreview();}).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
   const namesButton=document.createElement('button');
   namesButton.type='button';namesButton.id='communityLinkNames';namesButton.textContent='連結設定';namesButton.hidden=true;namesButton.setAttribute('aria-haspopup','dialog');namesButton.title='設定全部社區共用的六格名稱與外觀';
   document.getElementById('customOrderBtn').after(namesButton);
@@ -13814,7 +13870,7 @@ function paintPropertyState(state){
   applyFilter=function(...args){const result=previousFilter(...args);namesButton.hidden=!visible();return result;};
   tDataRowSibling=function(row,direction){let next=direction>0?row.nextElementSibling:row.previousElementSibling;while(next&&!next.dataset.id)next=direction>0?next.nextElementSibling:next.previousElementSibling;return next||null;};
   const previousAction=tableActionAt;
-  tableActionAt=function(target){return !tselMode&&target.closest('[data-cl-link-action]')||previousAction(target);};
+  tableActionAt=function(target){return !tselMode&&target.closest('[data-cl-link-action],[data-cl-district]')||previousAction(target);};
   const previousBusy=window.isTableBusy;
   window.isTableBusy=function(){return !!editor||previousBusy();};
   const previousTabAllowed=tabModeToggleAllowed,previousTabTarget=tabTrapTarget;
@@ -13827,20 +13883,30 @@ function paintPropertyState(state){
     return `<label class="cl-name-row"><span>第 ${index+2} 格</span><input class="fo-input" data-name-slot="${index}" aria-label="第 ${index+2} 格名稱" maxlength="24" value="${esc(name)}" placeholder="留白顯示－" autocomplete="off"></label>`;
   }
   function sharedSettingsHTML(){
-    const look=editor.draft;
-    return `<fieldset class="cl-shared-appearance"><legend>六格共用外觀</legend>
-      <label class="cl-height-control"><span>整列高度</span><select data-cl-height aria-label="六格連結整列高度">${heights.map(height=>`<option value="${height}"${look.height===height?' selected':''}>${height} px</option>`).join('')}</select></label>
+    const look=editor.draft,district=editor.kind==='district',scope=district?'全部重劃區橫桿':'六格共用';
+    const inks=[['auto',district?'自動':'原色'],['black','黑字'],['white','白字']];
+    if(district)inks.push(['custom','自訂']);
+    return `<fieldset class="cl-shared-appearance"><legend>${district?'全部重劃區橫桿共用':'六格共用外觀'}</legend>
+      <label class="cl-height-control"><span>整列高度</span><select data-cl-height aria-label="${scope}整列高度">${heights.map(height=>`<option value="${height}"${look.height===height?' selected':''}>${height} px</option>`).join('')}</select></label>
       <div class="cl-shared-settings-controls">
-        <label class="cl-size-control cl-setting-block"><span class="cl-setting-label">字級</span><select data-cl-size aria-label="六格共用字級">${fontSizes.map(size=>`<option value="${size}"${look.fontSize===size?' selected':''}>${size}</option>`).join('')}</select></label>
-        <div class="cl-setting-block"><span class="cl-setting-label">文字顏色</span><div class="cl-ink-controls" role="group" aria-label="六格共用文字顏色">${[['auto','原色'],['black','黑字'],['white','白字']].map(([ink,label])=>`<button type="button" data-cl-ink="${ink}" aria-pressed="${look.ink===ink}">${label}</button>`).join('')}</div></div>
-        <div class="cl-setting-block"><span class="cl-setting-label">字體粗細</span><div class="cl-weight-controls" role="group" aria-label="六格共用字體粗細">${[[400,'細'],[600,'中'],[700,'粗']].map(([weight,label])=>`<button type="button" data-cl-weight="${weight}" aria-pressed="${look.fontWeight===weight}">${label}</button>`).join('')}</div></div>
+        <label class="cl-size-control cl-setting-block"><span class="cl-setting-label">字級</span><select data-cl-size aria-label="${scope}字級">${fontSizes.map(size=>`<option value="${size}"${look.fontSize===size?' selected':''}>${size}</option>`).join('')}</select></label>
+        <div class="cl-setting-block"><span class="cl-setting-label">文字顏色</span><div class="cl-ink-controls" role="group" aria-label="${scope}文字顏色">${inks.map(([ink,label])=>`<button type="button" data-cl-ink="${ink}" aria-pressed="${look.ink===ink}">${label}</button>`).join('')}</div>${district?`<input type="color" data-district-text aria-label="自訂全部橫桿字色" value="${look.inkColor}"${look.ink==='custom'?'':' hidden'}>`:''}</div>
+        <div class="cl-setting-block"><span class="cl-setting-label">字體粗細</span><div class="cl-weight-controls" role="group" aria-label="${scope}字體粗細">${[[400,'細'],[600,'中'],[700,'粗']].map(([weight,label])=>`<button type="button" data-cl-weight="${weight}" aria-pressed="${look.fontWeight===weight}">${label}</button>`).join('')}</div></div>
       </div></fieldset>`;
   }
   function updatePreview(){
-    if(editor?.kind!=='names')return;
+    if(!editor||editor.kind==='url')return;
     const host=dialog.querySelector('.cl-appearance-preview');
-    host.style.setProperty('--cl-row-height',editor.draft.height+'px');
-    host.replaceChildren(buildBar('',editor.names,Array(slotCount).fill(''),editor.draft,true));
+    if(editor.kind==='district'){
+      paintDistrict(host,editor.community,editor.draft);
+      host.replaceChildren(districtControl(editor.community,true));
+      dialog.querySelector('[data-district-text]').hidden=editor.draft.ink!=='custom';
+      dialog.querySelector('.cl-inline-color-host').hidden=editor.draft.mode!=='custom';
+      dialog.querySelectorAll('[data-district-mode]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.districtMode===editor.draft.mode)));
+    }else{
+      host.style.setProperty('--cl-row-height',editor.draft.height+'px');
+      host.replaceChildren(buildBar('',editor.names,Array(slotCount).fill(''),editor.draft,true));
+    }
     dialog.querySelectorAll('[data-cl-ink]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.clInk===editor.draft.ink)));
     dialog.querySelectorAll('[data-cl-weight]').forEach(button=>button.setAttribute('aria-pressed',String(Number(button.dataset.clWeight)===editor.draft.fontWeight)));
   }
@@ -13848,8 +13914,20 @@ function paintPropertyState(state){
     if(kind==='url'&&(!Number.isInteger(slot)||slot<0||slot>=slotCount))return;
     if(editor)close();flushEditing();if(document.getElementById('saveErrorRetry'))return;
     refreshLinks();editor={kind,community,slot,resetAt:window._resetAt||0,base:JSON.stringify(CommunityData.read('links',null)),returnTo:document.activeElement};
-    dialog.classList.toggle('cl-settings-dialog',kind==='names');
-    if(kind==='names'){
+    dialog.classList.toggle('cl-settings-dialog',kind!=='url');
+    if(kind==='district'){
+      loadDistricts();
+      editor.baseShared={...districtShared};
+      const color=districtLooks.get(community)||defaultDistrictColor();
+      editor.baseColor={mode:color.mode,background:color.background};
+      editor.draft={...districtShared,...editor.baseColor};
+      const name=community||'未填寫';
+      dialog.innerHTML=header(name+' · 重劃區橫桿')+'<div class="cl-preview-section"><div class="cl-preview-caption">預覽<span>儲存後套用</span></div><div class="cl-appearance-preview"></div></div>'+
+        '<div class="cl-settings-body">'+sharedSettingsHTML()+'<fieldset class="cl-shared-appearance cl-district-colors"><legend>'+esc(name)+' 的橫桿底色</legend><div class="cl-ink-controls" role="group" aria-label="此區橫桿底色"><button type="button" data-district-mode="follow">跟隨重劃區顏色</button><button type="button" data-district-mode="custom">自訂橫桿底色</button></div><div class="cl-inline-color-host"></div></fieldset></div>'+footer();
+      editor.colorPicker=window.CommunityLinkColorPicker.mount(dialog.querySelector('.cl-inline-color-host'),{color:editor.draft.background,onPreview:setDraftColor});
+      dialog.querySelector('.clcp-inline-head h3').textContent='自訂底色';
+      updatePreview();
+    }else if(kind==='names'){
       editor.names=names.slice();editor.draft=normalizeAppearance(appearance);
       dialog.innerHTML=header('六格連結設定')+'<p class="cl-help cl-settings-help">第一格固定顯示社區名稱，其餘五格設定連結。整列共用外觀。</p>'+`<div class="cl-preview-section"><div class="cl-preview-caption">預覽<span>儲存後才套用</span></div><div class="cl-appearance-preview"></div></div><div class="cl-settings-body">${sharedSettingsHTML()}<div class="cl-settings-columns"><section class="cl-name-section" aria-label="六格名稱"><h3>六格名稱</h3><div class="cl-link-name-fields"><label class="cl-name-row cl-name-fixed"><span>第 1 格</span><input class="fo-input" aria-label="第 1 格名稱" value="社區名稱（固定）" disabled></label>${names.slice(0,5).map(nameInputHTML).join('')}</div></section><div class="cl-inline-color-host"></div></div></div>`+footer();
       updatePreview();
@@ -13858,13 +13936,34 @@ function paintPropertyState(state){
       const url=communities.get(community)?.[slot]||'';
       dialog.innerHTML=header(community+' · '+(names[slot]||'第 '+(slot+2)+' 格'))+`<div class="cl-url-row"><label class="cl-url-label" for="communityLinkURL">連結</label><input id="communityLinkURL" class="fo-input" type="text" placeholder="網址或電腦檔案路徑" value="${esc(localLinkPath(url)||url)}" autocomplete="off" spellcheck="false"></div>`+footer('<button type="button" class="fo-secondary cl-clear" data-cl-clear>清空連結</button>');
     }
-    lockOverlay();backdrop.classList.add('open');namesButton.setAttribute('aria-expanded',String(kind==='names'));dialog.querySelector('input:not(:disabled)')?.focus({preventScroll:true});
+    lockOverlay();backdrop.classList.add('open');namesButton.setAttribute('aria-expanded',String(kind==='names'));(kind==='district'?dialog.querySelector('[data-cl-height]'):dialog.querySelector('input:not(:disabled)'))?.focus({preventScroll:true});
   }
   function close(){
     if(!editor)return;editor.colorPicker?.destroy();const returnTo=editor.returnTo;editor=null;backdrop.classList.remove('open');namesButton.setAttribute('aria-expanded','false');dialog.innerHTML='';unlockOverlay();if(returnTo?.isConnected)returnTo.focus({preventScroll:true});
   }
   function commit(){
     if(!editor)return;
+    if(editor.kind==='district'){
+      if(editor.draft.mode==='custom'&&!editor.colorPicker.validate())return;
+      const {mode,background,...shared}=editor.draft,name=editor.community;
+      const ok=CommunityData.transaction(features=>{
+        const settings=features.districtBars||districtBase();
+        const entry=settings.backgrounds.find(item=>item.name===name);
+        for(const key of Object.keys(shared)){
+          if(shared[key]===editor.baseShared[key])continue;
+          if(settings.shared[key]!==editor.baseShared[key]&&settings.shared[key]!==shared[key])throw Error('共用外觀已在其他視窗更新，請重新開啟設定。');
+          settings.shared[key]=shared[key];
+        }
+        if(mode!==editor.baseColor.mode||background!==editor.baseColor.background){
+          const current=entry||defaultDistrictColor();
+          if(current.mode!==editor.baseColor.mode||current.background!==editor.baseColor.background)throw Error('此區底色已在其他視窗更新，請重新開啟設定。');
+          if(entry)Object.assign(entry,{mode,background});else settings.backgrounds.push({name,mode,background});
+        }
+        features.districtBars=settings;
+      },[],{resetAt:editor.resetAt});
+      if(!ok){error(CommunityData.lastError);return;}
+      close();loadDistricts();drawGroups();toast('已儲存重劃區橫桿設定');return;
+    }
     if(editor.kind==='names'){
       if(!editor.colorPicker.validate())return;
       // Keep all six stored link slots; the fixed name adds no data migration.
@@ -13883,11 +13982,13 @@ function paintPropertyState(state){
     const kind=editor.kind;close();drawGroups();toast(kind==='names'?'六格名稱與外觀已套用到全部社區':'已儲存此社區的連結');
   }
   function setDraftColor(color){
-    if(editor?.kind!=='names')return;
+    if(!editor||editor.kind==='url')return;
     editor.draft.background=color;updatePreview();
   }
   namesButton.addEventListener('click',()=>open('names'));
   tableWrap.addEventListener('click',event=>{
+    const district=event.target.closest('[data-cl-district]');
+    if(district&&!tselMode){event.stopImmediatePropagation();event.preventDefault();open('district',district.dataset.clDistrict);return;}
     const action=event.target.closest('[data-cl-link-action]');if(!action||tselMode)return;
     // Native anchors retain normal opening, modifier keys and a separate edit target.
     event.stopImmediatePropagation();
@@ -13906,12 +14007,14 @@ function paintPropertyState(state){
     if(button.hasAttribute('data-cl-close')){close();return;}
     if(button.hasAttribute('data-cl-save')){commit();return;}
     if(button.hasAttribute('data-cl-clear')){dialog.querySelector('#communityLinkURL').value='';dialog.querySelector('#communityLinkURL').focus();return;}
-    if(editor.kind!=='names')return;
+    if(editor.kind==='url')return;
+    if(button.hasAttribute('data-district-mode')){editor.draft.mode=button.dataset.districtMode;updatePreview();return;}
     if(button.hasAttribute('data-cl-ink')){editor.draft.ink=button.dataset.clInk;updatePreview();}
     else if(button.hasAttribute('data-cl-weight')){editor.draft.fontWeight=Number(button.dataset.clWeight);updatePreview();}
   });
   function changeSetting(event){
-    if(editor?.kind!=='names')return;const input=event.target;
+    if(!editor||editor.kind==='url')return;const input=event.target;
+    if(input.hasAttribute('data-district-text')){editor.draft.inkColor=input.value.toUpperCase();updatePreview();return;}
     if(input.hasAttribute('data-name-slot'))editor.names[Number(input.dataset.nameSlot)]=input.value;
     else if(input.hasAttribute('data-cl-height')){const value=Number(input.value);if(heights.includes(value))editor.draft.height=value;}
     else if(input.hasAttribute('data-cl-size')){const value=Number(input.value);if(fontSizes.includes(value))editor.draft.fontSize=value;}
@@ -13933,7 +14036,7 @@ function paintPropertyState(state){
     features.links.communities=records.filter(entry=>entry.name!==from&&entry.name!==to);
     features.links.communities.push({name:to,urls:old.urls.map((url,index)=>existing?.urls[index]||url)});
   }
-  CommunityData.subscribe(()=>{refreshLinks();if(editor&&editor.resetAt!==(window._resetAt||0)){close();toast('資料已還原，請重新開啟連結設定。');}if(!editor)drawGroups();});
+  CommunityData.subscribe(()=>{refreshLinks();loadDistricts();if(editor&&editor.resetAt!==(window._resetAt||0)){close();toast('資料已還原，請重新開啟連結設定。');}if(!editor)drawGroups();});
   window.CommunityLinks={renameFeatures,refresh:drawGroups};
   drawGroups();
 })();
