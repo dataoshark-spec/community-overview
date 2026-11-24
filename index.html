@@ -1228,9 +1228,8 @@ async function openCommunityTarget(value){
   .tcell[data-field="due"]{font-size:.66rem;}
   .tcell[data-field="addr"],.tcell[data-field="layout"],.tcell[data-field="floor"],.tcell[data-field="agent"],.tcell[data-field="store"],.tcell[data-field="tel"]{font-size:.72rem;}
   /* 外圈焦框(勿用 inset:易被相鄰格/gen-edge 蓋成「缺一邊」);z-index 高於 gen-edge(3) */
-  /* 內縮焦框:外圈會被 overflow／下一列 hover 裁掉;聚焦時藏 gen-edge */
+  /* 內縮焦框:外圈會被 overflow／下一列 hover 裁掉 */
   .tcell:focus{background:var(--card);box-shadow:inset 0 0 0 2px var(--accent);border-radius:5px;overflow:hidden;text-overflow:clip;position:relative;z-index:6;}
-  td.duewrap:has(.tcell:focus) .gen-edge,td.datewrap:has(.tcell:focus) .gen-edge{visibility:hidden;}
   .ptable :where(.topt-trigger,.tcat-trigger,.tdel button,.tdue-btn):focus-visible{box-shadow:var(--focus-ring-inset);}
   .ptable tbody tr:has(:focus-visible),
   .ptable tbody tr:has(.tcell:focus){position:relative;z-index:5;}
@@ -1238,22 +1237,6 @@ async function openCommunityTarget(value){
   .ptable:not(.ro) .tcell[contenteditable="false"][data-field]:focus{cursor:default;user-select:none;-webkit-user-select:none;}
   .ptable:not(.ro) .tcell[contenteditable="true"][data-field]{cursor:text;user-select:text;-webkit-user-select:text;}
   .tcell.saved{animation:tSaved .7s ease;}
-  /* 重劃區欄「生成檔名」面板 — 滑到該格最左窄感應帶,面板從左滑入覆蓋整格,點任一處生成 */
-  td.duewrap{position:relative;}
-  .gen-edge{position:absolute;left:0;top:0;bottom:0;width:14px;z-index:3;}   /* 最左窄感應帶,不干擾欄位編輯 */
-  .gen-btn{position:absolute;left:0;top:-1px;bottom:-1px;width:calc(100% + 1px);display:inline-flex;align-items:center;justify-content:center;
-    border:none;border-right:1px solid var(--accent-tint-bd);background:var(--accent-tint);color:var(--accent-deep);cursor:pointer;
-    opacity:0;pointer-events:none;transform:translateX(-100%);transition:transform .16s ease, background .12s;z-index:5;box-shadow:2px 0 7px rgba(0,0,0,.16);}
-  .gen-btn svg{width:15px;height:15px;stroke:currentColor;fill:none;flex:none;}
-  .gen-label{font-size:.82rem;font-weight:700;margin-left:5px;letter-spacing:.02em;}
-  .gen-edge:hover ~ .gen-btn, .gen-btn:hover{opacity:1;pointer-events:auto;transform:translateX(0);}
-  .gen-btn:active{filter:brightness(1.05);}
-  .gen-btn.gen-flash{animation:genFlash .5s ease;}
-  @keyframes genFlash{0%{background:var(--accent-deep);}100%{background:var(--accent-tint);}}
-  /* 觸控表格從重劃區篩選開啟各列的生成按鈕，再點表頭收起。 */
-  .gen-open .gen-btn{opacity:1;pointer-events:auto;transform:translateX(0);}
-  .gen-open th[data-col="planUnit"] .fmk{transform:rotate(180deg);}
-  #fltGen{align-self:flex-start;margin-top:10px;}
   @keyframes tSaved{0%{background:#D6EFE6;}100%{background:transparent;}}
   .ptable .tnum:is([data-field="mainArea"],[data-field="ancillaryArea"]){color:#7B898F;}
   [data-theme="dark"] .ptable .tnum:is([data-field="mainArea"],[data-field="ancillaryArea"]){color:#7F8D95;}
@@ -1301,7 +1284,7 @@ async function openCommunityTarget(value){
   .table-wrap.tsel-on tbody{user-select:none;-webkit-user-select:none;}
   /* 選取中一律只做「點列切換」:所有互動元素關閉命中,點擊落到列上由 capture 處理器統一接管 */
   .table-wrap.tsel-on .tcell,.table-wrap.tsel-on .tcat-trigger,.table-wrap.tsel-on .tdel button,
-  .table-wrap.tsel-on .tdue-btn,.table-wrap.tsel-on .gen-btn,.table-wrap.tsel-on .gen-edge,.table-wrap.tsel-on .tchip{pointer-events:none;}
+  .table-wrap.tsel-on .tdue-btn,.table-wrap.tsel-on .tchip{pointer-events:none;}
   .table-wrap.tsel-on tbody tr.tsel-row td{background:color-mix(in srgb, var(--accent) 10%, var(--card))!important;}
   /* 垃圾桶按鈕在選取模式化身為圓形勾選框:未選=空圈,已選=accent 實心打勾 */
   .table-wrap.tsel-on .tdel button svg{display:none;}
@@ -1319,7 +1302,7 @@ async function openCommunityTarget(value){
   /* 展開中:父列與展開區同用淡藍底,連成一塊聚焦區;用 !important 鎖定,任何 hover 都不會蓋掉 */
   .ptable tbody tr.exp-open td{background:var(--accent-tint) !important;border-bottom:none;}
   /* 已展開的那一列:欄位與下拉先鎖定,點一下=收合;垃圾桶保留操作並顯示刪除確認。 */
-  tr.exp-open .tcell[contenteditable],tr.exp-open .tcat-trigger,tr.exp-open .tdue-btn,tr.exp-open .gen-btn{pointer-events:none;}   /* 展開列鎖定:到期日鈕與生成鈕;不鎖定刪除鈕 */
+  tr.exp-open .tcell[contenteditable],tr.exp-open .tcat-trigger,tr.exp-open .tdue-btn{pointer-events:none;}   /* 展開列鎖定:到期日鈕;不鎖定刪除鈕 */
   .ptable tbody tr.exp-open td:first-child{box-shadow:inset 3px 0 0 var(--accent);}
   tr.needexp > td{padding:0;height:auto;background:var(--accent-tint) !important;border-bottom:1px solid var(--accent-tint-bd);border-right:none;border-radius:0 0 13px 13px;box-shadow:inset 3px 0 0 var(--accent), 0 18px 26px -12px rgba(22,34,42,.24);}
   /* 編輯模式:展開區(父列+展開列)背景改灰、左側邊線改中性色,與正常(唯讀)淺藍一眼可辨 */
@@ -2744,6 +2727,70 @@ select:not([hidden]):not([multiple]){border-radius:10px;}
   window.addEventListener('resize',position);window.visualViewport?.addEventListener('resize',position);
 })();
 </script>
+<style id="property-mark-style">
+.mark-action{position:absolute;z-index:3;inset:0 auto 0 0;width:20px;border:0;background:transparent;color:#76520c;padding:0;display:grid;place-items:center;cursor:pointer}
+.mark-action span{line-height:1;font-size:14px;pointer-events:none}
+.mark-action[aria-pressed=false]{opacity:0}
+tr[data-id]:hover .mark-action,.mark-action:focus-visible{opacity:1}
+.mark-action:focus-visible{outline:2px solid #39718d;outline-offset:-2px;border-radius:4px}
+html[data-mark-style=rail] .mark-action[aria-pressed=true] span{font-size:0;width:4px;height:66%;border-radius:4px;background:#ad640c}
+#tableWrap{margin-inline-start:max(28px,1.6vw)}
+#mark-outside{position:fixed;width:26px;overflow:hidden;z-index:2;pointer-events:none}
+#mark-outside .mark-action{width:100%;bottom:auto;pointer-events:auto;color:#815810;touch-action:manipulation;}
+#mark-outside .mark-action:hover,#mark-outside .mark-action:focus-visible{opacity:1}
+html[data-mark-style=combo] #mark-outside .mark-action[aria-pressed=true]::after{content:'';position:absolute;right:1px;top:18%;bottom:18%;width:2px;background:#ad640c;border-radius:2px}
+@media(hover:none){#mark-outside .mark-action[aria-pressed=false]{opacity:.6}}
+#mark-color-dialog{width:min(340px,calc(100vw - 24px));box-sizing:border-box;border:1px solid var(--line);border-radius:15px;padding:16px;background:var(--card);color:var(--ink);box-shadow:0 10px 35px #13283130}
+#mark-color-dialog::backdrop{background:#21323a33}
+#mark-color-dialog h3{margin:0 0 12px}
+#mark-color-dialog .mark-colormodes,#mark-color-dialog footer{display:flex;gap:6px}
+#mark-color-dialog .mark-colormodes button,#mark-color-dialog footer button{flex:1;border-radius:8px;padding:7px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;cursor:pointer}
+#mark-color-dialog button[aria-pressed=true],#mark-color-dialog [data-apply]{background:var(--accent-soft);font-weight:650}
+#mark-color-dialog footer{margin-top:14px}
+#mark-color-dialog .mark-palette:not(:empty){margin-top:12px}
+#mark-outside .mark-action[aria-pressed=true]{color:var(--marked-ink,#815810)}
+html[data-mark-style=rail] #mark-outside .mark-action[aria-pressed=true] span,html[data-mark-style=combo] #mark-outside .mark-action[aria-pressed=true]::after{background:var(--marked-ink,#815810)}
+#mark-color-dialog{position:fixed;inset:0;margin:auto;height:fit-content;max-height:calc(100dvh - 24px);overflow:auto}
+#mark-color-dialog .mark-palette p{font-size:13px;color:var(--ink-soft);margin:12px 0}
+#mark-color-dialog .mark-swatches{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+#mark-color-dialog .mark-swatches button{display:flex;align-items:center;justify-content:center;gap:6px;min-height:36px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);cursor:pointer}
+#mark-color-dialog .mark-swatches button::before{content:'';width:14px;height:14px;border-radius:50%;background:var(--swatch)}
+#mark-color-dialog .mark-swatches button[aria-pressed=true]{box-shadow:inset 0 0 0 2px var(--swatch)}
+#mark-color-dialog .mark-reset{border:0;background:transparent;color:var(--ink-soft);text-decoration:underline;text-underline-offset:3px;margin-top:12px;padding:4px;cursor:pointer}
+#mark-color-dialog .mark-shapes{margin:4px 0 10px;padding:0;border:0;display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+#mark-color-dialog legend{font-size:13px;font-weight:600;margin-bottom:6px}
+#mark-color-dialog .mark-shapes button{display:grid;justify-items:center;align-content:center;gap:4px;padding:6px 1px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink-soft);font-size:12px;cursor:pointer}
+#mark-color-dialog .mark-shapes button[aria-pressed=true]{box-shadow:inset 0 0 0 1.5px var(--ink-soft);background:var(--surface-2);color:var(--ink)}
+.mark-shapes svg{height:18px;width:18px}
+.mark-action svg{display:block;width:15px;height:15px}
+html[data-mark-style=rail] #mark-outside .mark-action[aria-pressed=true] svg{display:none}
+#mark-color-dialog .mark-reset{display:block}
+#mark-outside .mark-action[aria-pressed=false] span[data-shape="outlineStar"]{color:var(--ink-soft,#647781);opacity:.55}
+#mark-outside .mark-action .mark-star-glyph{display:block;font:inherit;line-height:1;font-weight:400}
+.mark-shapes .mark-star-glyph{display:grid;place-items:center;height:18px;font-size:18px;line-height:1;font-weight:400}
+html[data-mark-style=rail] #mark-outside .mark-action[aria-pressed=true] .mark-star-glyph{display:none}
+#mark-color-dialog .mark-shapes legend{width:100%}
+#mark-color-dialog .mark-shapes .mark-follow{float:right;display:inline-block;padding:2px 7px;font-size:12px;font-weight:400}
+#mark-color-dialog .mark-dialog-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}
+#mark-color-dialog .mark-dialog-head h3{margin:0}
+#mark-color-dialog .mark-dialog-head .fo-close{width:44px;height:44px;display:grid;place-items:center;font:500 22px/1 system-ui;background:var(--surface-2);color:var(--ink-soft);border:1px solid var(--line);border-radius:10px;cursor:pointer}
+.cl-community-row .cl-settings-entry .cl-community-name-text{flex:1 1 auto;align-self:center;text-align:center;min-width:0;padding-inline:4px}
+#mark-color-dialog .mark-shape-head{display:flex;justify-content:space-between;align-items:center;margin:2px 0 3px}
+#mark-color-dialog .mark-fill-toggle{display:inline-flex;gap:2px;padding:2px;border-radius:8px;background:var(--surface-2)}
+#mark-color-dialog .mark-fill-toggle button{padding:4px 10px;border:0;background:transparent;box-shadow:none;border-radius:6px}
+#mark-color-dialog .mark-fill-toggle button[aria-pressed=true]{background:var(--card);box-shadow:0 1px 3px #24373e35}
+#mark-color-dialog .mark-shapes .mark-follow{grid-column:1/-1;justify-self:end;float:none}
+#mark-color-dialog .mark-swatches{margin-bottom:10px}
+#mark-color-dialog .mark-palette .clcp-inline{padding:0}
+#mark-color-dialog .mark-palette .mark-follow{min-height:24px}
+#mark-color-dialog .mark-shapes>button[data-shape]{touch-action:none;user-select:none;-webkit-touch-callout:none;cursor:grab}
+#mark-color-dialog .mark-follow{order:20}
+#mark-color-dialog .drag-source{opacity:.32}
+#mark-color-dialog .mark-drag-ghost{position:fixed;pointer-events:none;z-index:10;display:grid;place-content:center;justify-items:center;gap:4px;border:1px solid var(--ink-soft);border-radius:8px;background:var(--card);color:var(--ink);box-shadow:0 4px 14px #20344030;font:inherit;font-size:12px}
+#mark-color-dialog .mark-drag-ghost svg{width:18px;height:18px}
+.mark-display-pref{display:flex;align-items:center;gap:6px;margin:8px 0;font-size:13px;color:var(--ink-soft)}
+.mark-display-pref select{margin-left:auto;border:1px solid var(--line);border-radius:6px;padding:3px 8px;background:var(--card);color:inherit}
+</style>
 </head>
 <body>
 <div id="app">
@@ -3083,7 +3130,6 @@ select:not([hidden]):not([multiple]){border-radius:10px;}
     <div class="fpanel" role="dialog" aria-modal="true" aria-labelledby="fltTitle" tabindex="-1">
       <div class="fpanel-head"><span id="fltTitle"></span><button type="button" class="fx" id="fltX" aria-label="關閉篩選">✕</button></div>
       <div class="fpanel-body" id="fltBody"></div>
-      <button type="button" class="s-btn" id="fltGen" hidden>生成檔名</button>
       <div class="fpanel-foot">
         <button type="button" class="cal-fbtn cal-clear" id="fltClear">清除此欄篩選</button>
         <button type="button" class="cal-fbtn cal-today" id="fltDone">完成</button>
@@ -3263,7 +3309,7 @@ function setDueValue(item,value){
 const fieldValue=(row,field)=>field==="due"?dueValue(row):row[field];
 const TABLE_ADDITIONS = ["planUnit","area","status","totalArea","mainPlus","mainArea","ancillaryArea","parkingType","parkingCount","parkingArea","floorPrice","cost"];
 const TABLE_DECIMALS = new Set(["totalArea","mainPlus","mainArea","ancillaryArea","parkingArea","floorPrice","cost"]);
-const FIELDS = [...TABLE_ADDITIONS,"name","cat","layout","floor","price","addr","due","agent","tel","store","url591","urlLeju","urlI","url4","linkNone1","linkNone2","linkNone3","linkNone4","linkBaseName1","linkBaseName2","linkBaseName3","linkBaseName4","linkName1","linkName2","linkName3","linkName4","note","note2","note3","t1","t2","t3","noteFont1","noteFont2","noteFont3","noteOrder"];
+const FIELDS = ["priorityMark",...TABLE_ADDITIONS,"name","cat","layout","floor","price","addr","due","agent","tel","store","url591","urlLeju","urlI","url4","linkNone1","linkNone2","linkNone3","linkNone4","linkBaseName1","linkBaseName2","linkBaseName3","linkBaseName4","linkName1","linkName2","linkName3","linkName4","note","note2","note3","t1","t2","t3","noteFont1","noteFont2","noteFont3","noteOrder"];
 const own = (o,k) => Object.prototype.hasOwnProperty.call(o,k);
 const validSlotId = id => Number.isSafeInteger(id) && id>0 && id!==591;
 const legacyUrls = ["url591","urlLeju","urlI","url4"];
@@ -3435,7 +3481,7 @@ function record(r,index){
  d.updatedAt=r.updatedAt || 1700000000000;
  d._fieldUpdatedAt={};
  const validMeta = obj(r._fieldUpdatedAt) && r._metaAt === d.updatedAt;
- for(const f of fields) d._fieldUpdatedAt[f]=(TABLE_ADDITIONS.includes(f)||f==="noteOrder"||f.startsWith("noteFont")||f==="url4"||f.startsWith("link")) && !own(r,f) ? 0 : validMeta && stamp(r._fieldUpdatedAt[f]) ? r._fieldUpdatedAt[f] : d.updatedAt;
+ for(const f of fields) d._fieldUpdatedAt[f]=((f==="priorityMark"||TABLE_ADDITIONS.includes(f))||f==="noteOrder"||f.startsWith("noteFont")||f==="url4"||f.startsWith("link")) && !own(r,f) ? 0 : validMeta && stamp(r._fieldUpdatedAt[f]) ? r._fieldUpdatedAt[f] : d.updatedAt;
  d._metaAt=d.updatedAt;
  return d;
 }
@@ -3773,12 +3819,12 @@ function track(items,base,now,submitted=items){
   const autoMainPlus=(!prev || r.mainArea!==prev.mainArea || r.ancillaryArea!==prev.ancillaryArea)
    ? mainAreaSum(r.mainArea,r.ancillaryArea) : null;
   if(autoMainPlus!==null)r.mainPlus=autoMainPlus;
-  if(!prev){r.updatedAt=ts;for(const f of recordFields(r)) r._fieldUpdatedAt[f]=TABLE_ADDITIONS.includes(f)&&!own(input,f)&&!(f==="mainPlus"&&autoMainPlus!==null)?0:ts;}
+  if(!prev){r.updatedAt=ts;for(const f of recordFields(r)) r._fieldUpdatedAt[f]=(f==="priorityMark"||TABLE_ADDITIONS.includes(f))&&!own(input,f)&&!(f==="mainPlus"&&autoMainPlus!==null)?0:ts;}
   else {
    let changed=false;
    for(const f of recordFields(r,prev)){
     // Omitting a newer-version field is not an edit. Clearing a URL uses an explicit empty value.
-    if(!own(r,f)||(TABLE_ADDITIONS.includes(f)&&!own(input,f)&&!(f==="mainPlus"&&autoMainPlus!==null))){r[f]=prev[f];r._fieldUpdatedAt[f]=prev._fieldUpdatedAt[f];continue;}
+    if(!own(r,f)||((f==="priorityMark"||TABLE_ADDITIONS.includes(f))&&!own(input,f)&&!(f==="mainPlus"&&autoMainPlus!==null))){r[f]=prev[f];r._fieldUpdatedAt[f]=prev._fieldUpdatedAt[f];continue;}
     if(!same(fieldValue(r,f),fieldValue(prev,f))) {r._fieldUpdatedAt[f]=ts;changed=true;}
     else r._fieldUpdatedAt[f]=prev._fieldUpdatedAt[f];
    }
@@ -4329,7 +4375,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.24P";
+const APP_VERSION = "2026.11.24Q";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -4483,7 +4529,6 @@ function districtFromAddr(addr){
   return m3 ? m3[1] : "";
 }
 // 生成面板圖示(文件)
-const GEN_ICON = '<svg viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>';
 function buildFileName(d){
   const date = dueValue(d);
   const due = date === UNKNOWN_DUE ? "0000000" : String(date).trim();
@@ -5403,7 +5448,6 @@ function openLinkFilter(trigger){
   if (viewMode==="table" || linkFilterBg.classList.contains("open")) return;
   flushEditing();
   closeOtherOverlays("linkfilter");
-  tableWrap.classList.remove("gen-open");
   linkFilterDraft = {...listFilters().links};
   renderLinkFilter();
   linkFilterBg.classList.add("open");
@@ -5604,10 +5648,9 @@ function columnOptionCounts(field){
 }
 const fltBg = document.getElementById("fltBg");
 function openColFlt(f,trigger){
-  closeOtherOverlays("flt"); tableWrap.classList.remove("gen-open");
+  closeOtherOverlays("flt");
   fltField = f;
   document.getElementById("fltDone").disabled=false;
-  document.getElementById("fltGen").hidden = f !== "planUnit" || !tableFileNameAvailable() || !window.matchMedia("(hover: none)").matches;
   document.getElementById("fltTitle").textContent = "篩選：" + (isAreaRangeField(f) ? AREA_LABELS[f]+"（坪）" : f==="store" && viewMode==="table" ? "公司" : FLT_NAME[f]||f);
   document.getElementById("fltBody").classList.remove("editing"); document.getElementById("fltClear").textContent = "清除此欄篩選";
   renderFltBody();
@@ -5710,11 +5753,6 @@ function renderFltBody(){
 }
 document.getElementById("fltX").addEventListener("click", closeColFlt);
 document.getElementById("fltDone").addEventListener("click", closeColFlt);
-document.getElementById("fltGen").addEventListener("click", () => {
-  if(fltField!=="planUnit" || !tableFileNameAvailable())return;
-  closeColFlt();
-  tableWrap.classList.add("gen-open");
-});
 document.getElementById("fltClear").addEventListener("click", () => {
   if (document.getElementById("fltBody").classList.contains("editing")){ exitFltEditing(); return; }
   if(fltField==="floor" && viewMode==="table"){listFilters().tableFloorRanges=FloorRangePreview.empty();currentColumns().floor=null;document.getElementById("fltDone").disabled=false;}
@@ -5738,10 +5776,6 @@ tableWrap.addEventListener("click", e => {
   const b=e.target.closest(".th-flt");
   if(!b)return;
   e.stopPropagation();
-  if(b.dataset.flt==="planUnit" && tableWrap.classList.contains("gen-open")){
-    tableWrap.classList.remove("gen-open");
-    return;
-  }
   if(b.dataset.flt==="links")openLinkFilter(b);
   else openColFlt(b.dataset.flt,b);
 });
@@ -6111,9 +6145,6 @@ function observeTableLinks(){
 }
 if(!tableLinkObserver)window.addEventListener("resize",queueTableLinkFit);
 const TABLE_NUMBERS = new Set(["price","totalArea","mainPlus","mainArea","ancillaryArea","parkingCount","parkingArea","floorPrice","cost"]);
-function tableFileNameAvailable(){
-  return !discreet.on || !["addr","name","price","agent"].some(field => discreet.fields.includes(field));
-}
 function trowHTML(d){
   const tTab = editMode ? ' tabindex="0"' : "";
   const delCell = editMode
@@ -6131,9 +6162,6 @@ function trowHTML(d){
     const content = field === "name" && !editMode ? nameSegmentsHTML(value) : areaTableHTML(field,value);
     const cls = field === "name" ? " tname" : TABLE_NUMBERS.has(field) ? " tnum" : "";
     const cell = `<div class="tcell${cls}" contenteditable="false"${tTab} data-field="${field}" title="${esc(value)}">${content}</div>`;
-    if (field === "planUnit" && tableFileNameAvailable()){
-      return `<td class="duewrap"><span class="gen-edge"></span><button type="button" class="gen-btn" tabindex="-1" data-gen="1" title="生成檔名" aria-label="生成檔名">${GEN_ICON}<span class="gen-label">生成</span></button>${cell}</td>`;
-    }
     return `<td>${cell}</td>`;
   }).join("");
   return `<tr data-id="${esc(d.id)}"${rowClass ? ` class="${rowClass}"` : ""}>${cells}${delCell}</tr>`;
@@ -6831,23 +6859,8 @@ tableWrap.addEventListener("click", e=>{
   }
   const openTr = e.target.closest("tr.exp-open");
   if (openTr){
-    if (e.target.closest(".gen-btn, .tdue-btn, .tchip, .tcell, .tcat-trigger, [data-act='del'], .tneed[data-need]")){ /* 交給下方各 handler */ }
+    if (e.target.closest(".tdue-btn, .tchip, .tcell, .tcat-trigger, [data-act='del'], .tneed[data-need]")){ /* 交給下方各 handler */ }
     else { e.stopPropagation(); hideNeedHover(); closeNeedExp(); return; }
-  }
-  // 重劃區欄「生成檔名」面板 → 生成並複製
-  const genBtn = e.target.closest(".gen-btn");
-  if (genBtn){
-    e.stopPropagation();
-    const it = tFindItem(genBtn);
-    if (it){
-      const fn = buildFileName(it);
-      if (fn){
-        const done = () => { if (!tableFileNameAvailable()) return; genBtn.classList.remove("gen-flash"); void genBtn.offsetWidth; genBtn.classList.add("gen-flash"); setTimeout(() => genBtn.classList.remove("gen-flash"), 500); toast("已複製檔名：" + fn); };
-        if (navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(fn).then(done).catch(() => { if (tableFileNameAvailable() && legacyCopy(fn)) done(); }); }
-        else if (legacyCopy(fn)){ done(); }
-      } else { toast("此物件資料不足，無法生成檔名"); }
-    }
-    return;
   }
   // 編輯模式:到期日 → 開日曆選擇(不用鍵盤輸入)
   const dueBtn = e.target.closest(".tdue-btn[data-duecal]");
@@ -7295,7 +7308,6 @@ document.getElementById("viewBtn").addEventListener("click", () => {
   closeCatMenu();
   if (lpop.classList.contains("show")) commitLink(); else closeLinkPop();
   if (typeof closeDetail === "function") closeDetail();
-  tableWrap.classList.remove("gen-open");   // 收起手機的生成面板,避免狀態殘留
   setViewMode(vm);
 });
 const discreetDialog = document.getElementById("discreetDialog");
@@ -7352,7 +7364,6 @@ const discreetDialog = document.getElementById("discreetDialog");
         if (on && fields.length === T_FIELDS.length && tselMode) exitTselMode();
       }
       closeNeedOrderUI();
-      tableWrap.classList.remove("gen-open");
       hideNeedHover();
       if (on && fields.includes("note")) needHover.replaceChildren();
       if (on && !fltBg.classList.contains("open")) document.getElementById("fltBody").replaceChildren();
@@ -7549,7 +7560,6 @@ function openList(cat, {unassignedOnly:restoreUnassigned, fromUnassignedShortcut
   activeDistrict=!cat&&!unassignedOnly&&districtTabsVisible()&&items.some(row=>districtOf(row)===district)?district:"";
   saveNav("list", currentCat);   // 記住:目前在列表(含分類)
   searchEl.value = "";
-  tableWrap.classList.remove("gen-open");   // 重新進列表:收起手機生成面板
   applyFilter();
   cover.style.display = "none";
   listView.classList.add("active");
@@ -8981,7 +8991,7 @@ function toggleTselRow(tr){
   updateSelbar();
 }
 // 瀏覽器可能把列線上的接觸派給附近的按鈕；只接受實際在同一顆按鈕內起落的觸控。
-const tableActionSelector = '.tcell [data-copy], .tcell, .gen-btn, .need-link, .need-link-chip, button[data-act="del"]';
+const tableActionSelector = '.tcell [data-copy], .tcell, .need-link, .need-link-chip, button[data-act="del"]';
 let tableActionTouch = null;
 function tableActionAt(target){
   return target.closest(tselMode ? "tr[data-id]" : tableActionSelector);
@@ -14072,7 +14082,7 @@ function paintPropertyState(state){
       if(event.key==='ArrowUp')hsv.v=clamp(hsv.v+step,0,100);if(event.key==='ArrowDown')hsv.v=clamp(hsv.v-step,0,100);
       if(event.key==='Home')hsv.s=0;if(event.key==='End')hsv.s=100;fromHSV();
     },{signal});
-    const instance={validate(){const valid=validate();if(!valid&&alive)refs.hex.focus();return valid;},destroy(){if(!alive)return;alive=false;abort.abort();if(activePointer!==null&&refs.sv.hasPointerCapture(activePointer))refs.sv.releasePointerCapture(activePointer);panel.remove();if(instances.get(host)===instance)instances.delete(host);}};
+    const instance={setColor,validate(){const valid=validate();if(!valid&&alive)refs.hex.focus();return valid;},destroy(){if(!alive)return;alive=false;abort.abort();if(activePointer!==null&&refs.sv.hasPointerCapture(activePointer))refs.sv.releasePointerCapture(activePointer);panel.remove();if(instances.get(host)===instance)instances.delete(host);}};
     instances.set(host,instance);render();return instance;
   }
   window.CommunityLinkColorPicker=Object.freeze({mount});
@@ -14188,7 +14198,16 @@ function paintPropertyState(state){
     communityCell.className='cl-link-slot cl-community-name';styleSlot(communityCell,look);
     const communityText=document.createElement('span');communityText.className='cl-community-name-text';
     communityText.textContent=preview?'社區名稱':community;communityCell.title=preview?'社區名稱':community;
-    communityCell.appendChild(communityText);bar.appendChild(communityCell);
+    communityCell.appendChild(communityText);
+    if(editable){
+      communityCell.classList.add('cl-link-filled','cl-settings-entry');
+      const edit=document.createElement('button');
+      edit.type='button';edit.className='cl-link-edit';edit.dataset.clLinkAction='settings';
+      edit.textContent='編輯';edit.title='編輯六格連結設定';
+      edit.setAttribute('aria-label','編輯六格連結共用設定');edit.setAttribute('aria-haspopup','dialog');
+      communityCell.append(edit);
+    }
+    bar.appendChild(communityCell);
     labels.slice(0,5).forEach((raw,slot)=>{
       const name=raw.trim(),url=urls[slot],link=document.createElement(editable&&!url?'button':'div');
       link.className='cl-link-slot'+(url?' has-link':'')+(!name?' is-blank':'');
@@ -14232,7 +14251,7 @@ function paintPropertyState(state){
   function drawGroups(){
     tableWrap.querySelectorAll('.cl-plan-row,.cl-community-row').forEach(row=>row.remove());
     const showCommunity=visible(),showDistrict=groupedTable()&&tableFields().includes('planUnit');
-    namesButton.hidden=!showCommunity;if(!showCommunity&&!showDistrict)return;
+    namesButton.hidden=true;if(!showCommunity&&!showDistrict)return;
     const columns=tableColumnCount(),byId=new Map(items.map(item=>[item.id,item]));
     let previousDistrict=null,previous=null;
     for(const row of Array.from(tableWrap.querySelectorAll('.tbody-wrap tr[data-id]'))){
@@ -14253,7 +14272,7 @@ function paintPropertyState(state){
   const previousRender=renderTable;
   renderTable=function(...args){const before=tableWrap.querySelector('.tbody-wrap'),top=before?.scrollTop||0;previousRender(...args);drawGroups();const after=tableWrap.querySelector('.tbody-wrap');if(after)after.scrollTop=top;};
   const previousFilter=applyFilter;
-  applyFilter=function(...args){const result=previousFilter(...args);namesButton.hidden=!visible();return result;};
+  applyFilter=function(...args){const result=previousFilter(...args);namesButton.hidden=true;return result;};
   tDataRowSibling=function(row,direction){let next=direction>0?row.nextElementSibling:row.previousElementSibling;while(next&&!next.dataset.id)next=direction>0?next.nextElementSibling:next.previousElementSibling;return next||null;};
   const previousAction=tableActionAt;
   tableActionAt=function(target){return !tselMode&&target.closest('[data-cl-link-action],[data-cl-district]')||previousAction(target);};
@@ -14383,7 +14402,9 @@ function paintPropertyState(state){
       if(localLinkPath(target)){event.preventDefault();openCommunityTarget(target);}
       return;
     }
-    event.preventDefault();if(editMode&&manualTableEdit)open('url',action.dataset.community,Number(action.dataset.slot));
+    event.preventDefault();if(!editMode||!manualTableEdit)return;
+    if(action.dataset.clLinkAction==='settings'){open('names');return;}
+    open('url',action.dataset.community,Number(action.dataset.slot));
   },true);
   let downOnBackground=false;
   backdrop.addEventListener('pointerdown',event=>{downOnBackground=event.target===backdrop;});
@@ -15773,6 +15794,7 @@ function paintPropertyState(state){
     for(const key of d.fields){
       if(/^(url|linkName|linkBaseName|linkNone)/.test(key))continue;
       if(/^noteFont[123]$/.test(key)){rows.push([needTitle(to,+key.slice(-1))+'字級',(to[key]||100)+'%']);continue;}
+      if(key==='priorityMark'){rows.push(['重點標記',to[key]?'已標記':'已取消標記']);continue;}
       if(key==='noteOrder'){rows.push(['段落順序',needOrder(to).map(s=>needTitle(to,s)).join('、')]);continue;}
       if(!Object.hasOwn(labels,key))continue;
       let value=to[key];
@@ -15987,6 +16009,9 @@ function paintPropertyState(state){
 })();
 </script>
 <style>
+#columnTypeDialog .cl-dialog:focus{outline:none;}
+#columnTypeDialog .cl-dialog :is(button,select,input,[tabindex="0"]):focus{outline:1px solid var(--ink-soft);outline-offset:1px;box-shadow:none;}
+@media(forced-colors:active){#columnTypeDialog .cl-dialog :is(button,select,input,[tabindex="0"]):focus{outline-color:Highlight;}}
 #columnTypeDialog .ct-preview{border:1px solid var(--line);border-radius:10px;overflow:hidden;text-align:center;margin:14px 0;}
 #columnTypeDialog .ct-preview div{padding:6px 12px;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;}
 #columnTypeDialog .ct-controls{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
@@ -15997,11 +16022,11 @@ function paintPropertyState(state){
 #columnTypeDialog .ct-swatch{width:15px;height:15px;border-radius:4px;border:1px solid var(--line);}
 #columnTypeDialog .ct-palette:not(:empty){margin-top:10px;}
 </style>
-<div id="columnTypeDialog" class="cl-backdrop"><section class="cl-dialog" role="dialog" aria-modal="true" aria-labelledby="columnTypeTitle">
+<div id="columnTypeDialog" class="cl-backdrop"><section class="cl-dialog" role="dialog" aria-modal="true" aria-labelledby="columnTypeTitle" tabindex="-1">
 <div class="cl-editor-head"><h2 id="columnTypeTitle"></h2><button type="button" data-ct-close class="fo-close" aria-label="關閉">×</button></div>
 <div class="ct-preview" aria-label="預覽"><div data-preview="head"></div><div data-preview="body"></div></div>
 <div class="ct-controls"></div><div class="ct-palette"></div><p class="cl-error" role="alert"></p>
-<div class="cl-editor-actions"><button type="button" class="fo-secondary" data-ct-reset>恢復預設</button><button type="button" class="fo-secondary" data-ct-close>取消</button><button type="button" class="fo-primary" data-ct-save>儲存</button></div>
+<div class="cl-editor-actions"><button type="button" class="fo-secondary" data-ct-reset>回復原始預設</button><button type="button" class="fo-secondary" data-ct-close>取消</button><button type="button" class="fo-primary" data-ct-save>儲存</button></div>
 </section></div>
 <script>
 (()=>{
@@ -16045,14 +16070,19 @@ function paintPropertyState(state){
   window.addEventListener('storage',e=>{if(e.key===null){T_FIELDS.forEach(reload);paint();return;}
     if(e.key.startsWith(keyPrefix)){const field=e.key.slice(keyPrefix.length);if(T_FIELDS.includes(field)){reload(field);paint();}}
   });
-  const options='<option value="">原字級</option>'+sizes.map(n=>'<option value="'+n+'">'+n+' px</option>').join('');
+  const options=sizes.map(n=>'<option value="'+n+'">'+n+' px</option>').join('');
   for(const part of parts){
     controls.insertAdjacentHTML('beforeend','<fieldset data-part="'+part+'"><legend>'+labels[part]+'</legend><label class="ct-line">字級<select aria-label="'+labels[part]+'字級">'+options+'</select></label><div class="ct-line">字色<button type="button" aria-label="'+labels[part]+'字色" aria-expanded="false" data-ct-color><span class="ct-swatch"></span><span class="ct-color-label"></span></button></div></fieldset>');
   }
   function preview(){
     for(const part of parts){
       const group=controls.querySelector('[data-part='+part+']'),look=current.draft[part],base=current.base[part];
-      group.querySelector('select').value=look.size||'';
+      const select=group.querySelector('select'),basePx=parseFloat(base.size);
+      const choices=[...new Set([...sizes,basePx])].sort((a,b)=>a-b);
+      if(select.dataset.base!==String(basePx)){
+        select.replaceChildren(...choices.map(n=>new Option(n+' px',String(n))));select.dataset.base=String(basePx);
+      }
+      select.value=String(look.size??basePx);
       group.querySelector('.ct-swatch').style.backgroundColor=look.color||base.color;
       group.querySelector('.ct-color-label').textContent=look.color||'原字色';
       const sample=panel.querySelector('[data-preview='+part+']');sample.style.color=look.color||base.color;
@@ -16080,7 +16110,7 @@ function paintPropertyState(state){
     current={field,base,original,draft:{head:{...original.head},body:{...original.body}}};
     panel.querySelector('h2').textContent=title+' · 欄位文字';
     panel.querySelector('.cl-error').textContent='';preview();lockOverlay(th.querySelector('button')||document.activeElement);
-    panel.classList.add('open');controls.querySelector('select').focus({preventScroll:true});
+    panel.classList.add('open');panel.querySelector('[role=dialog]').focus({preventScroll:true});
   }
   function close(){if(!current)return;closePicker();current=null;panel.classList.remove('open');unlockOverlay();}
   function save(){
@@ -16099,7 +16129,7 @@ function paintPropertyState(state){
     }catch{error.textContent='尚未儲存，請確認瀏覽器可儲存設定後再試。';}
   }
   panel.addEventListener('change',e=>{if(!current||!e.target.matches('.ct-line select'))return;
-    current.draft[e.target.closest('fieldset').dataset.part].size=Number(e.target.value)||undefined;preview();});
+    const part=e.target.closest('fieldset').dataset.part;const size=Number(e.target.value);current.draft[part].size=size===parseFloat(current.base[part].size)?undefined:size;preview();});
   panel.addEventListener('click',e=>{
     if(!current)return;
     const b=e.target.closest('button');if(!b)return;
@@ -16283,6 +16313,301 @@ function paintPropertyState(state){
     const from=group.rows.indexOf(group.row),id=group.row.dataset.id;group.move(from,from+(e.key==='ArrowUp'?-1:1));
     requestAnimationFrame(()=>tableWrap.querySelector('tr.row-drag-ready[data-id="'+CSS.escape(id)+'"]')?.focus({preventScroll:true}));
   },true);
+})();
+</script>
+<script id="property-focus-marks">
+(()=>{
+const markIcons={
+ star:['實心星','★'],
+ outlineStar:['空心星','☆'],
+ like:['讚','<path d="M3.3 10.8h3.1v9H3.3z M9 19.8V10l4.1-6c.8-1.2 2.8-.8 2.5 1.1l-.8 4.4h4.7a1.6 1.6 0 0 1 1.6 2l-1.6 6.7a2 2 0 0 1-2 1.6z"/>'],
+ circle:['圈圈','<circle cx="12" cy="12" r="8.2"/>'],
+ cross:['叉號','<path d="m5.7 5.7 12.6 12.6m0-12.6L5.7 18.3"/>'],
+ triangle:['三角形','<path d="m12 3.9 8.8 15.6H3.2z"/>'],
+ flag:['旗幟','<path d="M5.5 20.8V4.2q3.3-1.7 6.6.1t6.9-.1v8.9q-3.5 1.8-6.9.1t-6.6-.1"/>'],
+ bookmark:['書籤','<path d="M6.3 4.2h11.4v15.9l-5.7-3.5-5.7 3.5z"/>'],
+ check:['打勾','<path d="m3.8 12.5 5.2 5.2L20.2 6.5"/>'],
+ circleCheck:['圈勾','<circle cx="12" cy="12" r="8.8"/><path d="m7.7 12 3.1 3.1 5.6-6.1"/>'],
+ arrowRight:['右箭頭','<path d="M3.8 12h16.4m-6.4-6.4 6.4 6.4-6.4 6.4"/>'],
+ heart:['愛心','<path d="M12 20.5 4.3 13C-1.2 7.1 6 1.1 10.2 5.5L12 7.3l1.8-1.8C18 1.1 25.2 7.1 19.7 13z"/>'],
+ bell:['鈴鐺','<path d="M4.7 17.2c1.8-2.2 2.1-4.3 2.1-7.1a5.2 5.2 0 0 1 10.4 0c0 2.8.3 4.9 2.1 7.1z M10 20a2.4 2.4 0 0 0 4 0"/>']
+};
+
+
+const solidMarks={
+ like:'<path d="M3.3 10.8h3.1v9H3.3z M9 19.8V10l4.1-6c.8-1.2 2.8-.8 2.5 1.1l-.8 4.4h4.7a1.6 1.6 0 0 1 1.6 2l-1.6 6.7a2 2 0 0 1-2 1.6z"/>',
+ circle:'<circle cx="12" cy="12" r="8.2"/>',
+ cross:'<path d="m5 7 2-2 5 5 5-5 2 2-5 5 5 5-2 2-5-5-5 5-2-2 5-5z"/>',
+ triangle:'<path d="m12 3.9 8.8 15.6H3.2z"/>',
+ flag:'<path d="M5 3.5h1.5v.7q3.2-1.5 6.1.1t6.9-.1v9q-3.4 1.8-6.9.1t-6.1-.1v7.7H5z"/>',
+ bookmark:'<path d="M6.3 4.2h11.4v15.9l-5.7-3.5-5.7 3.5z"/>',
+ check:'<path d="m2.8 12.6 2.3-2.1 4.1 4.2 9.7-9.5 2.3 2.2-12 12z"/>',
+ circleCheck:'<path fill-rule="evenodd" d="M12 2.8a9.2 9.2 0 1 1 0 18.4 9.2 9.2 0 0 1 0-18.4zm-5.6 9.5 4 4.1 7.4-7.3-1.3-1.3-6.1 6-2.7-2.8z"/>',
+ arrowRight:'<path d="M3.5 10.4h10V5l7.2 7-7.2 7v-5.4h-10z"/>',
+ bell:'<path d="M4.7 17.2c1.8-2.2 2.1-4.3 2.1-7.1a5.2 5.2 0 0 1 10.4 0c0 2.8.3 4.9 2.1 7.1z M9.6 19.1h4.8a2.4 2.4 0 0 1-4.8 0z"/>',
+ heart:'<path d="M12 20.5 4.3 13C-1.2 7.1 6 1.1 10.2 5.5L12 7.3l1.8-1.8C18 1.1 25.2 7.1 19.7 13z"/>'
+};
+function shapeParts(id){
+ if(id==='star'||id==='outlineStar')return {key:'star',style:id==='star'?'solid':'outline'};
+ const [key,style]=id.split(':');return {key,style:style==='solid'?'solid':'outline'};
+}
+function shapeID(key,style){return key==='star'?(style==='solid'?'star':'outlineStar'):(style==='solid'?key+':solid':key)}
+
+const markDrawings=new Map();
+function markIconHTML(key){
+  if(markDrawings.has(key))return markDrawings.get(key);
+  const variant=shapeParts(key);const filled=variant.style==='solid'&&variant.key!=='star';
+  let shape=filled?'<g fill="currentColor" stroke="none">'+solidMarks[variant.key]+'</g>':markIcons[key][1],left,top,width,height;
+  if(key==='star'||key==='outlineStar'){
+    const ctx=document.createElement('canvas').getContext('2d');
+    ctx.font='96px "Segoe UI Symbol", sans-serif';
+    const m=ctx.measureText(shape);
+    left=-m.actualBoundingBoxLeft;top=-m.actualBoundingBoxAscent;
+    width=m.actualBoundingBoxRight-left;height=m.actualBoundingBoxDescent-top;
+    shape='<text style="font:96px &quot;Segoe UI Symbol&quot;,sans-serif" fill="currentColor" stroke="none">'+shape+'</text>';
+  }else{
+    const sample=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    sample.style.cssText='position:fixed;visibility:hidden;pointer-events:none';
+    sample.innerHTML=shape;document.body.append(sample);
+    const r=sample.getBBox(),stroke=filled?0:1.65;
+    left=r.x-stroke/2;top=r.y-stroke/2;width=r.width+stroke;height=r.height+stroke;
+    sample.remove();
+  }
+  const side=Math.max(width,height)*1.25;
+  const box=[left+(width-side)/2,top+(height-side)/2,side,side].join(' ');
+  const markup='<svg aria-hidden="true" viewBox="'+box+'" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">'+shape+'</svg>';
+  markDrawings.set(key,markup);
+  return markup;
+}
+function paint(b,on,shape){b.setAttribute('aria-pressed',on);b.setAttribute('aria-label',b.title=on?'取消重點標記':'標記為重點物件');if(b.firstElementChild.dataset.shape!==shape){b.firstElementChild.dataset.shape=shape;b.firstElementChild.innerHTML=markIconHTML(shape)}}
+
+const table=document.getElementById("tableWrap");
+const gutter=document.createElement('div');
+gutter.id='mark-outside';
+gutter.setAttribute('role','group');
+gutter.setAttribute('aria-label','物件重點標記');
+document.body.append(gutter);
+const controls=new Map();
+
+
+const factoryInk='#815810',prefKey='community-table-mark-preferred-color';
+const colors=[['金棕',factoryInk],['藍色','#2563EB'],['青綠','#0E8078'],['綠色','#368244'],['紅色','#BE4242'],['紫色','#8551B4']];
+let defaultInk=factoryInk;
+try{const prior=localStorage.getItem(prefKey);if(/^#[0-9a-f]{6}$/i.test(prior||''))defaultInk=prior.toUpperCase()}catch{}
+
+let defaultShape='star',draftShape='star',baseMark='',openEpoch=0,displayMode='star',draftDisplay='star';
+function validShape(id){if(typeof id!=='string'||!id)return false;const p=shapeParts(id);return Object.hasOwn(markIcons,p.key)&&shapeID(p.key,p.style)===id}
+try{
+ const saved=localStorage.getItem(prefKey+'-shape');if(validShape(saved))defaultShape=saved;
+ const style=localStorage.getItem(prefKey+'-display');if(['star','rail','combo'].includes(style))displayMode=style;
+}catch{}
+document.documentElement.dataset.markStyle=displayMode;
+function markParts(value){
+ const [,shape,color]=String(value||'').split('|');
+ return {shape:validShape(shape)?shape:'',color:/^#[0-9a-f]{6}$/i.test(color||'')?color:''};
+}
+function setMark(id,previous,value,epoch){
+ const item=items.find(i=>i.id===id);
+ if(!item||epoch!==(window._resetAt||0)||(item.priorityMark||'')!==previous){toast('物件標記已更新，請重新開啟。');return false;}
+ if(previous===value)return true;
+ return CommunityData.transaction(()=>{},[{...item,priorityMark:value}],{baseItems:items,resetAt:epoch});
+}
+let editingId='',picker=null,custom=false,draft='',inherit=false;
+const colorDialog=document.createElement('dialog');
+colorDialog.id='mark-color-dialog';
+colorDialog.setAttribute('aria-labelledby','mark-color-title');
+colorDialog.innerHTML='<form method="dialog"><header class="mark-dialog-head"><h3 id="mark-color-title">標記外觀</h3><button class="fo-close" type="submit" value="cancel" aria-label="關閉標記外觀" title="關閉">×</button></header><div class="mark-colormodes"><button type="button" data-mode="default">日常預設</button><button type="button" data-mode="custom">獨立自訂</button></div><div class="mark-palette"></div><footer><button value="cancel">取消</button><button type="button" data-apply></button></footer></form>';
+document.body.append(colorDialog);
+const modesUI=[...colorDialog.querySelectorAll('[data-mode]')], host=colorDialog.querySelector('.mark-palette'),apply=colorDialog.querySelector('[data-apply]');
+
+const shapeKeys=Object.keys(markIcons).filter(k=>k!=='heart').map(k=>k==='outlineStar'?'heart':k);
+let iconOrder=[...shapeKeys],lastFill=null;
+try{
+ const order=JSON.parse(localStorage.getItem('community-table-mark-icon-order'));
+ if(Array.isArray(order))iconOrder=[...new Set([...order.filter(k=>shapeKeys.includes(k)),...shapeKeys])];
+ const fill=localStorage.getItem('community-table-mark-last-fill');
+ if(['solid','outline'].includes(fill))lastFill=fill;
+}catch{}
+function remember(key,value){try{localStorage.setItem('community-table-mark-'+key,value)}catch{}}
+let stopIconDrag=()=>{};
+function enableIconDrag(section,tail){
+ let gesture=null,suppressClick=false;
+ function display(order){order.forEach((key,i)=>section.querySelector('[data-shape="'+key+'"]').style.order=i)}
+ function end(commit){
+   const g=gesture;if(!g)return;
+   gesture=null;clearTimeout(g.timer);
+   if(section.hasPointerCapture(g.id))section.releasePointerCapture(g.id);
+   if(!g.ghost)return;
+   g.ghost.remove();g.tile.classList.remove('drag-source');suppressClick=true;
+   if(commit){iconOrder=g.order;remember('icon-order',JSON.stringify(iconOrder))}
+   display(iconOrder);
+   for(const key of iconOrder)section.insertBefore(section.querySelector('[data-shape="'+key+'"]'),tail);
+ }
+ section.addEventListener('click',e=>{if(suppressClick&&e.detail){e.stopImmediatePropagation();e.preventDefault();suppressClick=false}},true);
+ section.addEventListener('contextmenu',e=>{if(e.target.closest('[data-shape]'))e.preventDefault()});
+ section.addEventListener('pointerdown',e=>{
+   suppressClick=false;const tile=e.target.closest('button[data-shape]');if(!tile||!e.isPrimary||e.button!==0)return;
+   end(false);suppressClick=false;
+   const g=gesture={id:e.pointerId,tile,x:e.clientX,y:e.clientY,scroll:colorDialog.scrollTop,order:[...iconOrder]};
+   g.timer=setTimeout(()=>{
+     if(gesture!==g)return;
+     const rect=tile.getBoundingClientRect();g.ghost=tile.cloneNode(true);g.ghost.removeAttribute('data-shape');
+     g.ghost.setAttribute('aria-hidden','true');g.ghost.tabIndex=-1;g.ghost.className='mark-drag-ghost';
+     Object.assign(g.ghost.style,{left:rect.left+'px',top:rect.top+'px',width:rect.width+'px',height:rect.height+'px'});
+     colorDialog.append(g.ghost);tile.classList.add('drag-source');section.setPointerCapture(g.id);
+   },500);
+ });
+ section.addEventListener('pointermove',e=>{
+   const g=gesture;if(!g||e.pointerId!==g.id)return;
+   const dx=e.clientX-g.x,dy=e.clientY-g.y;
+   if(!g.ghost){
+     if(Math.hypot(dx,dy)>7){clearTimeout(g.timer);g.pan=true;suppressClick=true}
+     if(g.pan&&e.pointerType==='touch')colorDialog.scrollTop=g.scroll-dy;
+     return;
+   }
+   g.ghost.style.transform='translate('+dx+'px,'+dy+'px)';
+   const over=document.elementFromPoint(e.clientX,e.clientY)?.closest('button[data-shape]');
+   if(!over||!section.contains(over)||over===g.tile)return;
+   const from=g.order.indexOf(g.tile.dataset.shape),to=g.order.indexOf(over.dataset.shape);
+   g.order.splice(to,0,g.order.splice(from,1)[0]);display(g.order);
+ });
+ section.addEventListener('pointerup',e=>{if(e.pointerId===gesture?.id)end(true)});
+ section.addEventListener('pointercancel',()=>end(false));
+ section.addEventListener('lostpointercapture',e=>{if(e.target===section)end(false)});
+ section.addEventListener('pointerleave',()=>{if(gesture&&!gesture.ghost)end(false)});
+ return ()=>end(false);
+}
+
+const modeDrafts=new Map();
+function setMode(next){
+ const keepScroll=colorDialog.scrollTop;
+ if(picker&&colorDialog.open){if(!picker.validate())return;modeDrafts.set(custom,{draft,draftShape,inherit})}
+ stopIconDrag();custom=next;picker?.destroy();picker=null;host.replaceChildren();draftShape=custom?markParts(baseMark).shape:defaultShape;
+ for(const b of modesUI)b.setAttribute('aria-pressed',(b.dataset.mode==='custom')===custom);
+ apply.textContent=custom?'套用至此物件':'儲存預設';
+ draft=custom?(markParts(baseMark).color||defaultInk):defaultInk;inherit=custom&&!markParts(baseMark).color;
+ if(modeDrafts.has(custom))({draft,draftShape,inherit}=modeDrafts.get(custom));
+
+ const palette=document.createElement('div');palette.className='mark-swatches';palette.setAttribute('role','group');palette.setAttribute('aria-label','基本顏色');
+ const panel=document.createElement('div');host.append(palette,panel);
+ const syncSwatches=()=>{for(const b of palette.children)b.setAttribute('aria-pressed',b.dataset.ink===draft)};
+ for(const [name,hex] of colors){
+   const b=document.createElement('button');b.type='button';b.dataset.ink=hex;b.style.setProperty('--swatch',hex);b.textContent=name;
+   b.onclick=()=>picker.setColor(hex);palette.append(b);
+ }
+ picker=CommunityLinkColorPicker.mount(panel,{textLabel:'標記顏色',color:draft,onPreview(c){
+   inherit=custom&&!c;draft=c||(custom?defaultInk:factoryInk);syncSwatches();
+ }});
+ const colorReset=panel.querySelector('[data-clcp-reset]');
+ colorReset.textContent=custom?'跟隨預設色':'還原預設色';
+ colorReset.onclick=event=>{event.stopPropagation();picker.setColor(custom?defaultInk:factoryInk);inherit=custom;};
+ syncSwatches();
+ const section=document.createElement('fieldset');section.className='mark-shapes';
+ const legend=document.createElement('legend');section.append(legend);
+ const header=document.createElement('div');header.className='mark-shape-head';legend.append(header);
+ const label=document.createElement('span');label.textContent='標記圖示';header.append(label);
+ const toggle=document.createElement('div');toggle.className='mark-fill-toggle';toggle.setAttribute('role','group');toggle.setAttribute('aria-label','圖示類型');header.append(toggle);
+ let browseFill=lastFill||shapeParts(draftShape||defaultShape).style;
+ const styleButtons=[];
+ for(const [style,caption] of [['solid','實心'],['outline','空心']]){
+   const b=document.createElement('button');b.type='button';b.dataset.fill=style;b.textContent=caption;styleButtons.push(b);toggle.append(b);
+   b.onclick=()=>{const current=shapeParts(draftShape||defaultShape);browseFill=lastFill=style;remember('last-fill',style);if(style!==current.style)draftShape=shapeID(current.key,style);showShape()};
+ }
+ let follow=null;
+ {
+   follow=document.createElement('button');follow.type='button';follow.className='mark-follow';follow.textContent=custom?'跟隨預設圖示':'還原軟體預設';
+   follow.onclick=()=>{draftShape=custom?'':'star';if(!custom)picker.setColor(factoryInk);browseFill=lastFill=shapeParts(draftShape||defaultShape).style;remember('last-fill',browseFill);showShape()};section.append(follow);
+ }
+ const tiles=new Map();
+ for(const key of iconOrder){
+   const button=document.createElement('button');button.type='button';button.dataset.shape=key;
+   const caption=key==='star'?'星星':markIcons[key][0];button.setAttribute('aria-label',caption);
+   button.onclick=()=>{draftShape=shapeID(key,browseFill);showShape()};
+   tiles.set(key,[button,caption]);section.insertBefore(button,follow);
+ }
+ function showShape(){
+   const current=shapeParts(draftShape||defaultShape);
+   for(const b of styleButtons)b.setAttribute('aria-pressed',b.dataset.fill===browseFill);
+   follow?.setAttribute('aria-pressed',!draftShape);
+   for(const [key,[b,caption]] of tiles){
+     b.setAttribute('aria-pressed',key===current.key&&browseFill===current.style);
+     b.innerHTML=markIconHTML(shapeID(key,browseFill))+'<span>'+caption+'</span>';
+   }
+ }
+ const view=document.createElement('label');view.className='mark-display-pref';view.textContent='表格標記樣式';
+ const select=document.createElement('select');for(const [key,name] of [['star','圖示'],['rail','側線'],['combo','圖示＋側線']])select.add(new Option(name,key));select.value=draftDisplay;select.onchange=()=>{draftDisplay=select.value};view.append(select);host.prepend(section,view);showShape();stopIconDrag=enableIconDrag(section,follow);colorDialog.scrollTop=keepScroll;
+
+}
+for(const b of modesUI)b.onclick=()=>setMode(b.dataset.mode==='custom');
+function openMark(b){
+ if(colorDialog.open||isBlocked())return;
+ const item=items.find(i=>i.id===b.dataset.markId);if(!item)return;
+ editingId=item.id;baseMark=item.priorityMark||'';openEpoch=window._resetAt||0;draftDisplay=displayMode;
+ modeDrafts.clear();const mark=markParts(baseMark);setMode(!!(mark.shape||mark.color));colorDialog.showModal();
+}
+gutter.addEventListener('contextmenu',e=>{const b=e.target.closest('[data-mark-id]');if(b){e.preventDefault();openMark(b)}});
+let hold=null;
+function cancelHold(){if(hold)clearTimeout(hold.timer);hold=null;}
+gutter.addEventListener('pointerdown',e=>{cancelHold();if(e.pointerType!=='touch'||!e.isPrimary)return;const b=e.target.closest('[data-mark-id]');if(!b)return;hold={x:e.clientX,y:e.clientY,timer:setTimeout(()=>{cancelHold();openMark(b)},550)}});
+gutter.addEventListener('pointermove',e=>{if(hold&&Math.hypot(e.clientX-hold.x,e.clientY-hold.y)>7)cancelHold()});
+for(const type of ['pointercancel','pointerup','pointerleave'])gutter.addEventListener(type,cancelHold);
+apply.onclick=()=>{
+ if(picker&&!picker.validate())return;
+ if(custom){
+   if(!setMark(editingId,baseMark,['1',draftShape,inherit?'':draft].join('|'),openEpoch))return;
+ }else{
+   defaultInk=draft;defaultShape=draftShape;try{localStorage.setItem(prefKey,defaultInk);localStorage.setItem(prefKey+'-shape',defaultShape)}catch{}
+ }
+ displayMode=draftDisplay;document.documentElement.dataset.markStyle=displayMode;remember('preferred-color-display',displayMode);colorDialog.close();
+};
+colorDialog.addEventListener('close',()=>{stopIconDrag();picker?.destroy();picker=null;schedule()});
+let frame=0;
+const schedule=()=>{if(!frame)frame=requestAnimationFrame(layout)};
+let recordList=null,records=new Map();
+function isBlocked(){return viewMode!=='table'||!listView.classList.contains('active')||tselMode||!!table.querySelector('tr.row-drag-ready')}
+function layout(){
+ frame=0;
+ const scroll=table.querySelector('.tbody-wrap');
+ if(!scroll||!scroll.clientHeight||isBlocked()){gutter.hidden=true;return}
+ const rect=scroll.getBoundingClientRect();
+ const top=Math.max(rect.top,0),bottom=Math.min(innerHeight,rect.top+scroll.clientHeight);
+ gutter.hidden=bottom<=top;
+ if(gutter.hidden)return;
+ Object.assign(gutter.style,{top:top+'px',height:(bottom-top)+'px',left:(table.getBoundingClientRect().left-26)+'px'});
+ const visible=new Set();
+ if(recordList!==items){recordList=items;records=new Map(items.map(row=>[row.id,row]))}
+ const rows=scroll.querySelector('tbody')?.rows||[];
+ let first=0,end=rows.length;
+ // Group bars can stick to the top; only use ordinary rows for the search.
+ if(rows.length>100){const regular=scroll.querySelectorAll('tr[data-id]');let lo=0,hi=regular.length;while(lo<hi){const mid=(lo+hi)>>>1;if(regular[mid].getBoundingClientRect().bottom<top)lo=mid+1;else hi=mid}first=regular[lo]?.sectionRowIndex??end;}
+ for(let i=first;i<end;i++){
+   const row=rows[i];if(!row.hasAttribute('data-id'))continue;
+   if(row.getBoundingClientRect().top>=bottom)break;
+   const box=row.getBoundingClientRect(),mid=(box.top+box.bottom)/2;
+   if(mid<top||mid>=bottom)continue;
+   const at=document.elementFromPoint(rect.left+Math.min(8,rect.width/2),mid);
+   if(at?.closest('tr')!==row)continue;
+   const id=row.dataset.id;
+   visible.add(id);
+   let b=controls.get(id);
+   if(!b){b=document.createElement('button');b.type='button';b.className='mark-action';b.dataset.markId=id;b.append(document.createElement('span'));controls.set(id,b);gutter.append(b)}
+   b.style.top=(box.top-top)+'px';b.style.height=box.height+'px';
+   const value=records.get(id)?.priorityMark||'',mark=markParts(value);b.style.setProperty('--marked-ink',mark.color||defaultInk);paint(b,!!value,mark.shape||defaultShape);
+ }
+ for(const [id,b] of controls)if(!visible.has(id)){b.remove();controls.delete(id)}
+}
+const observe=new MutationObserver(schedule);observe.observe(table,{childList:true,subtree:true,attributes:true,attributeFilter:['style','class']});
+const resize=new ResizeObserver(schedule);resize.observe(table);
+document.addEventListener('scroll',schedule,true);window.addEventListener('resize',schedule);
+document.addEventListener('focusin',schedule);
+schedule();
+CommunityData.subscribe(schedule);
+window.addEventListener('pageshow',schedule);
+gutter.addEventListener('click',e=>{
+ const b=e.target.closest('[data-mark-id]');if(!b||isBlocked()||colorDialog.open)return;
+ e.preventDefault();const item=items.find(row=>row.id===b.dataset.markId);if(!item)return;
+ const value=item.priorityMark||'';if(setMark(item.id,value,value?'':'1||',window._resetAt||0))schedule();
+});
 })();
 </script>
 </body>
