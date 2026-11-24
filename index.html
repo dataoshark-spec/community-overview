@@ -4375,7 +4375,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.24Q";
+const APP_VERSION = "2026.11.24R";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -16560,6 +16560,14 @@ apply.onclick=()=>{
  }
  displayMode=draftDisplay;document.documentElement.dataset.markStyle=displayMode;remember('preferred-color-display',displayMode);colorDialog.close();
 };
+// In the per-property editor Enter applies the draft through the same validation as the button.
+colorDialog.addEventListener('keydown',event=>{
+ if(!custom||event.key!=='Enter'||event.altKey||event.ctrlKey||event.metaKey||event.shiftKey)return;
+ if(event.isComposing||event.keyCode===229)return;
+ if(event.target.closest('button[value="cancel"],select,textarea,[aria-expanded="true"]'))return;
+ event.preventDefault();event.stopPropagation();
+ if(!event.repeat)apply.click();
+},true);
 colorDialog.addEventListener('close',()=>{stopIconDrag();picker?.destroy();picker=null;schedule()});
 let frame=0;
 const schedule=()=>{if(!frame)frame=requestAnimationFrame(layout)};
