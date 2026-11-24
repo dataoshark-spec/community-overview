@@ -2246,11 +2246,15 @@ button.cl-district-bar{cursor:pointer;}
 .cl-setting-block .cl-weight-controls [data-cl-weight="700"]{font-weight:700;}
 /* END THREE WEIGHT CHOICES */
 
+/* Keep the district swatch centered under the fourth text color choice. */
+.cl-district-ink-picker{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));row-gap:4px;min-width:0;}
+.cl-district-ink-picker .cl-ink-controls{grid-column:1/-1;}
+.cl-district-ink-picker [data-district-text]{grid-column:4;justify-self:center;box-sizing:border-box;width:min(42px,100%);min-width:0;height:30px;background:var(--card);border:1px solid var(--line);cursor:pointer;}
 /* Field appearance controls: rounded color, synchronized presets, complete segmented borders. */
-#fieldTintPanel .fo-custom input[type="color"]{appearance:none;-webkit-appearance:none;border-radius:8px;padding:4px;overflow:hidden;}
-#fieldTintPanel .fo-custom input[type="color"]::-webkit-color-swatch-wrapper{padding:0;}
-#fieldTintPanel .fo-custom input[type="color"]::-webkit-color-swatch{border:0;border-radius:5px;}
-#fieldTintPanel .fo-custom input[type="color"]::-moz-color-swatch{border:0;border-radius:5px;}
+#fieldTintPanel .fo-custom input[type="color"],[data-district-text]{appearance:none;-webkit-appearance:none;border-radius:8px;padding:4px;overflow:hidden;}
+#fieldTintPanel .fo-custom input[type="color"]::-webkit-color-swatch-wrapper,[data-district-text]::-webkit-color-swatch-wrapper{padding:0;}
+#fieldTintPanel .fo-custom input[type="color"]::-webkit-color-swatch,[data-district-text]::-webkit-color-swatch{border:0;border-radius:5px;}
+#fieldTintPanel .fo-custom input[type="color"]::-moz-color-swatch,[data-district-text]::-moz-color-swatch{border:0;border-radius:5px;}
 #fieldTintPanel .fo-quick button[aria-pressed="true"]{background:var(--accent);color:#16222a;border-color:var(--accent-deep);}
 #fieldTintPanel .fo-type-options{border:0;overflow:visible;}
 #fieldTintPanel .fo-type-options button{position:relative;min-height:40px;border:1px solid var(--line);}
@@ -4207,7 +4211,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.24C";
+const APP_VERSION = "2026.11.24D";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -13915,7 +13919,7 @@ function paintPropertyState(state){
       <label class="cl-height-control"><span>整列高度</span><select data-cl-height aria-label="${scope}整列高度">${heights.map(height=>`<option value="${height}"${look.height===height?' selected':''}>${height} px</option>`).join('')}</select></label>
       <div class="cl-shared-settings-controls">
         <label class="cl-size-control cl-setting-block"><span class="cl-setting-label">字級</span><select data-cl-size aria-label="${scope}字級">${fontSizes.map(size=>`<option value="${size}"${look.fontSize===size?' selected':''}>${size}</option>`).join('')}</select></label>
-        <div class="cl-setting-block"><span class="cl-setting-label">文字顏色</span><div class="cl-ink-controls" role="group" aria-label="${scope}文字顏色">${inks.map(([ink,label])=>`<button type="button" data-cl-ink="${ink}" aria-pressed="${look.ink===ink}">${label}</button>`).join('')}</div>${district?`<input type="color" data-district-text aria-label="自訂全部橫桿字色" value="${look.inkColor}"${look.ink==='custom'?'':' hidden'}>`:''}</div>
+        <div class="cl-setting-block"><span class="cl-setting-label">文字顏色</span>${district?'<div class="cl-district-ink-picker">':''}<div class="cl-ink-controls" role="group" aria-label="${scope}文字顏色">${inks.map(([ink,label])=>`<button type="button" data-cl-ink="${ink}" aria-pressed="${look.ink===ink}">${label}</button>`).join('')}</div>${district?`<input type="color" data-district-text aria-label="自訂全部橫桿字色" value="${look.inkColor}"${look.ink==='custom'?'':' hidden' }></div>`:''}</div>
         <div class="cl-setting-block"><span class="cl-setting-label">字體粗細</span><div class="cl-weight-controls" role="group" aria-label="${scope}字體粗細">${[[400,'細'],[600,'中'],[700,'粗']].map(([weight,label])=>`<button type="button" data-cl-weight="${weight}" aria-pressed="${look.fontWeight===weight}">${label}</button>`).join('')}</div></div>
       </div></fieldset>`;
   }
