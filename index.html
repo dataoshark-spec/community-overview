@@ -1886,44 +1886,19 @@ button.cl-district-bar{cursor:pointer;}
 .cl-url-label{display:block;margin:12px 0 8px;color:var(--ink-soft);font-size:14px;}.cl-editor-actions{display:flex;gap:8px;margin-top:16px;}.cl-editor-actions>button{flex:1;min-width:0;}.cl-editor-actions .cl-clear{flex:1.25;}.cl-error{color:var(--danger);font-size:13px;margin:10px 0 0;}.cl-error:empty{display:none;}
 @media(max-width:480px){.cl-dialog{padding:14px;}.cl-editor-actions{flex-wrap:wrap;}.cl-editor-actions .cl-clear{flex-basis:100%;}}
 
-/* A single gentle fill fade marks restored columns; grid lines stay unchanged. */
-#tableWrap .ptable th.community-column-reveal,
-#tableWrap .ptable td.community-column-reveal {
-  position: relative;
-}
-
-#tableWrap .ptable .community-column-reveal::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 8;
-  pointer-events: none;
-  border: 0;
-  border-radius: 0;
-  outline: none;
-  box-shadow: none;
-  background: rgba(168, 186, 195, .22);
-  opacity: 0;
-  animation: community-column-reveal-soft 2.2s ease-out 1;
-}
-
-[data-theme="dark"] #tableWrap .ptable .community-column-reveal::after {
-  box-shadow: none;
-  background: rgba(194, 209, 217, .14);
-}
-
-@keyframes community-column-reveal-soft {
-  0% { opacity: 0; }
-  20% { opacity: 1; }
-  100% { opacity: 0; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  #tableWrap .ptable .community-column-reveal::after {
-    animation: none;
-    opacity: .45;
+  .ptable .discreet-revealed{
+    --reveal-tint:rgba(255,217,122,.50);
+    --reveal-shadow:inset 2px 0 #c48b24,inset -2px 0 #c48b24,inset 0 0 0 100px var(--reveal-tint);
+    animation:discreet-reveal 1050ms ease-out;
   }
-}
+  .ptable th.discreet-revealed{--reveal-tint:rgba(255,210,106,.24);}
+  @keyframes discreet-reveal{
+    0%,26%{box-shadow:var(--reveal-shadow);}
+    100%{box-shadow:inset 2px 0 transparent,inset -2px 0 transparent,inset 0 0 0 100px transparent;}
+  }
+  @media(prefers-reduced-motion:reduce){
+    .ptable .discreet-revealed{animation:none;box-shadow:var(--reveal-shadow);}
+  }
 
 /* Table hover feedback. No row or column geometry changes. */
 @media (hover: hover) and (pointer: fine) {
@@ -2675,7 +2650,102 @@ body.column-moving,body.column-moving *{cursor:grabbing!important;user-select:no
 .rd-area-emphasis .rd-note > i { flex: none; }
 .rd-area-emphasis .rd-note .cc-note-text { min-width: 0; overflow-wrap: anywhere; }
 
-</style></head>
+</style><style>
+/* Standard single-choice menus keep the original control, labels, and change handlers. */
+select:not([hidden]):not([multiple]){border-radius:10px;}
+#appChoiceList{position:fixed;inset:auto;z-index:2147483646;box-sizing:border-box;margin:0;padding:4px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink-soft);box-shadow:0 6px 20px #17232c24;overflow:auto;overscroll-behavior:contain;text-align:start;}
+#appChoiceList [role=option]{display:block;box-sizing:border-box;min-height:34px;padding:8px 10px;border-radius:7px;font:inherit;font-size:13px;line-height:18px;cursor:pointer;overflow-wrap:anywhere;}
+#appChoiceList [aria-selected=true]{background:var(--surface-2);color:var(--ink);}
+#appChoiceList .active{box-shadow:inset 0 0 0 1px var(--border-2);}
+@media(hover:hover){#appChoiceList [role=option]:hover{background:var(--surface-2);color:var(--ink);}}
+@media(pointer:coarse){#appChoiceList [role=option]{min-height:42px;padding-block:12px;}}
+.ptable .cl-plan-row .cl-district-bar{position:sticky;left:0;width:min(100%,var(--district-viewport,100%));}
+</style>
+<script>
+/* One rounded list for the remaining single-select controls, including dynamically rendered settings. */
+(()=>{
+  let owner=null,menu=null,active=-1,search='',typedAt=0;
+  function close(){
+    if(!owner)return;
+    owner.removeAttribute('aria-controls');owner.removeAttribute('aria-activedescendant');owner.removeAttribute('aria-expanded');
+    menu.remove();owner=null;menu=null;search='';
+  }
+  function highlight(index){
+    const rows=menu.children;
+    if(!rows.length)return;
+    active=Math.max(0,Math.min(index,rows.length-1));
+    for(const row of rows)row.classList.toggle('active',row===rows[active]);
+    owner.setAttribute('aria-activedescendant',rows[active].id);
+    const row=rows[active];
+    if(row.offsetTop<menu.scrollTop)menu.scrollTop=row.offsetTop;
+    else if(row.offsetTop+row.offsetHeight>menu.scrollTop+menu.clientHeight)menu.scrollTop=row.offsetTop+row.offsetHeight-menu.clientHeight;
+  }
+  function position(){
+    if(!owner)return;
+    if(!owner.isConnected||!owner.getClientRects().length){close();return;}
+    const r=owner.getBoundingClientRect(),view=window.visualViewport;
+    const left=view?.offsetLeft||0,top=view?.offsetTop||0,w=view?.width||innerWidth,h=view?.height||innerHeight;
+    const below=top+h-r.bottom-10,above=r.top-top-10,up=below<Math.min(220,menu.scrollHeight)&&above>below;
+    const width=Math.min(Math.max(88,r.width),w-16);
+    menu.style.width=width+'px';menu.style.maxHeight=Math.max(32,Math.min(260,up?above:below))+'px';
+    menu.style.left=Math.max(left+8,Math.min(r.left,left+w-width-8))+'px';
+    menu.style.top=(up?r.top-4-menu.offsetHeight:r.bottom+4)+'px';
+  }
+  function open(s){
+    close();owner=s;owner.focus({preventScroll:true});
+    menu=document.createElement('div');menu.id='appChoiceList';menu.setAttribute('role','listbox');
+    menu.setAttribute('aria-label',s.getAttribute('aria-label')||s.labels?.[0]?.firstChild?.textContent?.trim()||'選項');
+    let selected=0;
+    for(const o of s.options){
+      if(o.hidden||o.disabled||o.parentElement?.disabled)continue;
+      const row=document.createElement('div');row.id='appChoice'+o.index;row.dataset.index=o.index;
+      row.setAttribute('role','option');row.setAttribute('aria-selected',String(o.selected));row.textContent=o.label;
+      if(o.selected)selected=menu.childElementCount;menu.append(row);
+    }
+    document.body.append(menu);owner.setAttribute('aria-controls',menu.id);owner.setAttribute('aria-expanded','true');
+    position();if(owner)highlight(selected);
+  }
+  function choose(row){
+    if(!row||!owner)return;
+    const s=owner,index=Number(row.dataset.index);close();
+    if(s.selectedIndex===index)return;
+    s.selectedIndex=index;
+    for(const type of ['input','change'])s.dispatchEvent(new Event(type,{bubbles:true}));
+  }
+  function control(e){const s=e.target.closest?.('select:not([multiple]):not([hidden]):not(:disabled)');return s&&s.size<=1?s:null;}
+  window.addEventListener('pointerdown',e=>{
+    if(control(e)&&e.button===0){e.preventDefault();return;}
+    if(menu?.contains(e.target)){if(e.pointerType==='mouse')e.preventDefault();return;}
+    close();
+  },true);
+  window.addEventListener('click',e=>{
+    const s=control(e),row=e.target.closest?.('#appChoiceList [role=option]');
+    if(!s&&!row)return;
+    e.preventDefault();e.stopImmediatePropagation();
+    if(row)choose(row);else if(owner===s)close();else open(s);
+  },true);
+  window.addEventListener('keydown',e=>{
+    const s=control(e);if(!s||e.isComposing||e.ctrlKey||e.metaKey)return;
+    if(e.key==='Tab'){close();return;}
+    if(e.key==='Escape'&&owner){e.preventDefault();e.stopImmediatePropagation();close();return;}
+    const keys=['ArrowDown','ArrowUp','Enter',' ','Home','End'];
+    if(!keys.includes(e.key)&&e.key.length!==1)return;
+    e.stopImmediatePropagation();e.preventDefault();const wasOpen=owner===s;
+    if(!wasOpen)open(s);
+    if(!owner)return;
+    if(e.key==='Home')highlight(0);
+    else if(e.key==='End')highlight(menu.childElementCount-1);
+    else if(e.key==='ArrowDown'||e.key==='ArrowUp'){if(wasOpen)highlight(active+(e.key==='ArrowDown'?1:-1));}
+    else if(e.key==='Enter'||e.key===' '){if(wasOpen)choose(menu.children[active]);}
+    else{const now=performance.now();search=(now-typedAt<650?search:'')+e.key.toLowerCase();typedAt=now;
+      const match=Array.from(menu.children).findIndex(row=>row.textContent.trim().toLowerCase().startsWith(search));if(match>=0)highlight(match);}
+  },true);
+  window.addEventListener('focusin',e=>{if(owner&&e.target!==owner)close();});
+  window.addEventListener('scroll',e=>{if(owner&&!menu.contains(e.target))position();},{capture:true,passive:true});
+  window.addEventListener('resize',position);window.visualViewport?.addEventListener('resize',position);
+})();
+</script>
+</head>
 <body>
 <div id="app">
 
@@ -3455,10 +3525,10 @@ function communityFeatures(value){
   const source=value.values[section];let result;
   if(section==='catalogs'){
    if(!obj(source))fail('欄位選項設定不正確');result={};
-   for(const field of ['planUnit','area','layout','status','parkingType','name']){
+   for(const field of ['planUnit','area','layout','status','parkingType','parkingCount','name']){
     const list=source[field]??[];if(!Array.isArray(list)||list.length>5000)fail('欄位選項清單不正確');
     const seen=new Set();result[field]=list.map(entry=>{
-     if(!obj(entry))fail('欄位選項不正確');const name=text(entry.name,80,false).trim();if(seen.has(name))fail('欄位選項名稱重複');seen.add(name);
+     if(!obj(entry))fail('欄位選項不正確');const name=field==='parkingCount'?parkingCount(text(entry.name,5000,false)):text(entry.name,80,false).trim();if(seen.has(name))fail('欄位選項名稱重複');seen.add(name);
      const item={name};
      if(own(entry,'hex')){if(typeof entry.hex!=='string'||!/^#[0-9a-f]{6}$/i.test(entry.hex))fail('欄位底色色碼不正確');item.hex=entry.hex;}
      if(own(entry,'alpha')){if(typeof entry.alpha!=='number'||!Number.isFinite(entry.alpha)||entry.alpha<0||entry.alpha>100)fail('欄位底色濃度不正確');item.alpha=entry.alpha;}
@@ -3476,7 +3546,7 @@ function communityFeatures(value){
    const hex=v=>typeof v==='string'&&/^#[0-9a-f]{6}$/i.test(v);
    if(!obj(source)||!obj(source.shared)||!Array.isArray(source.backgrounds)||source.backgrounds.length>5000)fail('重劃區橫桿設定不正確');
    const {height,fontSize,fontWeight,ink,inkColor}=source.shared;
-   if(![22,24,26,28,32].includes(height)||![12,13,14,15,16].includes(fontSize)||![400,600,700].includes(fontWeight)||!['auto','black','white','custom'].includes(ink)||!hex(inkColor))fail('重劃區橫桿共用外觀不正確');
+   if(![22,24,26,28,32].includes(height)||!(Number.isInteger(fontSize)&&fontSize>=12&&fontSize<=24)||![400,600,700].includes(fontWeight)||!['auto','black','white','custom'].includes(ink)||!hex(inkColor))fail('重劃區橫桿共用外觀不正確');
    const seen=new Set();
    const backgrounds=source.backgrounds.map(entry=>{
     if(!obj(entry)||!['follow','custom'].includes(entry.mode)||(entry.background!==null&&!hex(entry.background)))fail('重劃區橫桿底色不正確');
@@ -3488,7 +3558,7 @@ function communityFeatures(value){
    if(!obj(source))fail('社區連結設定不正確');const names=strings(source.names,24,6);if(names.length!==6)fail('社區連結需要六格名稱');
    if(!Array.isArray(source.communities)||source.communities.length>5000)fail('社區連結清單不正確');const seen=new Set();
    const communities=source.communities.map(entry=>{if(!obj(entry))fail('社區連結不正確');const name=text(entry.name,5000,false);if(seen.has(name))fail('社區連結名稱重複');seen.add(name);if(!Array.isArray(entry.urls)||entry.urls.length!==6)fail('社區連結需要六格網址');return {name,urls:entry.urls.map(url)};});
-   const a=source.appearance;if(!obj(a)||![32,28,26,24,22].includes(a.height)||![12,13,14,15,16].includes(a.fontSize)||![400,600,700].includes(a.fontWeight)||!['auto','black','white'].includes(a.ink)||(a.background!==null&&(typeof a.background!=='string'||!/^#[0-9a-f]{6}$/i.test(a.background))))fail('社區連結外觀設定不正確');
+   const a=source.appearance;if(!obj(a)||![32,28,26,24,22].includes(a.height)||!(Number.isInteger(a.fontSize)&&a.fontSize>=12&&a.fontSize<=24)||![400,600,700].includes(a.fontWeight)||!['auto','black','white'].includes(a.ink)||(a.background!==null&&(typeof a.background!=='string'||!/^#[0-9a-f]{6}$/i.test(a.background))))fail('社區連結外觀設定不正確');
    result={names,communities,appearance:{height:a.height,background:a.background,fontSize:a.fontSize,fontWeight:a.fontWeight,ink:a.ink}};
   }else if(section==='locations'){
    if(!obj(source)||source.version!==2||!stamp(source.resetAt))fail('社區共用資料格式不正確');result={version:2,resetAt:source.resetAt,registry:{},pending:{}};
@@ -3828,7 +3898,7 @@ function emptyHistorySection(key,state){
  if(key==='columnOrder')return [];
  if(key==='districtTabs')return {order:[],initial:''};
  if(key==='districtBars')return defaultDistrictBars();
- if(key==='catalogs')return Object.fromEntries(['planUnit','area','layout','status','parkingType','name'].map(f=>[f,[]]));
+ if(key==='catalogs')return Object.fromEntries(['planUnit','area','layout','status','parkingType','parkingCount','name'].map(f=>[f,[]]));
  if(key==='locations')return {version:2,resetAt:state.resetAt,registry:{},pending:{}};
  if(key==='orders')return {version:1,resetAt:state.resetAt,mode:'default',orders:{property:[],planUnit:[],community:[]}};
  return {names:['','','','','',''],communities:[],appearance:{height:32,background:null,fontSize:13,fontWeight:700,ink:'auto'}};
@@ -4256,7 +4326,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.24K";
+const APP_VERSION = "2026.11.24L";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -7244,6 +7314,28 @@ const discreetDialog = document.getElementById("discreetDialog");
       button.setAttribute("aria-pressed",String(discreet.on));
     }
   }
+  function highlightRestoredColumns(fields){
+    if(!fields.length||viewMode!=="table")return;
+    const head=tableWrap.querySelector(".thead-wrap"),body=tableWrap.querySelector(".tbody-wrap");
+    if(!head||!body)return;
+    const headers=Array.from(head.querySelectorAll("th[data-col]")).filter(th=>fields.includes(th.dataset.col));
+    if(!headers.length)return;
+    const first=headers[0].getBoundingClientRect(),left=body.getBoundingClientRect().left+body.clientLeft;
+    if(first.left<left||first.right>left+body.clientWidth){
+      body.scrollLeft+=first.left-left-Math.max(0,(body.clientWidth-first.width)/2);
+      head.scrollLeft=body.scrollLeft;
+    }
+    const cells=headers.slice(),rows=body.querySelectorAll("tr[data-id]");
+    for(const header of headers){
+      for(const row of rows){
+        const cell=row.cells[header.cellIndex];
+        if(cell)cells.push(cell);
+      }
+    }
+    for(const cell of cells)cell.classList.add("discreet-revealed");
+    const duration=matchMedia("(prefers-reduced-motion: reduce)").matches?650:1050;
+    setTimeout(()=>cells.forEach(cell=>cell.classList.remove("discreet-revealed")),duration);
+  }
   function setDiscreet(on,fields){
     const redraw = on || discreet.on;
     if (redraw){
@@ -7267,6 +7359,7 @@ const discreetDialog = document.getElementById("discreetDialog");
         toastEl.textContent = "";
       }
     }
+    const restored=discreet.on?discreet.fields.filter(field=>!on||!fields.includes(field)):[];
     const toggled = discreet.on !== on;
     discreet = {on,fields};
     syncButton();
@@ -7283,6 +7376,7 @@ const discreetDialog = document.getElementById("discreetDialog");
       }
       applyFilter();
       refreshDiscreetDetail();
+      highlightRestoredColumns(restored);
     }
     const message = toggled ? (on ? "低調模式：開" : "低調模式：關") : "";
     try { localStorage.setItem(DISCREET_KEY, JSON.stringify(discreet)); }
@@ -13417,7 +13511,7 @@ function paintPropertyState(state){
 /* Community field choices, appearance and links. */
 (() => {
   'use strict';
-  const labels={planUnit:'重劃區',area:'區域',layout:'格局',status:'狀態',parkingType:'車類',name:'社區名稱'};
+  const labels={planUnit:'重劃區',area:'區域',layout:'格局',status:'狀態',parkingType:'車類',parkingCount:'車數',name:'社區名稱'};
   const fields=Object.keys(labels), colored=new Set(fields);
   const palette=[['紅色','#ef4444'],['橙色','#f97316'],['黃色','#eab308'],['綠色','#16a34a'],['青色','#0891b2'],['藍色','#2563eb'],['紫色','#7c3aed'],['灰色','#64748b']];
   const initial=Object.fromEntries(fields.map(field=>[field,[]]));
@@ -13505,7 +13599,7 @@ function paintPropertyState(state){
     menu.setAttribute('aria-label',labels[active.field]+'選項');
     menu.innerHTML=head(labels[active.field])+(active.field==='name'?`<div class="fo-full-name"><label for="fieldFullName">編輯完整案名／戶別</label><div class="fo-full-name-row"><input id="fieldFullName" class="fo-input" data-full-name aria-label="編輯完整案名／戶別" value="${esc(active.fullNameDraft??String(item.name||''))}" placeholder="社區名稱／戶別" autocomplete="off"><button type="button" class="fo-primary" data-save-full-name>儲存</button></div><span class="fo-full-name-hint">只修改這筆物件，也可按 Enter 儲存。</span></div>`:'')+`<button type="button" class="fo-clear" data-clear aria-label="清空這筆${labels[active.field]}">—</button>`+
       active.options.map((opt,i)=>`<div class="fo-line"><button type="button" class="fo-option" title="長按調整順序" aria-keyshortcuts="Alt+ArrowDown" data-select="${i}" aria-pressed="${opt.name===current}"><span>${esc(opt.name)}</span>${opt.name===current?'<span class="fo-check">✓</span>':''}</button>${colored.has(active.field)?`<button type="button" class="fo-color" data-color="${i}" aria-label="選擇 ${esc(opt.name)} 的顏色"><span class="fo-dot${opt.hex&&opt.alpha?'':' none'}" style="--dot:${opt.hex||'#64748b'}"></span></button>`:''}<button type="button" class="fo-rename" data-rename="${i}" aria-label="重新命名 ${esc(opt.name)}">重新命名</button><button type="button" class="fo-delete" data-delete-option="${i}" aria-label="刪除 ${esc(opt.name)} 選項">刪除</button></div>`).join('')+
-      `<div class="fo-add"><input class="fo-input" data-add-input placeholder="自訂…" aria-label="新增自訂${labels[active.field]}" maxlength="80" autocomplete="off"><button type="button" class="fo-primary" data-add>加入</button></div><p class="fo-error" role="alert"></p>`;
+      `<div class="fo-add"><input class="fo-input" data-add-input placeholder="自訂…" aria-label="新增自訂${labels[active.field]}" ${active.field==='parkingCount'?'inputmode="numeric" maxlength="5000"':'maxlength="80"'} autocomplete="off"><button type="button" class="fo-primary" data-add>加入</button></div><p class="fo-error" role="alert"></p>`;
     if(active.addDraft!=null){menu.querySelector('[data-add-input]').value=active.addDraft;delete active.addDraft;}
     window.CommunityShared?.decorateMenu(menu,item,active.field);
     menu.classList.add('show');place();
@@ -13585,7 +13679,9 @@ function paintPropertyState(state){
     else menu.querySelector('button').focus({preventScroll:true});
   }
   function error(message){menu.querySelector('.fo-error').textContent=message;}
-  function validName(raw){const name=String(raw).trim();if(!name){error('請輸入名稱。');return null;}if(name.length>80){error('名稱最多 80 個字。');return null;}if(active.field==='name'&&/[／/]/.test(name)){error('這裡只填社區名稱，戶別會保留。');return null;}return name;}
+  function validName(raw){const name=String(raw).trim();if(!name){error('請輸入名稱。');return null;}if(active.field==='parkingCount'){
+    try{return PropertyCore.parkingCount(name);}catch(e){error(e.message);return null;}
+  }if(name.length>80){error('名稱最多 80 個字。');return null;}if(active.field==='name'&&/[／/]/.test(name)){error('這裡只填社區名稱，戶別會保留。');return null;}return name;}
   function choose(name,nextCatalogs=null){
     const session=active,ok=performChoice(name,nextCatalogs);
     if(active===session && window.DesktopQuickEdit?.current?.kind==='option')active.quickPendingChoice=ok?null:{name,nextCatalogs};
@@ -13609,7 +13705,7 @@ function paintPropertyState(state){
   function showRename(index){
     cancelTint();active.mode='rename';active.renaming=active.options[index].name;
     const count=items.filter(x=>valueOf(x,active.field)===active.renaming).length;
-    menu.innerHTML=head('重新命名'+labels[active.field])+`<input class="fo-input" data-rename-input aria-label="新名稱" value="${esc(active.renaming)}" maxlength="80"><p class="fo-note">使用此名稱的 ${count} 筆物件會一起更新。${active.field==='name'?'「／」後的戶別保留。':''}</p><p class="fo-error" role="alert"></p><div class="fo-actions"><button type="button" class="fo-secondary" data-back>取消</button><button type="button" class="fo-primary" data-save-name>儲存</button></div>`;
+    menu.innerHTML=head('重新命名'+labels[active.field])+`<input class="fo-input" data-rename-input aria-label="新名稱" value="${esc(active.renaming)}" ${active.field==='parkingCount'?'inputmode="numeric" maxlength="5000"':'maxlength="80"'}><p class="fo-note">使用此名稱的 ${count} 筆物件會一起更新。${active.field==='name'?'「／」後的戶別保留。':''}</p><p class="fo-error" role="alert"></p><div class="fo-actions"><button type="button" class="fo-secondary" data-back>取消</button><button type="button" class="fo-primary" data-save-name>儲存</button></div>`;
     place();menu.querySelector('input').focus();menu.querySelector('input').select();
   }
   function rename(){
@@ -13621,7 +13717,7 @@ function paintPropertyState(state){
     if(index<0)nextCatalogs[field].push(entry);else nextCatalogs[field][index]=entry;
     const ok=CommunityData.transaction(features=>{
       features.catalogs=nextCatalogs;
-      window.CommunityShared.renameFeatures(features,field,old,name);
+      if(['name','planUnit','area'].includes(field))window.CommunityShared.renameFeatures(features,field,old,name);
       if(field==='planUnit'&&features.districtTabs){
         const tabs=features.districtTabs;
         tabs.order=[...new Set(tabs.order.map(value=>value===old?name:value))];
@@ -13672,10 +13768,10 @@ function paintPropertyState(state){
       return {itemCount:affectedRows.length,communityCount:groups.size,communities:[...groups],linkCount,used:affectedRows.length>0||groups.size>0||linkCount>0};
     }
     function plan(records,features,field,from,to,resetAt,createState,orderFallback){
-      if(!['planUnit','area','layout','status','parkingType','name'].includes(field)||!from||from===to)throw Error('請選擇不同的替代選項，或選擇清空。');
+      if(!['planUnit','area','layout','status','parkingType','parkingCount','name'].includes(field)||!from||from===to)throw Error('請選擇不同的替代選項，或選擇清空。');
       const next=copy(features),beforeById=new Map(records.map(item=>[item.id,item]));
       const after=records.map(copy),use=usage(records,features,field,from);
-      next.catalogs=copy(next.catalogs||Object.fromEntries(['planUnit','area','layout','status','parkingType','name'].map(key=>[key,[]])));
+      next.catalogs=copy(next.catalogs||Object.fromEntries(['planUnit','area','layout','status','parkingType','parkingCount','name'].map(key=>[key,[]])));
       next.catalogs[field]=(next.catalogs[field]||[]).filter(entry=>entry.name!==from);
       if(field==='planUnit'&&next.districtTabs){
         next.districtTabs.order=next.districtTabs.order.filter(name=>name!==from);
@@ -13974,7 +14070,7 @@ function paintPropertyState(state){
 (() => {
   'use strict';
   const slotCount=6;
-  const heights=[32,28,26,24,22],fontSizes=[12,13,14,15,16];
+  const heights=[32,28,26,24,22],fontSizes=Array.from({length:13},(_,i)=>12+i);
   const validHex=value=>typeof value==='string'&&/^#[a-f\d]{6}$/i.test(value);
   const defaultAppearance=()=>({height:32,background:null,fontSize:13,fontWeight:700,ink:'auto'});
   function normalizeAppearance(value,strict=false){
@@ -13989,7 +14085,7 @@ function paintPropertyState(state){
     else if(validHex(shared.background))result.background=shared.background.toUpperCase();
     else if(strict)throw new Error('共用底色請填入完整 HEX 色碼，例如 #AFBBC1。');
     if(fontSizes.includes(shared.fontSize))result.fontSize=shared.fontSize;
-    else if(strict)throw new Error('共用字級請選擇 12 至 16。');
+    else if(strict)throw new Error('共用字級請選擇 12 至 24。');
     if([400,600,700].includes(shared.fontWeight))result.fontWeight=shared.fontWeight;
     else if(strict&&shared.fontWeight!=null)throw new Error('請選擇細、中或粗。');
     if(['auto','black','white'].includes(shared.ink))result.ink=shared.ink;
@@ -14048,7 +14144,7 @@ function paintPropertyState(state){
     bar.textContent=name||'未填寫';
     if(editable){
       bar.type='button';bar.dataset.clDistrict=name;bar.setAttribute('aria-haspopup','dialog');
-      bar.title='編輯重劃區橫桿';bar.setAttribute('aria-label','編輯「'+(name||'未填寫')+'」重劃區橫桿');
+      bar.setAttribute('aria-label','編輯「'+(name||'未填寫')+'」重劃區橫桿');
       const edit=document.createElement('span');edit.className='cl-district-edit';edit.setAttribute('aria-hidden','true');edit.textContent='編輯';bar.append(edit);
     }
     return bar;
@@ -14451,7 +14547,7 @@ function paintPropertyState(state){
   function retainLocationChoices(features,changes,beforeItems,nextLocations){
     const previous=features.locations?.registry||{},following=nextLocations.registry||{};
     const beforeById=new Map(beforeItems.map(item=>[item.id,item]));
-    const catalogs=copy(features.catalogs||Object.fromEntries(['planUnit','area','layout','status','parkingType','name'].map(field=>[field,[]])));
+    const catalogs=copy(features.catalogs||Object.fromEntries(['planUnit','area','layout','status','parkingType','parkingCount','name'].map(field=>[field,[]])));
     let added=false;
     for(const field of ['planUnit','area']){
       const names=new Set(),remember=value=>{if(typeof value==='string'&&value.trim())names.add(value.trim());};
@@ -15090,74 +15186,7 @@ function paintPropertyState(state){
 
 </script>
 <script id="feedback-source">
-/* Community soft feedback for table columns restored by turning discreet mode off.
-   Append after field-options.js so its renderTable/applyFilter wrappers run first. */
-(() => {
-  'use strict';
 
-  const className = 'community-column-reveal';
-  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-  const list = document.getElementById('list');
-  let highlighted = [];
-  let cleanupTimer = null;
-
-  function snapshot() {
-    return {on: discreet.on, fields: tableFields().slice(), view: viewMode};
-  }
-  let previous = snapshot();
-
-  function clear() {
-    clearTimeout(cleanupTimer);
-    cleanupTimer = null;
-    for (const cell of highlighted) cell.classList.remove(className);
-    highlighted = [];
-  }
-
-  function reveal(fields) {
-    if (!fields.length || discreet.on || viewMode !== 'table' || !list.classList.contains('active')) return;
-    const restored = new Set(fields);
-    const columns = [];
-    for (const header of tableWrap.querySelectorAll('.thead-wrap th[data-col]')) {
-      if (!restored.has(header.dataset.col)) continue;
-      columns.push(header.cellIndex);
-      highlighted.push(header);
-    }
-    for (const row of tableWrap.querySelectorAll('.tbody-wrap tr[data-id]')) {
-      for (const index of columns) {
-        const cell = row.cells[index];
-        if (cell) highlighted.push(cell);
-      }
-    }
-    for (const cell of highlighted) cell.classList.add(className);
-    cleanupTimer = setTimeout(clear, reducedMotion.matches ? 650 : 2250);
-  }
-
-  const previousRenderTable = renderTable;
-  renderTable = function (...args) {
-    clear();
-    return previousRenderTable.apply(this, args);
-  };
-
-  const previousApplyFilter = applyFilter;
-  applyFilter = function (...args) {
-    const current = snapshot();
-    const restored = previous.on && !current.on && previous.view === 'table' && current.view === 'table'
-      ? current.fields.filter(field => !previous.fields.includes(field))
-      : [];
-    previous = current;
-    clear();
-    const result = previousApplyFilter.apply(this, args);
-    reveal(restored);
-    return result;
-  };
-
-  // Leaving the list or changing the motion preference ends an in-progress cue.
-  new MutationObserver(() => {
-    if (!list.classList.contains('active')) clear();
-  }).observe(list, {attributes: true, attributeFilter: ['class']});
-  reducedMotion.addEventListener('change', clear);
-  window.addEventListener('pagehide', clear);
-})();
 
 /* Extend community bar paint into the existing scrollbar gutter.  */
 (() => {
@@ -15292,6 +15321,7 @@ function paintPropertyState(state){
     }
     unpin(active);active=null;groups=[];
     if(!body||!table)return;
+    body.style.setProperty('--district-viewport',body.clientWidth+'px');
     const origin=body.getBoundingClientRect().top+body.clientTop;
     groups=Array.from(table.querySelectorAll('tbody > .cl-community-row,tbody > .cl-plan-row'),row=>{
       const cell=row.firstElementChild,rect=row.getBoundingClientRect();
@@ -15392,7 +15422,7 @@ function paintPropertyState(state){
   indicator();return true;
  }
  const scalar={
-  target(target){const el=target.closest('.tcell[data-field]');return el&&tableWrap.contains(el)&&!['planUnit','area','layout','status','parkingType','name'].includes(el.dataset.field)&&el.getAttribute('aria-readonly')!=='true'?{id:tFindItem(el)?.id,field:el.dataset.field}:null;},
+  target(target){const el=target.closest('.tcell[data-field]');return el&&tableWrap.contains(el)&&!['planUnit','area','layout','status','parkingType','parkingCount','name'].includes(el.dataset.field)&&el.getAttribute('aria-readonly')!=='true'?{id:tFindItem(el)?.id,field:el.dataset.field}:null;},
   open(spec){const el=Array.from(tableWrap.querySelectorAll('.tcell[data-field]')).find(cell=>tFindItem(cell)?.id===spec.id&&cell.dataset.field===spec.field);if(!el)return null;if(el.querySelector('.area-extra'))el.textContent=el.textContent;el.dataset.quickEdit='cell';el.contentEditable='true';el.tabIndex=0;el.focus({preventScroll:true});caretEnd(el);tScrollFieldIntoView(el);return {...spec,el,kind:'cell'};},
   commit(state){
    const {el,field}=state;let value=el.textContent.trim();
@@ -15408,7 +15438,7 @@ function paintPropertyState(state){
   contains(state,target){return state.el.contains(target);}
  };
  const option={
-  target(target){const el=target.closest('.tcell[data-field]');return el&&tableWrap.contains(el)&&['planUnit','area','layout','status','parkingType','name'].includes(el.dataset.field)?{id:tFindItem(el)?.id,field:el.dataset.field}:null;},
+  target(target){const el=target.closest('.tcell[data-field]');return el&&tableWrap.contains(el)&&['planUnit','area','layout','status','parkingType','parkingCount','name'].includes(el.dataset.field)?{id:tFindItem(el)?.id,field:el.dataset.field}:null;},
   open(spec){const el=Array.from(tableWrap.querySelectorAll('.tcell[data-field]')).find(cell=>tFindItem(cell)?.id===spec.id&&cell.dataset.field===spec.field);if(!el)return null;CommunityFields.open(el);return CommunityFields.getActive()?{...spec,el,kind:'option'}:null;},
   commit(){return CommunityFields.finish();},
   contains(state,target){return !!target.closest('#fieldOptionMenu,#fieldTintPanel,#communityDefaultsBg');}
