@@ -4329,7 +4329,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.24O";
+const APP_VERSION = "2026.11.24P";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -16130,23 +16130,27 @@ function paintPropertyState(state){
 #communityRowDrag{min-height:36px;padding:8px 11px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink-soft);line-height:1.2;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;white-space:nowrap;}
 #communityRowDrag[aria-pressed=true]{background:var(--ink);color:var(--card);border-color:transparent;}
 #communityRowDrag[hidden]{display:none;}
-#tableWrap td.row-grip-cell{position:relative;}
-#tableWrap td.row-grip-cell>.tcell{padding-inline-start:25px;}
-#tableWrap .community-row-grip{position:absolute;inset:0 auto 0 0;z-index:1;width:23px;border:0;background:transparent;color:inherit;font:700 16px/1 sans-serif;cursor:grab;touch-action:none;user-select:none;}
-#tableWrap .community-row-grip:hover,#tableWrap .community-row-grip:focus-visible{background:var(--surface-2);border-radius:4px;}
+#tableWrap tr.row-drag-ready{cursor:grab;user-select:none;-webkit-user-select:none;}
+#tableWrap tr.row-drag-ready>td{position:relative;cursor:inherit;touch-action:pan-x pinch-zoom;}
+#tableWrap tr.row-drag-ready>td::after{content:"";position:absolute;inset:0;z-index:8;pointer-events:none;background:color-mix(in srgb,var(--surface-2) 32%,transparent);}
+#tableWrap tr.row-drag-ready:focus-visible{outline:2px solid var(--accent-deep);outline-offset:-2px;}
+#tableWrap tr.row-drag-ready.fo-moving{cursor:grabbing;outline:2px solid var(--accent-deep);outline-offset:-2px;}
+#tableWrap tr.row-drag-ready.fo-moving>td::after{background:transparent;}
+@media(hover:hover){#tableWrap tr.row-drag-ready:hover:not(.fo-moving)>td::after{background:color-mix(in srgb,var(--surface-2) 15%,transparent);}}
 #tableWrap .tbody-wrap.is-dragging tr[data-id]{position:relative;transition:transform .13s ease-out;}
 #tableWrap .tbody-wrap.is-dragging tr.fo-moving{z-index:3;transition:none;filter:drop-shadow(0 2px 3px #17232c38);}
 #tableWrap .tbody-wrap.is-dragging tr.fo-moving td{background-color:var(--card);}
-#tableWrap .fo-moving .community-row-grip{cursor:grabbing;}
 @media(prefers-reduced-motion:reduce){#tableWrap .tbody-wrap.is-dragging tr[data-id]{transition:none;}}
 </style>
 <script>
 (()=>{
   const button=document.createElement('button');
   button.id='communityRowDrag';button.type='button';button.textContent='拖曳模式';
-  button.title='拖曳案名前的把手，調整同社區內的物件順序';
+  button.title='按住物件列上下拖曳，調整同社區內的順序';
   document.getElementById('rowHeightControl').after(button);
   let activeMode=null,cancelDrag=null;
+  const wasBusy=window.isTableBusy;
+  window.isTableBusy=()=>!!cancelDrag||wasBusy();
   function mode(){
     const sort=visibleSort();
     return viewMode==='table'&&listView.classList.contains('active')&&!tselMode&&tableFields().includes('name')
@@ -16157,16 +16161,16 @@ function paintPropertyState(state){
     if(activeMode!==available){cancelDrag?.();activeMode=null;}
     button.hidden=!available;button.setAttribute('aria-pressed',String(!!activeMode));
   }
-  function addHandles(){
+  function markRows(){
     toolbar();if(!activeMode)return;
     let batch=[];
     function finish(){
       if(batch.length>1)for(const row of batch){
         const name=row.querySelector('.tcell[data-field="name"]');
-        if(!name||name.parentElement.querySelector('.community-row-grip'))continue;
-        const grip=document.createElement('button');grip.type='button';grip.className='community-row-grip';grip.textContent='⠿';
-        grip.title='拖曳排序，也可按 ↑ 或 ↓';grip.setAttribute('aria-label','移動'+name.textContent);
-        name.parentElement.classList.add('row-grip-cell');name.before(grip);
+        if(!name||row.classList.contains('row-drag-ready'))continue;
+        row.classList.add('row-drag-ready');row.tabIndex=0;
+        row.setAttribute('aria-label','移動'+name.textContent+'，可按上下方向鍵排序');
+        for(const cell of row.cells)for(const child of cell.children)child.inert=true;
       }
       batch=[];
     }
@@ -16178,19 +16182,20 @@ function paintPropertyState(state){
     finish();
   }
   const previousRender=renderTable;
-  renderTable=function(...args){cancelDrag?.();const result=previousRender(...args);addHandles();return result;};
+  renderTable=function(...args){cancelDrag?.();const result=previousRender(...args);markRows();return result;};
   const previousMode=syncTableMode;
   syncTableMode=function(...args){const result=previousMode(...args);toolbar();return result;};
   toolbar();
   button.addEventListener('click',()=>{
     if(!mode()||flushEditing()===false||window._saveBlocked)return;
+    if(!activeMode&&openNeedId)closeNeedExp();
     activeMode=activeMode?null:mode();applyFilter();
-    if(activeMode)toast('拖曳案名前的把手，調整同社區內的物件順序');
+    if(activeMode)toast('按住物件列上下拖曳，調整同社區內的順序');
   });
-  function begin(grip){
+  function begin(row){
     const sort=activeMode;
     if(!sort||sort!==mode()||window._saveBlocked)return;
-    const row=grip.closest('tr'),item=items.find(x=>x.id===row.dataset.id);
+    const item=items.find(x=>x.id===row.dataset.id);
     if(!item)return;
     const name=namedCommunity(item),plan=String(item.planUnit||'').trim(),byPlan=sort==='group_plan_unit';
     const belongs=x=>namedCommunity(x)===name&&(!byPlan||String(x.planUnit||'').trim()===plan);
@@ -16220,13 +16225,10 @@ function paintPropertyState(state){
     }
     return {row,rows,move};
   }
-  tableWrap.addEventListener('pointerdown',event=>{
-    const grip=event.target.closest('.community-row-grip');
-    if(!grip||event.button!==0||!event.isPrimary)return;
-    event.stopImmediatePropagation();cancelDrag?.();
-    const group=begin(grip);if(!group)return;
-    const {rows,row,move}=group,scroller=row.closest('.tbody-wrap'),sort=activeMode;
-    cancelDrag=dragOrderRow(event,grip,row,()=>activeMode===sort&&mode()===sort,move,{
+  function lift(event,row){
+    const group=begin(row);if(!group)return;
+    const {rows,move}=group,scroller=row.closest('.tbody-wrap'),sort=activeMode;
+    cancelDrag=dragOrderRow(event,row,row,()=>activeMode===sort&&mode()===sort,move,{
       rows,scroller,onEnd(){cancelDrag=null;},
       canDrop(e,rects,initialScroll){
         const r=scroller.getBoundingClientRect(),y=e.clientY+scroller.scrollTop-initialScroll;
@@ -16235,15 +16237,51 @@ function paintPropertyState(state){
           &&y>=rects[0].top&&y<rects.at(-1).bottom&&!target?.closest('.cl-community-row,.cl-plan-row');
       }
     });
+  }
+  // A quick vertical swipe scrolls. Holding a touch still first picks up the row.
+  function waitForHold(down,row){
+    const scroller=row.closest('.tbody-wrap'),top=scroller.scrollTop;
+    const listeners=new AbortController(),binding={signal:listeners.signal,capture:true};
+    let scrolling=false;
+    row.setPointerCapture(down.pointerId);
+    const timer=setTimeout(()=>{
+      if(scrolling)return;
+      stop(false);if(row.isConnected&&activeMode===mode()&&activeMode)lift(down,row);
+    },280);
+    function stop(release=true){
+      clearTimeout(timer);listeners.abort();cancelDrag=null;
+      if(release&&row.hasPointerCapture(down.pointerId))row.releasePointerCapture(down.pointerId);
+    }
+    window.addEventListener('pointermove',e=>{
+      if(e.pointerId!==down.pointerId)return;
+      const dx=e.clientX-down.clientX,dy=e.clientY-down.clientY;
+      if(!scrolling&&Math.hypot(dx,dy)>7){clearTimeout(timer);scrolling=true;}
+      if(scrolling&&Math.abs(dy)>=Math.abs(dx))scroller.scrollTop=top-dy;
+    },binding);
+    for(const type of ['pointerup','pointercancel','lostpointercapture']){
+      window.addEventListener(type,e=>{if(e.pointerId===down.pointerId)stop();},binding);
+    }
+    window.addEventListener('blur',()=>stop(),binding);cancelDrag=stop;
+  }
+  window.addEventListener('pointerdown',event=>{
+    if(!event.isPrimary){if(event.pointerType==='touch')cancelDrag?.();return;}
+    const row=event.target.closest?.('#tableWrap tr.row-drag-ready');
+    if(!activeMode||!row||event.button!==0)return;
+    event.stopImmediatePropagation();event.preventDefault();cancelDrag?.();
+    if(event.pointerType==='touch')waitForHold(event,row);else lift(event,row);
   },true);
-  tableWrap.addEventListener('click',e=>{if(e.target.closest('.community-row-grip')){e.preventDefault();e.stopImmediatePropagation();}},true);
+  for(const type of ['click','dblclick','contextmenu','dragstart']){
+    window.addEventListener(type,e=>{
+      if(activeMode&&e.target.closest?.('#tableWrap tr.row-drag-ready')){e.preventDefault();e.stopImmediatePropagation();}
+    },true);
+  }
   window.addEventListener('keydown',e=>{
     if(e.key==='Escape'&&cancelDrag){e.preventDefault();e.stopImmediatePropagation();cancelDrag();return;}
-    const grip=e.target.closest?.('.community-row-grip');
-    if(!grip||!['ArrowUp','ArrowDown'].includes(e.key))return;
-    e.preventDefault();e.stopImmediatePropagation();const group=begin(grip);if(!group)return;
+    const row=e.target.closest?.('.row-drag-ready');
+    if(!row||!['ArrowUp','ArrowDown'].includes(e.key))return;
+    e.preventDefault();e.stopImmediatePropagation();const group=begin(row);if(!group)return;
     const from=group.rows.indexOf(group.row),id=group.row.dataset.id;group.move(from,from+(e.key==='ArrowUp'?-1:1));
-    requestAnimationFrame(()=>tableWrap.querySelector('tr[data-id="'+CSS.escape(id)+'"] .community-row-grip')?.focus({preventScroll:true}));
+    requestAnimationFrame(()=>tableWrap.querySelector('tr.row-drag-ready[data-id="'+CSS.escape(id)+'"]')?.focus({preventScroll:true}));
   },true);
 })();
 </script>
