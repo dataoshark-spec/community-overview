@@ -1,5 +1,5 @@
-/* 社區總覽 2026.11.25R：成功載入完整新版後才啟用，離線保留正常頁面。 */
-const VERSION="20261125R";
+/* 社區總覽 2026.11.25S：成功載入完整新版後才啟用，離線保留正常頁面。 */
+const VERSION="20261125S";
 const SCOPE=new URL(self.registration.scope);
 const PREFIX="community-table-v3-shell:"+encodeURIComponent(SCOPE.pathname)+":";
 const CACHE=PREFIX+"v6:"+VERSION;

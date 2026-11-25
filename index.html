@@ -2319,12 +2319,14 @@ button.cl-district-bar{cursor:pointer;}
 <style id="community-sticky-style">
 /* Keep sticky table contents below toolbar menus. */
 #tableWrap{isolation:isolate;}
+.ptable tbody .cl-plan-row > td.cl-district-pinned,
 .ptable tbody .cl-community-row > td.cl-community-pinned{
   position:sticky;
   top:var(--cl-sticky-top,0px);
   z-index:10;
   box-shadow:0 2px 3px rgba(44,63,71,.09);
 }
+.ptable tbody .cl-plan-row > td.cl-district-pinned{z-index:11;}
 </style>
 <style id="community-name-slot-style">
 .cl-link-grid .cl-community-name{cursor:default;min-width:0;color:var(--cl-slot-ink,var(--text));}
@@ -2445,6 +2447,7 @@ tr.history-highlight>td{box-shadow:inset 0 2px #60ae93,inset 0 -2px #60ae93!impo
 #app:not(.table-mode) .ctrl-right{flex:none;gap:5px}
 #districtTabSettings{padding:8px 10px;border-radius:9px;font-size:.8rem;}
 #districtTabSettings[hidden]{display:none;}
+#catBg[inert]{visibility:hidden;}
 #districtTabDialog .cl-dialog{display:flex;flex-direction:column;max-width:430px;overflow:hidden;}
 #districtTabRows{min-height:0;overflow:auto;overscroll-behavior:contain;}
 .district-tab-head,.district-tab-row{display:grid;grid-template-columns:32px 66px minmax(0,1fr) auto;align-items:center;gap:8px;}
@@ -2722,17 +2725,17 @@ select:not([hidden]):not([multiple]){border-radius:10px;}
 })();
 </script>
 <style id="property-mark-style">
-.mark-action{position:absolute;z-index:3;inset:0 auto 0 0;width:20px;border:0;background:transparent;color:#76520c;padding:0;display:grid;place-items:center;cursor:pointer}
+.mark-action{position:absolute;z-index:3;inset:0 auto 0 0;width:20px;border:0;background:transparent;padding:0;display:grid;place-items:center;cursor:pointer}
 .mark-action span{line-height:1;font-size:14px;pointer-events:none}
 .mark-action[aria-pressed=false]{opacity:0}
-tr[data-id]:hover .mark-action,.mark-action:focus-visible{opacity:1}
+
 .mark-action:focus-visible{outline:2px solid #39718d;outline-offset:-2px;border-radius:4px}
-html[data-mark-style=rail] .mark-action[aria-pressed=true] span{font-size:0;width:4px;height:66%;border-radius:4px;background:#ad640c}
+html[data-mark-style=rail] .mark-action span{font-size:0;width:4px;height:66%;border-radius:4px;background:currentColor}
 #tableWrap{margin-inline-start:max(28px,1.6vw)}
 #mark-outside{position:fixed;width:26px;overflow:hidden;z-index:2;pointer-events:none}
-#mark-outside .mark-action{width:100%;bottom:auto;pointer-events:auto;color:#815810;touch-action:manipulation;}
+#mark-outside .mark-action{width:100%;bottom:auto;pointer-events:auto;color:var(--marked-ink,#815810);touch-action:manipulation;}
 #mark-outside .mark-action:hover,#mark-outside .mark-action:focus-visible{opacity:1}
-html[data-mark-style=combo] #mark-outside .mark-action[aria-pressed=true]::after{content:'';position:absolute;right:1px;top:18%;bottom:18%;width:2px;background:#ad640c;border-radius:2px}
+html[data-mark-style=combo] #mark-outside .mark-action::after{content:'';position:absolute;right:1px;top:18%;bottom:18%;width:2px;background:currentColor;border-radius:2px}
 #mark-outside .mark-track{position:absolute;inset:0;pointer-events:none}
 @media(hover:none){#mark-outside .mark-action[aria-pressed=false]:not(:focus-visible){opacity:0}}
 #mark-color-dialog{width:min(340px,calc(100vw - 24px));box-sizing:border-box;border:1px solid var(--line);border-radius:15px;padding:16px;background:var(--card);color:var(--ink);box-shadow:0 10px 35px #13283130}
@@ -2743,8 +2746,6 @@ html[data-mark-style=combo] #mark-outside .mark-action[aria-pressed=true]::after
 #mark-color-dialog button[aria-pressed=true],#mark-color-dialog [data-apply]{background:var(--accent-soft);font-weight:650}
 #mark-color-dialog footer{margin-top:14px}
 #mark-color-dialog .mark-palette:not(:empty){margin-top:12px}
-#mark-outside .mark-action[aria-pressed=true]{color:var(--marked-ink,#815810)}
-html[data-mark-style=rail] #mark-outside .mark-action[aria-pressed=true] span,html[data-mark-style=combo] #mark-outside .mark-action[aria-pressed=true]::after{background:var(--marked-ink,#815810)}
 #mark-color-dialog{position:fixed;inset:0;margin:auto;height:fit-content;max-height:calc(100dvh - 24px);overflow:auto}
 #mark-color-dialog .mark-palette p{font-size:13px;color:var(--ink-soft);margin:12px 0}
 #mark-color-dialog .mark-swatches{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
@@ -2758,12 +2759,11 @@ html[data-mark-style=rail] #mark-outside .mark-action[aria-pressed=true] span,ht
 #mark-color-dialog .mark-shapes button[aria-pressed=true]{box-shadow:inset 0 0 0 1.5px var(--ink-soft);background:var(--surface-2);color:var(--ink)}
 .mark-shapes svg{height:18px;width:18px}
 .mark-action svg{display:block;width:15px;height:15px}
-html[data-mark-style=rail] #mark-outside .mark-action[aria-pressed=true] svg{display:none}
+html[data-mark-style=rail] #mark-outside .mark-action svg{display:none}
 #mark-color-dialog .mark-reset{display:block}
-#mark-outside .mark-action[aria-pressed=false] span[data-shape="outlineStar"]{color:var(--ink-soft,#647781);opacity:.55}
 #mark-outside .mark-action .mark-star-glyph{display:block;font:inherit;line-height:1;font-weight:400}
 .mark-shapes .mark-star-glyph{display:grid;place-items:center;height:18px;font-size:18px;line-height:1;font-weight:400}
-html[data-mark-style=rail] #mark-outside .mark-action[aria-pressed=true] .mark-star-glyph{display:none}
+html[data-mark-style=rail] #mark-outside .mark-action .mark-star-glyph{display:none}
 #mark-color-dialog .mark-shapes legend{width:100%}
 #mark-color-dialog .mark-shapes .mark-follow{float:right;display:inline-block;padding:2px 7px;font-size:12px;font-weight:400}
 #mark-color-dialog .mark-dialog-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}
@@ -2789,7 +2789,6 @@ html[data-mark-style=rail] #mark-outside .mark-action[aria-pressed=true] .mark-s
 </style>
 <style>
 #tableWrap.zone-ready :is(.cl-district-bar,.cl-community-row,.cl-community-row .cl-link-slot){cursor:pointer}
-#bar-sort-tip{font-size:12px;color:var(--muted);padding:5px 15px}
 #bar-sort-dialog{position:fixed;inset:0;margin:auto;width:min(382px,calc(100vw - 28px));max-height:min(540px,calc(100dvh - 32px));height:fit-content;box-sizing:border-box;padding:0;border:1px solid var(--line);border-radius:18px;background:var(--card,#fff);color:var(--ink);box-shadow:0 16px 60px #15283233;overflow:hidden}
 #bar-sort-dialog[open]{display:flex;flex-direction:column}
 #bar-sort-dialog::backdrop{background:rgba(25,42,50,.29)}
@@ -2854,6 +2853,11 @@ html[data-mark-style=rail] #mark-outside .mark-action[aria-pressed=true] .mark-s
 #tableWrap td.bulk-cell>*{background:transparent!important;outline:none!important}
 #tableWrap.bulk-on,#tableWrap.bulk-on .tbody-wrap td{user-select:none}
 #tableWrap.bulk-on:focus{outline:none}
+#bulkTouch[aria-pressed=true]{background:var(--ink);color:var(--card);border-color:var(--ink)}
+@media(pointer:coarse){
+ #tableWrap.bulk-touch-selecting .tbody-wrap tr[data-id]>td>*{pointer-events:none}
+ #bulkMenu button{min-height:40px}
+}
 #bulkMenu{position:fixed;z-index:16000;box-sizing:border-box;min-width:132px;max-width:calc(100vw - 12px);max-height:calc(100dvh - 12px);overflow:auto;margin:0;padding:5px;border:1px solid var(--line);border-radius:11px;background:var(--card);color:var(--ink);box-shadow:0 6px 24px #192e3826}
 #bulkMenu [hidden],#bulkMenu[hidden]{display:none}
 #bulkMenu button,#bulkMenu input{font:inherit;font-size:.9rem;color:inherit}
@@ -2868,6 +2872,132 @@ html[data-mark-style=rail] #mark-outside .mark-action[aria-pressed=true] .mark-s
 #bulkMenu [role=alert]{color:var(--danger);font-size:.8rem}
 
 </style>
+<style>
+/* Shared community and district manager */
+#catBg {align-items:center;justify-content:center;padding:16px;}
+#catBg .modal {width:min(100%,490px);max-width:490px;height:auto;max-height:calc(100dvh - 32px);margin:0;padding:0;border-radius:18px;box-shadow:0 18px 58px #13243235;animation:none;}
+#catBg .modal-body {min-height:0;padding:16px 18px;gap:12px;}
+#catBg .modal-head,#catBg .modal-foot {flex:none;padding:14px 18px;}
+#catBg .cat-add {margin:0;}
+.manager-kinds {display:flex;gap:4px;padding:4px;border-radius:12px;background:var(--surface-2);}
+.manager-kinds button {flex:1;min-height:36px;border:0;border-radius:9px;background:transparent;color:var(--ink-soft);font:inherit;font-weight:600;cursor:pointer;}
+.manager-kinds [aria-pressed=true] {color:var(--ink);background:var(--card);box-shadow:0 1px 4px #18293520;}
+#catList {display:flex;flex-direction:column;gap:7px;min-height:0;overflow-y:auto;overscroll-behavior:contain;}
+.manager-row {position:relative;flex:none;background:var(--card);border:1px solid var(--line);border-radius:11px;}
+.manager-summary {display:grid;grid-template-columns:32px 9px minmax(0,1fr) auto auto;align-items:center;gap:9px;padding:6px 9px 6px 4px;min-height:44px;}
+.manager-summary strong {font-size:.96rem;color:var(--ink);overflow-wrap:anywhere;}
+.manager-color {width:9px;height:9px;border-radius:50%;}
+.manager-count {color:var(--ink-soft);font-size:.8rem;font-variant-numeric:tabular-nums;}
+.manager-summary button,.manager-actions button {font:inherit;font-size:.8rem;cursor:pointer;color:var(--ink-soft);border:1px solid var(--line);border-radius:8px;background:var(--card);padding:6px 10px;}
+.manager-summary .manager-handle {touch-action:none;cursor:grab;border:0;background:transparent;height:34px;display:grid;place-items:center;padding:0;}
+.manager-grip {display:block;width:12px;height:18px;background:radial-gradient(circle,currentColor 1.7px,transparent 1.95px) 0 0 / 6px 6px repeat;}
+.manager-edit {display:grid;grid-template-columns:minmax(0,1fr) 38px;gap:8px;padding:10px;border-top:1px solid var(--line);}
+.manager-edit input {min-width:0;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);padding:6px 9px;font:inherit;}
+.manager-edit input[type=color] {width:38px;height:36px;padding:3px;}
+.manager-actions {grid-column:1/-1;display:flex;gap:6px;justify-content:flex-end;}
+.manager-actions [data-manage-delete] {margin-right:auto;color:var(--danger);}
+.manager-actions [data-manage-save] {color:var(--ink);background:var(--surface-2);}
+.manager-empty,#managerError {margin:0;color:var(--ink-soft);font-size:.88rem;}
+#managerError {color:var(--danger);}
+#catList .fo-moving {z-index:1;box-shadow:0 4px 12px #12253522;}
+#catList.is-dragging .manager-row:not(.fo-moving) {transition:transform .14s ease;}
+#districtTabDialog .cl-dialog {width:min(100%,450px);}
+.district-tab-head,.district-tab-row {grid-template-columns:44px 66px minmax(0,1fr) auto;gap:6px;}
+.district-tab-row {min-height:50px;}
+.district-tab-row .district-tab-grip {width:40px;height:42px;border-radius:10px;background:var(--surface-2);display:grid;place-items:center;color:var(--ink-soft);}
+.district-tab-grip .manager-grip {width:16px;height:24px;background-size:8px 8px;background-image:radial-gradient(circle,currentColor 2.1px,transparent 2.4px);}
+.district-tab-row label {font-weight:600;}
+@media (hover:hover){.district-tab-row .district-tab-grip:hover,.manager-summary .manager-handle:hover {background:var(--surface-3);color:var(--ink);}}
+@media(max-width:420px){#catBg {padding:12px;}#catBg .modal {max-height:calc(100dvh - 24px);}#catBg .modal-body {padding:12px;} .manager-summary {gap:6px;} .district-tab-head,.district-tab-row {grid-template-columns:40px 58px minmax(0,1fr) auto;gap:4px;}}
+@media(prefers-reduced-motion:reduce){#catList.is-dragging .manager-row {transition:none;}}
+
+/* Names and counts stay aligned while the row editor is open. */
+#catList.manager-editing .manager-handle {visibility:hidden;}
+.mini-color-control,#fieldTintPanel .mini-color-control,#catBg .mini-color-control,.cl-district-ink-picker .mini-color-control {
+  display:inline-grid;place-items:stretch;box-sizing:border-box;width:42px;max-width:100%;height:34px;padding:4px;cursor:pointer;
+  border:1px solid var(--line);border-radius:11px;background:var(--card);box-shadow:0 1px 2px #1729340e;
+}
+.mini-color-control::before {content:"";border-radius:7px;background:var(--mini-ink);box-shadow:inset 0 0 0 1px #18283312;}
+.cl-district-ink-picker .mini-color-control[hidden]{display:none;}
+.mini-color-control:focus-visible {outline:2px solid var(--accent-deep);outline-offset:2px;}
+#miniColorDialog {position:fixed;inset:0;margin:auto;width:min(320px,calc(100vw - 28px));height:fit-content;max-height:calc(100dvh - 28px);box-sizing:border-box;overflow:auto;overscroll-behavior:contain;padding:0;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:0 18px 56px #13233130;font-family:inherit;}
+#miniColorDialog::backdrop {background:#16232c36;}
+#miniColorDialog[open] {display:flex;flex-direction:column;overflow:hidden;}
+#miniColorDialog header,#miniColorDialog footer {flex:none;display:flex;align-items:center;gap:8px;padding:12px 16px;}
+#miniColorDialog header {justify-content:space-between;border-bottom:1px solid var(--line);}
+#miniColorDialog h2 {font:inherit;font-size:1rem;font-weight:650;color:var(--ink);margin:0;}
+#miniColorDialog .mini-close {width:32px;height:32px;border:0;color:var(--ink-soft);background:var(--surface-2);font:inherit;font-size:20px;border-radius:10px;cursor:pointer;}
+#miniColorDialog .mini-palette {padding:12px 16px;min-height:0;overflow-y:auto;overscroll-behavior:contain;}
+#miniColorDialog .clcp-inline-head {justify-content:flex-end;}
+#miniColorDialog .clcp-inline-head button:first-of-type:not(:last-child) {margin-right:auto;}
+#miniColorDialog .clcp-sv {height:116px;border-radius:13px;overflow:hidden;}
+#miniColorDialog .clcp-presets button {border-radius:9px;}
+#miniColorDialog footer {border-top:1px solid var(--line);}
+#miniColorDialog footer button {flex:1;min-height:36px;border:1px solid var(--line);background:var(--card);color:var(--ink-soft);border-radius:10px;font:inherit;font-weight:600;cursor:pointer;}
+#miniColorDialog footer [data-mini-apply] {background:var(--ink);color:var(--card);border-color:var(--ink);}
+@media(pointer:coarse){#miniColorDialog footer button {min-height:42px;}}
+
+
+</style><script>
+
+/* Compact color controls use the same editable palette as link and marker settings. */
+(()=>{
+  let active=null;
+  function close(){
+    if(!active)return;
+    const {dialog,widget,trigger,abort}=active;active=null;abort.abort();widget.destroy();
+    dialog.close();dialog.remove();trigger.setAttribute('aria-expanded','false');
+    if(trigger.isConnected)trigger.focus({preventScroll:true});
+  }
+  function open(trigger){
+    const original=trigger.value.toUpperCase();
+    const dialog=document.createElement('dialog');
+    dialog.id='miniColorDialog';dialog.setAttribute('aria-labelledby','miniColorTitle');
+    dialog.innerHTML='<header><h2 id="miniColorTitle"></h2><button type="button" class="mini-close" aria-label="關閉調色盤">×</button></header><div class="mini-palette"></div><footer><button type="button" data-mini-cancel>取消</button><button type="button" data-mini-apply>套用顏色</button></footer>';
+    dialog.querySelector('h2').textContent=trigger.getAttribute('aria-label');
+    const owner=trigger.closest('#catBg,#fieldTintPanel,.cl-dialog');
+    (owner||document.body).append(dialog);
+    let color=original;
+    const widget=CommunityLinkColorPicker.mount(dialog.querySelector('.mini-palette'),{color:original,resetTo:original,onPreview(value){color=value||original}});
+    const abort=new AbortController();
+    active={dialog,widget,trigger,abort};
+    const palette=dialog.querySelector('.clcp-inline');
+    palette.removeAttribute('aria-labelledby');palette.setAttribute('aria-label','選色');
+    const head=palette.querySelector('.clcp-inline-head');
+    head.querySelector('h3').textContent='';head.querySelector('h3').hidden=true;
+    const reset=head.querySelector('[data-clcp-reset]');reset.textContent='回到開啟時顏色';
+    const hex=palette.querySelector('.clcp-hex');hex.placeholder=original;
+    for(const el of palette.querySelectorAll('[aria-label]'))el.setAttribute('aria-label',el.getAttribute('aria-label').replaceAll('底色','顏色'));
+    if(window.EyeDropper){
+      const sample=document.createElement('button');sample.type='button';sample.className='clcp-reset';sample.textContent='螢幕取色';
+      sample.onclick=async()=>{try{const result=await new EyeDropper().open({signal:abort.signal});if(!abort.signal.aborted)widget.setColor(result.sRGBHex.toUpperCase());}catch(error){if(error.name!=='AbortError')palette.querySelector('.clcp-error').textContent='目前無法從螢幕取色，請使用下方色盤。';}};
+      head.prepend(sample);
+    }
+    function apply(){
+      if(!widget.validate())return;
+      if(trigger.isConnected){
+        trigger.value=color;trigger.style.setProperty('--mini-ink',color);
+        trigger.dispatchEvent(new Event('input',{bubbles:true}));trigger.dispatchEvent(new Event('change',{bubbles:true}));
+      }
+      close();
+    }
+    dialog.querySelector('.mini-close').onclick=close;dialog.querySelector('[data-mini-cancel]').onclick=close;
+    dialog.querySelector('[data-mini-apply]').onclick=apply;
+    dialog.addEventListener('cancel',e=>{e.preventDefault();close()});
+    for(const type of ['input','change','click','keydown','touchstart'])dialog.addEventListener(type,e=>e.stopPropagation());
+    dialog.showModal();trigger.setAttribute('aria-expanded','true');
+    dialog.querySelector('.mini-close').focus({preventScroll:true});
+  }
+  window.addEventListener('click',event=>{
+    const trigger=event.target.closest?.('.mini-color-control');
+    if(!active&&trigger){event.preventDefault();event.stopImmediatePropagation();open(trigger);}
+  },true);
+  window.addEventListener('keydown',event=>{
+    if(active&&event.key==='Escape'){event.preventDefault();event.stopImmediatePropagation();close();}
+  },true);
+})();
+
+</script>
 </head>
 <body>
 <div id="app">
@@ -2885,7 +3015,7 @@ html[data-mark-style=rail] #mark-outside .mark-action[aria-pressed=true] .mark-s
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
       <span>搜尋重劃區、社區、案名、門牌、售價、格局、樓層…</span>
     </button>
-    <button class="all-btn cover-community-manage" id="coverCatManage" type="button" aria-haspopup="dialog" aria-controls="catBg">＋ 管理社區</button>
+    <button class="all-btn cover-community-manage" id="coverCatManage" type="button" aria-haspopup="dialog" aria-controls="catBg">＋ 社區／重劃區管理</button>
     <div class="cover-scrollwrap">
       <div class="cover-body" id="coverBody">
         <div class="spacer"></div>
@@ -2929,8 +3059,7 @@ html[data-mark-style=rail] #mark-outside .mark-action[aria-pressed=true] .mark-s
         <div class="tabs" id="tabs">
           <button type="button" id="allListTab" class="tab active" data-cat="" aria-pressed="true">全部</button>
         </div>
-        <button type="button" id="districtTabSettings" class="tab" aria-haspopup="dialog" aria-controls="districtTabDialog">分頁設定</button>
-        <button class="cat-manage" id="catManage" aria-label="管理社區" title="管理社區" aria-haspopup="dialog" aria-controls="catBg">＋</button>
+        <button class="cat-manage" id="catManage" aria-label="社區／重劃區管理" title="社區／重劃區管理" aria-haspopup="dialog" aria-controls="catBg">＋</button>
       </div>
       <div class="search">
         <div class="search-box">
@@ -3162,20 +3291,23 @@ html[data-mark-style=rail] #mark-outside .mark-action[aria-pressed=true] .mark-s
       <div class="cl-editor-footer"><p class="cl-error" role="alert"></p><div class="cl-editor-actions"><button type="button" class="fo-secondary" data-tabs-reset>恢復預設</button><button type="button" class="fo-secondary" data-tabs-cancel>取消</button><button type="button" class="fo-primary" data-tabs-save>儲存</button></div></div>
     </section>
   </div>
-  <div class="modal-bg" id="catBg" role="dialog" aria-modal="true" aria-labelledby="catManagerTitle">
+  <div class="modal-bg center" id="catBg" role="dialog" aria-modal="true" aria-labelledby="catManagerTitle">
     <div class="modal">
       <div class="modal-head">
-        <h2 id="catManagerTitle">管理社區</h2>
+        <h2 id="catManagerTitle">社區／重劃區管理</h2>
         <button class="x" id="catCloseX" aria-label="關閉">✕</button>
       </div>
       <div class="modal-body">
+        <div class="manager-kinds" role="group" aria-label="管理項目"><button type="button" data-kind="name" aria-pressed="true">社區</button><button type="button" data-kind="planUnit" aria-pressed="false">重劃區</button></div>
         <div class="cat-add">
           <input id="catNew" type="text" placeholder="新增社區名稱" aria-label="新增社區名稱" maxlength="80">
           <button class="btn-primary" id="catAdd">新增</button>
         </div>
+        <p id="managerError" role="alert" hidden></p>
         <div class="cat-list" id="catList"></div>
       </div>
       <div class="modal-foot">
+        <button type="button" id="districtTabSettings" class="tab" aria-haspopup="dialog" aria-controls="districtTabDialog" hidden>分頁順序與預設</button>
         <span class="spacer"></span>
         <button class="btn-primary" id="catDone">完成</button>
       </div>
@@ -4165,7 +4297,7 @@ function historyMove(latest,h,request){
    const matches=k=>{
     const actual=fieldValue(current,k),expected=fieldValue(from,k);
     if(same(actual,expected))return true;
-    if(!to||!customLinkFieldId(k)||!k.startsWith("link"))return false;
+    if(!to||!customLinkFieldId(k))return false;
     const empty=k.startsWith("linkNone")?false:"";
     return (actual===undefined&&expected===empty)||(expected===undefined&&actual===empty);
    };
@@ -4183,6 +4315,7 @@ function historyMove(latest,h,request){
    for(const k of d.fields){
     if(k==="due")setDueValue(current,dueValue(to));
     else if(own(to,k))current[k]=to[k];
+    else if(customLinkFieldId(k))current[k]=k.startsWith("linkNone")?false:"";
     else delete current[k];
    }
   }
@@ -4477,7 +4610,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.25R";
+const APP_VERSION = "2026.11.25S";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -4874,9 +5007,11 @@ function isOnSale(item){ return !CLOSED_SALE_STATUSES.has(String(item?.status ??
 function namedCommunity(item){return String(item?.name||"").split(/[／/]/,1)[0].trim();}
 function homeCommunities(){
   const groups=new Map();
+  const catalog=PropertyCore.local().current.settings.communityFeatures?.values.catalogs?.name||[];
+  for(const entry of catalog)groups.set(entry.name,{name:entry.name,color:entry.hex||'#8494A0',count:0});
   for(const c of communityGroups()){
     const name=communityLabel(c.key).trim();
-    if(name&&!groups.has(name))groups.set(name,{name,color:c.color,count:0});
+    if(name)groups.set(name,{name,color:c.color,count:0});
   }
   for(const item of items){
     const name=namedCommunity(item);
@@ -5030,7 +5165,6 @@ function districtTabsVisible(){return !discreet.on||!discreet.fields.includes('p
 function renderDistrictTabs(){
   const visible=districtTabsVisible(),names=visible?orderedDistrictTabs():[''];
   if(!names.includes(activeDistrict))activeDistrict='';
-  document.getElementById('districtTabSettings').hidden=!visible;
   const host=allListTab.parentNode,signature=JSON.stringify(names);
   const layoutChanged=signature!==tabSignature;
   if(layoutChanged){
@@ -8292,6 +8426,7 @@ function trapFocusKey(e, container){
   try { nodes[j].focus(); } catch(err){}
 }
 function tabTrapTarget(){
+  const colorDialog=document.querySelector("#miniColorDialog[open]");if(colorDialog)return colorDialog;
   const columnText=document.querySelector('#columnTypeDialog.open .cl-dialog');if(columnText)return columnText;
   if(tabDraft)return document.querySelector("#districtTabDialog .cl-dialog");
   if(customOrderOpen())return document.querySelector("#customOrderBg .modal");
@@ -11506,7 +11641,7 @@ const bulkCommunityUI={
   apply:document.getElementById("bulkCommunityApply")
 };
 let communityMovePlan=null,communityMoveBusy=false,communityBackdropDown=false,communityCloseWatcher=null;
-const noCommunityMessage="尚未建立社區，請回首頁點「管理社區」新增。";
+const noCommunityMessage="尚未建立社區，請回首頁點「社區／重劃區管理」新增。";
 function fillBulkTargets(targets){
   const select=bulkCommunityUI.select;
   select.replaceChildren(new Option("請選擇社區",""),...targets.map(c=>new Option(c.label,c.key)));
@@ -11907,7 +12042,7 @@ function dragOrderRow(down,handle,row,isCurrent,onMove,scope={}){
   function render(){
     rows.innerHTML=tabDraft.order.map((name,i)=>{
       const label=esc(name||'全部');
-      return `<div class="district-tab-row"><button type="button" class="district-tab-grip" data-order-grip aria-label="拖曳${label}調整順序" title="拖曳調整順序">⠿</button><input type="radio" name="districtTabDefault" id="district-tab-choice-${i}" value="${i}" aria-label="預設開啟${label}" ${tabDraft.initial===name?'checked':''}><label for="district-tab-choice-${i}">${label}</label><span><button type="button" data-step="-1" data-idx="${i}" aria-label="上移${label}" ${i===0?'disabled':''}>↑</button><button type="button" data-step="1" data-idx="${i}" aria-label="下移${label}" ${i===tabDraft.order.length-1?'disabled':''}>↓</button></span></div>`;
+      return `<div class="district-tab-row"><button type="button" class="district-tab-grip" data-order-grip aria-label="拖曳${label}調整順序" title="拖曳調整順序"><span class="manager-grip" aria-hidden="true"></span></button><input type="radio" name="districtTabDefault" id="district-tab-choice-${i}" value="${i}" aria-label="預設開啟${label}" ${tabDraft.initial===name?'checked':''}><label for="district-tab-choice-${i}">${label}</label><span><button type="button" data-step="-1" data-idx="${i}" aria-label="上移${label}" ${i===0?'disabled':''}>↑</button><button type="button" data-step="1" data-idx="${i}" aria-label="下移${label}" ${i===tabDraft.order.length-1?'disabled':''}>↓</button></span></div>`;
     }).join('');
   }
   let cancelDrag=null;
@@ -11927,14 +12062,14 @@ function dragOrderRow(down,handle,row,isCurrent,onMove,scope={}){
   function close(){
     if(!tabDraft)return;
     cancelDrag?.();cancelDrag=null;
-    tabDraft=null;panel.classList.remove('open');trigger.setAttribute('aria-expanded','false');unlockOverlay();applyPendingMergeIfAny();
+    tabDraft=null;panel.classList.remove('open');trigger.setAttribute('aria-expanded','false');catBg.inert=false;trigger.focus({preventScroll:true});
   }
   trigger.addEventListener('click',()=>{
     flushEditing();if(window._saveBlocked||tabDraft||tableWrap.querySelector('[aria-invalid="true"]')||document.getElementById('saveErrorRetry'))return;
     districtTabs=loadDistrictTabs();
     const order=orderedDistrictTabs();
     tabDraft={order,resetAt:window._resetAt||0,initial:order.includes(districtTabs.initial)?districtTabs.initial:'',base:JSON.stringify(districtTabs)};
-    message.textContent='';render();lockOverlay(trigger);panel.classList.add('open');trigger.setAttribute('aria-expanded','true');
+    message.textContent='';render();catBg.inert=true;panel.classList.add('open');trigger.setAttribute('aria-expanded','true');
     rows.querySelector(':checked')?.focus({preventScroll:true});
   });
   rows.addEventListener('change',event=>{if(tabDraft&&event.target.type==='radio')tabDraft.initial=tabDraft.order[Number(event.target.value)];});
@@ -12253,26 +12388,163 @@ function managerCommunityList(){
   for(const name of Object.keys(settings?.locations?.registry||{}))include(name);
   return Array.from(list.values());
 }
-function renderCatList(){
-  catListEl.innerHTML=managerCommunityList().map(({name,count,managed:c})=>{
-    if(!c)return `<div class="cat-item cat-derived"><strong>${esc(name)}</strong><span class="cat-count">${count} 筆</span></div>`;
-    return `
-    <div class="cat-item" data-key="${esc(c.key)}">
-      <span class="cat-drag" aria-label="拖曳排序" title="拖曳排序"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><g fill="currentColor"><circle cx="6" cy="4" r="1.25"/><circle cx="10" cy="4" r="1.25"/><circle cx="6" cy="8" r="1.25"/><circle cx="10" cy="8" r="1.25"/><circle cx="6" cy="12" r="1.25"/><circle cx="10" cy="12" r="1.25"/></g></svg></span>
-      <button type="button" class="cat-color" data-color="${c.color}" style="--cc:${c.color}" aria-label="選擇顏色" title="選擇顏色"></button>
-      <input type="text" class="cat-name" value="${esc(communityLabel(c.key))}" aria-label="社區名稱" maxlength="80">
-      <span class="cat-count">${count} 筆</span>
-      <button type="button" class="cat-del" aria-label="刪除社區">🗑</button>
-    </div>`;
-  }).join("");
+
+let managerField='name',managerEditing='',managerBase=null;
+const managerLabel=()=>managerField==='name'?'社區':'重劃區';
+function managerError(message){
+  const el=document.getElementById('managerError');el.textContent=message;el.hidden=!message;
 }
+function managerSnapshot(){
+  const state=PropertyCore.local().current;
+  return {items:PropertyCore.clone(items),cats:PropertyCore.clone(cats),features:CommunityData.snapshot(),resetAt:state.resetAt,settings:state.settings};
+}
+function managerEntries(){
+  const catalog=CommunityData.read('catalogs',{})[managerField]||[];
+  const entries=new Map(catalog.map(opt=>[opt.name,{name:opt.name,count:0,color:opt.hex}]));
+  const include=name=>{if(!entries.has(name))entries.set(name,{name,count:0});return entries.get(name);};
+  if(managerField==='name'){
+    for(const {name,count,managed} of managerCommunityList()){
+      const entry=include(name);entry.count=count;entry.color=entry.color||managed?.color;
+    }
+  }else{
+    for(const item of items){const name=districtOf(item);if(name)include(name).count++;}
+    const locations=CommunityData.read('locations',{});
+    for(const loc of Object.values(locations.registry||{}))if(loc.planUnit)include(loc.planUnit);
+  }
+  return Array.from(entries.values());
+}
+function managerCommit(base,mutate,changes=[],nextCats=null,onSaved){
+  const ok=CommunityData.transaction(mutate,changes,{resetAt:base.resetAt,baseItems:base.items,baseFeatures:base.features,managerCats:nextCats,
+    checkLatest(latest){
+      if(JSON.stringify(latest.cats)!==JSON.stringify(base.cats)||JSON.stringify(latest.items)!==JSON.stringify(base.items)||
+        JSON.stringify(latest.settings.communityFeatures?.values||{})!==JSON.stringify(base.features))throw Error('清單已更新，請重新開啟管理視窗後再試。');
+    }});
+  if(!ok){managerError(CommunityData.lastError||'尚未儲存');return false;}
+  managerError('');managerEditing='';managerBase=null;
+  onSaved?.();districtTabs=loadDistrictTabs();renderCover();applyFilter();renderCatList();window.CommunityShared?.formSuggestions();return true;
+}
+function managerCatalog(features){
+  return features.catalogs??=Object.fromEntries(['name','planUnit','area','layout','status','parkingType','parkingCount'].map(key=>[key,[]]));
+}
+function managerValid(name,except){
+  const normalized=value=>value.normalize('NFKC').toLowerCase();
+  let error='';
+  if(!name||name.length>80)error='請輸入 1 至 80 字的名稱。';
+  else if(managerField==='name'&&/[／/]/.test(name))error='請只輸入社區名稱，戶別在物件上填寫。';
+  else if(managerEntries().some(entry=>entry.name!==except&&normalized(entry.name)===normalized(name)))error='清單中已有這個名稱。';
+  managerError(error);return !error;
+}
+function renderCatList(){
+  const label=managerLabel(),entries=managerEntries();
+  catBg.querySelectorAll('[data-kind]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.kind===managerField)));
+  document.getElementById('districtTabSettings').hidden=managerField!=='planUnit'||!!managerEditing||!districtTabsVisible();
+  catNewEl.placeholder='新增'+label+'名稱';catNewEl.setAttribute('aria-label',catNewEl.placeholder);
+  catListEl.classList.toggle("manager-editing",!!managerEditing);
+  catListEl.innerHTML=entries.map(({name,count,color})=>{
+    const text=esc(name),hex=/^#[0-9a-f]{6}$/i.test(color)?color:'#8494A0',expanded=name===managerEditing;
+    return `<div class="manager-row" data-name="${text}"><div class="manager-summary">
+      <button type="button" class="manager-handle" ${managerEditing?'disabled':''} aria-label="拖曳排序 ${text}" title="拖曳排序"><span class="manager-grip" aria-hidden="true"></span></button>
+      <span class="manager-color" style="background:${hex}"></span><strong>${text}</strong><span class="manager-count">${count} 筆</span>
+      <button type="button" data-manage-edit aria-expanded="${expanded}" aria-label="編輯 ${text}">編輯</button></div>${expanded?`<div class="manager-edit">
+        <input type="text" data-manage-name maxlength="80" aria-label="名稱" value="${text}"><button type="button" class="mini-color-control" data-manage-color data-original="${hex}" aria-label="${label}顏色" aria-haspopup="dialog" aria-expanded="false" value="${hex}" style="--mini-ink:${hex}"></button>
+        <div class="manager-actions"><button type="button" data-manage-delete>刪除</button><button type="button" data-manage-cancel>取消</button><button type="button" data-manage-save>儲存</button></div></div>`:''}</div>`;
+  }).join('')||'<p class="manager-empty">尚無'+label+'</p>';
+}
+function addManagerEntry(){
+  const name=catNewEl.value.trim();if(!managerValid(name))return;
+  const base=managerSnapshot(),newCats=managerField==='name'?[...base.cats,{key:makeCommunityKey(),label:name,color:nextColor(),community:true}]:null;
+  if(newCats&&newCats.length>200){managerError('社區清單已達容量上限。');return;}
+  if(managerCommit(base,features=>managerCatalog(features)[managerField].push({name}),[],newCats)){
+    catNewEl.value='';toast('已新增'+managerLabel());
+  }
+}
+function saveManagerEntry(row){
+  const base=managerBase,old=managerEditing,field=managerField,name=row.querySelector('[data-manage-name]').value.trim();
+  if(!base||!managerValid(name,old))return;
+  const picker=row.querySelector('[data-manage-color]'),color=picker.value.toUpperCase(),changedColor=color!==picker.dataset.original.toUpperCase();
+  if(name===old&&!changedColor){managerEditing='';renderCatList();return;}
+  const nextCats=PropertyCore.clone(base.cats);
+  const cat=field==='name'&&communityGroups(nextCats).find(group=>communityLabel(group.key,nextCats)===old);
+  if(cat){cat.label=name;cat.community=true;if(changedColor)cat.color=color;}
+  const changes=[];
+  if(name!==old)for(const item of base.items){
+    if(field==='name'?namedCommunity(item)===old:districtOf(item)===old){
+      const unit=field==='name'?String(item.name).match(/[／/].*$/s)?.[0]||'':'';
+      const value=name+unit;
+      changes.push({...item,[field]:value});
+    }
+  }
+  if(managerCommit(base,features=>{
+    const list=managerCatalog(features)[field];let entry=list.find(item=>item.name===old);
+    if(!entry){entry={name:old};list.push(entry);}entry.name=name;
+    if(changedColor){entry.hex=color;entry.alpha=entry.alpha||35;}
+    if(name!==old)CommunityFields.renameGroupSettings(features,field,old,name);
+  },changes,cat?nextCats:null,()=>{
+    if(field==='planUnit'&&activeDistrict===old)activeDistrict=name;
+    if(field==='name'&&currentCat===old)currentCat=name;
+  }))toast('已儲存'+managerLabel());
+}
+function deleteManagerEntry(){
+  const name=managerEditing,field=managerField,base=managerBase;
+  try{
+    const proposal=CommunityFields.deleteGroupPlan(base.items,base.features,field,name,base.resetAt,base.settings);
+    const cat=field==='name'&&communityGroups(base.cats).find(g=>communityLabel(g.key,base.cats)===name);
+    const changes=new Map(proposal.changes.map(item=>[item.id,item]));
+    if(cat)for(const item of base.items)if(item.cat===cat.key)changes.set(item.id,{...(changes.get(item.id)||item),cat:''});
+    const message=proposal.usage.itemCount?'使用此名稱的 '+proposal.usage.itemCount+' 筆物件會清空這個欄位，物件會保留。':'移除清單中的名稱。';
+    askConfirm('刪除「'+name+'」？',message+(proposal.usage.linkCount?' 此社區的連結也會移除。':''),()=>{
+      if(managerCommit(base,features=>Object.assign(features,proposal.features),Array.from(changes.values()),cat?base.cats.filter(g=>g.key!==cat.key):null))toast('已刪除'+managerLabel());
+    });
+  }catch(error){managerError(error.message);}
+}
+function reorderManager(from,to){
+  if(from===to)return;
+  const base=managerSnapshot(),names=managerEntries().map(entry=>entry.name);
+  names.splice(to,0,names.splice(from,1)[0]);
+  const nextCats=PropertyCore.clone(base.cats);
+  if(managerField==='name'){
+    const groups=communityGroups(nextCats).sort((a,b)=>names.indexOf(communityLabel(a.key,nextCats))-names.indexOf(communityLabel(b.key,nextCats)));
+    let i=0;const keys=new Set(groups.map(g=>g.key));nextCats.forEach((g,index)=>{if(keys.has(g.key))nextCats[index]=groups[i++];});
+  }
+  managerCommit(base,features=>{
+    const catalogs=managerCatalog(features),existing=new Map(catalogs[managerField].map(entry=>[entry.name,entry]));
+    catalogs[managerField]=names.map(name=>existing.get(name)||{name});
+  },[],managerField==='name'?nextCats:null);
+}
+catBg.querySelector('.manager-kinds').addEventListener('click',e=>{
+  const btn=e.target.closest('[data-kind]');if(!btn||btn.dataset.kind===managerField)return;
+  managerField=btn.dataset.kind;managerEditing='';managerBase=null;catNewEl.value='';managerError('');renderCatList();catListEl.scrollTop=0;
+});
+catListEl.addEventListener('click',e=>{
+  const row=e.target.closest('.manager-row');if(!row)return;
+  if(e.target.closest('[data-manage-edit],[data-manage-cancel]')){
+    managerEditing=managerEditing===row.dataset.name?'':row.dataset.name;managerBase=managerEditing?managerSnapshot():null;
+    managerError('');renderCatList();catListEl.querySelector('[data-manage-name]')?.focus();
+  }else if(e.target.closest('[data-manage-save]'))saveManagerEntry(row);
+  else if(e.target.closest('[data-manage-delete]'))deleteManagerEntry();
+});
+catListEl.addEventListener('pointerdown',event=>{
+  const handle=event.target.closest('.manager-handle');if(!handle||event.button!==0||!event.isPrimary||managerEditing)return;
+  dragOrderRow(event,handle,handle.closest('.manager-row'),()=>catBg.classList.contains('open'),reorderManager);
+});
+catListEl.addEventListener('keydown',event=>{
+  const row=event.target.closest('.manager-row');if(!row)return;
+  if(event.target.matches('[data-manage-name]')&&event.key==='Enter'&&!event.isComposing){event.preventDefault();saveManagerEntry(row);}
+  if(!managerEditing&&event.target.closest('.manager-handle')&&['ArrowUp','ArrowDown'].includes(event.key)){
+    event.preventDefault();const from=[...catListEl.children].indexOf(row),to=from+(event.key==='ArrowUp'?-1:1);
+    if(to>=0&&to<catListEl.children.length){reorderManager(from,to);catListEl.children[to].querySelector('.manager-handle').focus();}
+  }
+});
+document.getElementById('catAdd').addEventListener('click',addManagerEntry);
+catNewEl.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing&&e.keyCode!==229){e.preventDefault();addManagerEntry();}});
+
 function openCatManager(e){
   if (catBg.classList.contains("open")) return;
   window.applyPropertyRefresh?.(true);
   const trigger=e?.currentTarget || document.activeElement;
-  renderCatList(); catNewEl.value="";
+  managerField="name"; managerEditing=""; managerError("");renderCatList();catNewEl.value="";
   catBg.classList.add("open"); lockOverlay(trigger);
-  catNewEl.focus({preventScroll:true});
+  document.getElementById("catCloseX").focus({preventScroll:true});
 }
 function closeCatManager(){ closePalette(); catBg.classList.remove("open"); unlockOverlay(); applyPendingMergeIfAny(); }
 
@@ -12537,140 +12809,7 @@ function changeCommunity(change){
   }
   locked(false).catch(e=>window.onPropertyStorageError?.(e));
 }
-function duplicateCommunityName(name, exceptKey){
-  const compare=value=>value.trim().normalize("NFKC").toLowerCase();
-  return managerCommunityList().some(entry=>(!exceptKey||entry.managed?.key!==exceptKey)&&compare(entry.name)===compare(name));
-}
-function addCategory(){
-  const name=catNewEl.value.trim();
-  if(!name){catNewEl.focus();return;}
-  if(name.length>80){toast("社區名稱最多 80 字元");return;}
-  const key=makeCommunityKey();
-  changeCommunity(save=>{
-    if(duplicateCommunityName(name)){toast("這個社區已在清單中");return;}
-    if(cats.length>=200){toast("社區清單已達容量上限");return;}
-    cats.push({key,label:name,color:nextColor()});
-    save(()=>{
-      renderCatList();
-      if(catNewEl.value.trim()===name)catNewEl.value="";
-      toast("已新增社區");
-    });
-  });
-}
-document.getElementById("catAdd").addEventListener("click",addCategory);
-catNewEl.addEventListener("keydown",e=>{
-  if(e.key==="Enter" && !e.isComposing && e.keyCode!==229){e.preventDefault();addCategory();}
-});
 
-catListEl.addEventListener("change",e=>{
-  const field=e.target;
-  if(!field.classList.contains("cat-name"))return;
-  const key=field.closest(".cat-item").dataset.key;
-  const name=field.value.trim(),oldName=field.defaultValue;
-  if(!name || name===oldName){field.value=oldName;return;}
-  if(name.length>80){field.value=oldName;toast("社區名稱最多 80 字元");return;}
-  changeCommunity(save=>{
-    const c=communityGroups().find(x=>x.key===key);
-    if(!c || communityLabel(key)!==oldName){renderCatList();toast("社區名稱已更新，請確認後重試");return;}
-    if(duplicateCommunityName(name,key)){field.value=oldName;toast("社區名稱重複");return;}
-    c.label=name; c.community=true;
-    save(()=>{
-      renderCatList();
-      toast("已更改社區名稱");
-    });
-  });
-});
-catListEl.addEventListener("click",e=>{
-  const cbtn=e.target.closest(".cat-color");
-  if(cbtn){openPalette(cbtn);return;}
-  const del=e.target.closest(".cat-del");
-  if(!del)return;
-  const key=del.closest(".cat-item").dataset.key;
-  const name=communityLabel(key);
-  const memberIds=()=>items.filter(it=>it.cat===key).map(it=>it.id).sort();
-  const before=memberIds();
-  askConfirm(`刪除社區「${name}」？`,before.length
-    ?`這個社區的 ${before.length} 筆物件會解除社區歸屬，仍可在「全部」找到。`:"",
-    ()=>changeCommunity(save=>{
-      if(!communityGroups().some(c=>c.key===key))return;
-      if(name!==communityLabel(key) || JSON.stringify(before)!==JSON.stringify(memberIds())){
-        renderCatList();toast("社區或關聯物件已更新，請再次確認刪除");return;
-      }
-      const ts=Date.now();
-      for(const it of items)if(it.cat===key){it.cat="";it.updatedAt=ts;}
-      cats=cats.filter(c=>c.key!==key);
-      for(const filters of [regularFilters,shortcutFilters]){
-        const selectedCats=filters?.colFilter.cat;
-        if(selectedCats){selectedCats.delete(key);if(!selectedCats.size)filters.colFilter.cat=null;}
-      }
-      if(currentCat===name&&!activeCommunity())currentCat="";
-      save(()=>{
-        if(listView.classList.contains("active"))saveNav("list",currentCat);
-        renderCatList();toast("已刪除社區");
-      });
-    })
-  );
-});
-
-// ---- 類別拖曳排序 ----
-let catDrag = null;
-catListEl.addEventListener("pointerdown", e => {
-  const handle = e.target.closest(".cat-drag");
-  if (!handle) return;
-  const row = handle.closest(".cat-item");
-  if (!row) return;
-  e.preventDefault();
-  const rows = Array.from(catListEl.querySelectorAll(".cat-item[data-key]"));
-  const index = rows.indexOf(row);
-  const rowH = rows.length > 1
-    ? (rows[1].getBoundingClientRect().top - rows[0].getBoundingClientRect().top)
-    : row.offsetHeight + 9;
-  catDrag = { row, index, target: index, startY: e.clientY, rowH, rows };
-  row.classList.add("dragging");
-  document.body.style.userSelect = "none";
-});
-document.addEventListener("pointermove", e => {
-  if (!catDrag) return;
-  const dy = e.clientY - catDrag.startY;
-  catDrag.row.style.transform = `translateY(${dy}px)`;
-  let target = catDrag.index + Math.round(dy / catDrag.rowH);
-  target = Math.max(0, Math.min(catDrag.rows.length - 1, target));
-  if (target !== catDrag.target){
-    catDrag.target = target;
-    const from = catDrag.index;
-    catDrag.rows.forEach((r, j) => {
-      if (r === catDrag.row) return;
-      let shift = 0;
-      if (from < target && j > from && j <= target) shift = -catDrag.rowH;
-      else if (from > target && j >= target && j < from) shift = catDrag.rowH;
-      r.style.transform = shift ? `translateY(${shift}px)` : "";
-    });
-  }
-});
-function endCatDrag(){
-  if (!catDrag) return;
-  const from = catDrag.index, to = catDrag.target, rows = catDrag.rows, row = catDrag.row;
-  rows.forEach(r => { r.style.transform = ""; r.classList.remove("dragging"); });
-  row.style.transform = "";
-  document.body.style.userSelect = "";
-  catDrag = null;
-  if (from !== to){
-    const order=rows.map(el=>el.dataset.key);
-    changeCommunity(save=>{
-      const groups=communityGroups();
-      if(groups.length!==order.length || groups.some((c,i)=>c.key!==order[i])){
-        renderCatList(); toast("社區順序已更新，請再拖曳一次"); return;
-      }
-      const moved=groups.splice(from,1)[0]; groups.splice(to,0,moved);
-      const visible=new Set(order);
-      let next=0;
-      cats=cats.map(c=>visible.has(c.key)?groups[next++]:c);
-      save(()=>{renderCatList();toast("已調整順序");});
-    });
-  }
-}
-document.addEventListener("pointerup", endCatDrag);
-document.addEventListener("pointercancel", endCatDrag);
 
 /* =========================================================================
    滑動返回:在列表頁/設定頁，水平滑動(左或右)即返回上一頁(回到封面)。
@@ -13708,6 +13847,10 @@ function paintPropertyState(state){
    const state=core.local().commit(null,{history:true,group:options.batchGroup||window.propertyUndo?.group(),updateLatest(latest){
     if(latest.resetAt!==expected){const error=Error('資料已完整還原，請關閉並重新開啟這個設定。');error.code='PROPERTY_RESET';throw error;}
     options.checkLatest?.(latest);
+    if(options.managerCats){
+     if(!equal(latest.cats,base.cats))throw Error('社區清單已在其他視窗變更，請重新開啟。');
+     latest.cats=clone(options.managerCats);
+    }
     const feature=clone(latest.settings.communityFeatures||empty()),baseClocks=base.settings.communityFeatures?.clocks||{};
     if(options.catalogBase!=null&&options.catalogBase!==JSON.stringify(feature.values.catalogs??null))throw Error('欄位選項已更新，請取消後重新開啟社區資料。');
     for(const name of affectedCommunities){
@@ -13953,15 +14096,7 @@ function paintPropertyState(state){
     menu.innerHTML=head('重新命名'+labels[active.field])+`<input class="fo-input" data-rename-input aria-label="新名稱" value="${esc(active.renaming)}" ${active.field==='parkingCount'?'inputmode="numeric" maxlength="5000"':'maxlength="80"'}><p class="fo-note">使用此名稱的 ${count} 筆物件會一起更新。${active.field==='name'?'「／」後的戶別保留。':''}</p><p class="fo-error" role="alert"></p><div class="fo-actions"><button type="button" class="fo-secondary" data-back>取消</button><button type="button" class="fo-primary" data-save-name>儲存</button></div>`;
     place();menu.querySelector('input').focus();menu.querySelector('input').select();
   }
-  function rename(){
-    if(!catalogFresh())return;
-    const field=active.field,old=active.renaming,name=validName(menu.querySelector('[data-rename-input]').value);if(!name)return;
-    if(name!==old&&options(field).some(x=>x.name===name)){error('這個名稱已存在，請使用另一個名稱。');return;}
-    const changes=items.filter(item=>valueOf(item,field)===old).map(item=>{const next={...item};setValue(next,field,name);return next;});
-    const nextCatalogs=clone(catalogs),entry={...option(field,old),name},index=nextCatalogs[field].findIndex(x=>x.name===old);
-    if(index<0)nextCatalogs[field].push(entry);else nextCatalogs[field][index]=entry;
-    const ok=CommunityData.transaction(features=>{
-      features.catalogs=nextCatalogs;
+  function renameGroupSettings(features,field,old,name){
       if(['name','planUnit','area'].includes(field))window.CommunityShared.renameFeatures(features,field,old,name);
       if(field==='planUnit'&&features.districtTabs){
         const tabs=features.districtTabs;
@@ -13975,7 +14110,18 @@ function paintPropertyState(state){
       if(field==='name')window.CommunityLinks.renameFeatures(features,old,name);
       const kind=field==='name'?'community':field==='planUnit'?'planUnit':null;
       if(kind&&features.orders?.orders?.[kind])features.orders.orders[kind]=[...new Set(features.orders.orders[kind].map(value=>value===old?name:value))];
-    },changes,saveOptions());
+  }
+  function rename(){
+    if(!catalogFresh())return;
+    const field=active.field,old=active.renaming,name=validName(menu.querySelector('[data-rename-input]').value);if(!name)return;
+    if(name!==old&&(field==='name'?managerCommunityList():options(field)).some(x=>x.name===name)){error('這個名稱已存在，請使用另一個名稱。');return;}
+    const changes=items.filter(item=>valueOf(item,field)===old).map(item=>{const next={...item};setValue(next,field,name);return next;});
+    const nextCatalogs=clone(catalogs),entry={...option(field,old),name},index=nextCatalogs[field].findIndex(x=>x.name===old);
+    if(index<0)nextCatalogs[field].push(entry);else nextCatalogs[field][index]=entry;
+    const ok=CommunityData.transaction(features=>{
+      features.catalogs=nextCatalogs;
+      renameGroupSettings(features,field,old,name);
+    },changes,{...saveOptions(),managerCats:field==='name'&&managedCommunityKey(old)?cats.map(c=>c.key===managedCommunityKey(old)?{...c,label:name,community:true}:c):null});
     if(!ok){error(CommunityData.lastError||'尚未儲存成功，請重試。');return;}
     refreshCatalogs();
     if(field==='planUnit'){if(activeDistrict===old)activeDistrict=name;districtTabs=loadDistrictTabs();saveNav('list',currentCat);}
@@ -14121,9 +14267,15 @@ function paintPropertyState(state){
       if(latest.resetAt!==base.resetAt||JSON.stringify(items)!==JSON.stringify(base.items)||JSON.stringify(latest.items)!==JSON.stringify(base.items)||JSON.stringify(CommunityData.snapshot())!==JSON.stringify(base.features)||JSON.stringify(latest.settings)!==JSON.stringify(base.settings))throw Error('資料已更新，這次尚未刪除。請取消後重新確認。');
       const fallback=CommunitySortModel.legacy(base.settings,base.resetAt,currentSort);
       const proposal=optionDeleteModel.plan(base.items,base.features,field,from,to,base.resetAt,CommunityShared.model.createState,fallback);
+      const managedKey=field==='name'&&managedCommunityKey(from);
+      if(managedKey){
+        const changes=new Map(proposal.changes.map(item=>[item.id,item]));
+        for(const item of base.items)if(item.cat===managedKey)changes.set(item.id,{...(changes.get(item.id)||item),cat:managedCommunityKey(to)});
+        proposal.changes=Array.from(changes.values());
+      }
       const ok=CommunityData.transaction(features=>{
         for(const section of ['catalogs','locations','links','orders','districtBars','districtTabs'])if(Object.hasOwn(proposal.features,section))features[section]=proposal.features[section];
-      },proposal.changes,{...saveOptions(),baseItems:base.items,baseFeatures:base.features});
+      },proposal.changes,{...saveOptions(),baseItems:base.items,baseFeatures:base.features,managerCats:managedKey?cats.filter(c=>c.key!==managedKey):null});
       if(!ok){error(CommunityData.lastError||'尚未刪除成功，請重試。');return;}
       close();refreshCatalogs();applyFilter();CommunityShared.formSuggestions();toast('已刪除「'+from+'」選項');
     }catch(cause){error(cause.message||'尚未刪除成功，請重試。');place();}
@@ -14132,7 +14284,7 @@ function paintPropertyState(state){
   function showTint(index){
     const entry=active.options[index];draft={field:active.field,name:entry.name,hex:entry.hex||'#64748b',alpha:entry.hex?entry.alpha:20,fontWeight:[400,600,700].includes(entry.fontWeight)?entry.fontWeight:(active.field==='name'?700:400),text:['black','white'].includes(entry.text)?entry.text:null};
     tint.setAttribute('aria-label',labels[active.field]+'整格底色');
-    tint.innerHTML=`<div class="fo-head"><span>${esc(entry.name)} 的底色</span><button type="button" class="fo-close" data-cancel-tint aria-label="取消選色">×</button></div><div class="fo-label">純色</div><div class="fo-palette">${palette.map(([name,hex])=>`<button type="button" class="fo-swatch" data-pure="${hex}" aria-label="${name}"><span style="--pure:${hex}"></span></button>`).join('')}</div><div class="fo-custom"><span>自訂顏色</span><input type="color" aria-label="自訂顏色" value="${draft.hex}"><input class="fo-input" data-hex aria-label="顏色色碼" value="${draft.hex}" maxlength="7"></div><label class="fo-label" for="fieldTintRange">底色濃度 <span data-percent></span></label><input type="range" class="fo-range" id="fieldTintRange" aria-label="底色濃度" min="0" max="100" value="${draft.alpha}"><div class="fo-quick">${[10,15,20,30].map(n=>`<button type="button" data-level="${n}">${n}%</button>`).join('')}</div><div class="fo-label">整格預覽</div><div class="fo-preview-cell">${esc(entry.name)}</div><p class="fo-note">同名${labels[active.field]}的整個儲存格使用相同底色。</p><div class="fo-actions"><button type="button" class="fo-secondary" data-none>無底色</button><button type="button" class="fo-primary" data-tint-done>完成</button></div>`;
+    tint.innerHTML=`<div class="fo-head"><span>${esc(entry.name)} 的底色</span><button type="button" class="fo-close" data-cancel-tint aria-label="取消選色">×</button></div><div class="fo-label">純色</div><div class="fo-palette">${palette.map(([name,hex])=>`<button type="button" class="fo-swatch" data-pure="${hex}" aria-label="${name}"><span style="--pure:${hex}"></span></button>`).join('')}</div><div class="fo-custom"><span>自訂顏色</span><button type="button" class="mini-color-control" data-field-tint-color aria-label="自訂欄位底色" aria-haspopup="dialog" aria-expanded="false" value="${draft.hex}" style="--mini-ink:${draft.hex}"></button><input class="fo-input" data-hex aria-label="顏色色碼" value="${draft.hex}" maxlength="7"></div><label class="fo-label" for="fieldTintRange">底色濃度 <span data-percent></span></label><input type="range" class="fo-range" id="fieldTintRange" aria-label="底色濃度" min="0" max="100" value="${draft.alpha}"><div class="fo-quick">${[10,15,20,30].map(n=>`<button type="button" data-level="${n}">${n}%</button>`).join('')}</div><div class="fo-label">整格預覽</div><div class="fo-preview-cell">${esc(entry.name)}</div><p class="fo-note">同名${labels[active.field]}的整個儲存格使用相同底色。</p><div class="fo-actions"><button type="button" class="fo-secondary" data-none>無底色</button><button type="button" class="fo-primary" data-tint-done>完成</button></div>`;
     const textControls=document.createElement('div');
     textControls.className='fo-text-settings fo-type-row';
     textControls.innerHTML='<span id="fieldTextColorLabel">文字顏色</span><div class="fo-type-options" role="group" aria-labelledby="fieldTextColorLabel"><button type="button" data-text-color="black" aria-pressed="false">黑字</button><button type="button" data-text-color="white" aria-pressed="false">白字</button></div>';
@@ -14142,7 +14294,7 @@ function paintPropertyState(state){
     tint.classList.add('show');updateTint();place();tint.querySelector('input[type="range"]').focus({preventScroll:true});
   }
   function updateTint(){
-    tint.querySelector('[data-percent]').textContent=draft.alpha+'%';tint.querySelector('input[type="range"]').value=draft.alpha;tint.querySelector('input[type="color"]').value=draft.hex;tint.querySelector('[data-hex]').value=draft.hex;
+    tint.querySelector('[data-percent]').textContent=draft.alpha+'%';tint.querySelector('input[type="range"]').value=draft.alpha;const swatch=tint.querySelector('[data-field-tint-color]');swatch.value=draft.hex;swatch.style.setProperty('--mini-ink',draft.hex);tint.querySelector('[data-hex]').value=draft.hex;
     tint.querySelectorAll('[data-pure]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.pure===draft.hex)));
     tint.querySelectorAll('[data-level]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.level)===Number(draft.alpha))));
     const visual=appearance(draft),preview=tint.querySelector('.fo-preview-cell');preview.style.background=visual?.bg||'var(--card)';preview.style.color=visual?.ink||'var(--ink)';preview.style.fontWeight=String(draft.fontWeight);
@@ -14192,7 +14344,7 @@ function paintPropertyState(state){
     if(b.hasAttribute('data-none')){draft.alpha=0;draft.text=null;}
     updateTint();
   });
-  tint.addEventListener('input',event=>{if(!draft)return;if(event.target.type==='range')draft.alpha=Number(event.target.value);else if(event.target.type==='color')draft.hex=event.target.value;else if(event.target.hasAttribute('data-hex')){if(!/^#[a-f0-9]{6}$/i.test(event.target.value))return;draft.hex=event.target.value;}updateTint();});
+  tint.addEventListener('input',event=>{if(!draft)return;if(event.target.type==='range')draft.alpha=Number(event.target.value);else if(event.target.hasAttribute('data-field-tint-color'))draft.hex=event.target.value;else if(event.target.hasAttribute('data-hex')){if(!/^#[a-f0-9]{6}$/i.test(event.target.value))return;draft.hex=event.target.value;}updateTint();});
   document.addEventListener('click',event=>{
     if(event.composedPath().includes(menu)||event.composedPath().includes(tint))return;
     if(window.DesktopQuickEdit?.current?.kind==='option'&&event.target.closest('#communityDefaultsBg'))return;
@@ -14215,13 +14367,13 @@ function paintPropertyState(state){
       if(event.altKey&&event.key==='ArrowDown'&&event.target.closest('[data-select]')){event.preventDefault();event.stopPropagation();const index=Number(event.target.closest('[data-select]').dataset.select);enterOptionOrder();menu.querySelectorAll('.fo-order-grip')[index]?.focus();return;}
       event.stopPropagation();if(event.key==='Enter'&&!event.isComposing&&!event.repeat){if(event.target.hasAttribute('data-full-name')){event.preventDefault();saveFullName();}else if(event.target.hasAttribute('data-add-input')){event.preventDefault();add();}else if(event.target.hasAttribute('data-rename-input')){event.preventDefault();rename();}}return;
     }
-    if(tint.contains(event.target)){event.stopPropagation();return;}
+    if(tint.contains(event.target)&&!event.target.closest('#miniColorDialog')){event.stopPropagation();return;}
     if(editMode&&!tselMode&&(event.key==='Enter'||event.key===' ')&&event.target.matches('.tcell[data-field]')&&fields.includes(event.target.dataset.field)&&!tCellIsEditing(event.target)){event.preventDefault();event.stopImmediatePropagation();open(event.target);}
   },true);
   window.addEventListener('resize',()=>{if(active)place();});
   tableWrap.addEventListener('scroll',()=>{if(active)close();},true);
   CommunityData.subscribe(()=>{refreshCatalogs();if(active&&active.resetAt!==(window._resetAt||0)){close();toast('資料已還原，請重新開啟欄位設定。');}paint();});
-  window.CommunityFields={appearance,paint,paintDistrictTabs,close,open,getActive(){return active?{id:active.id,field:active.field,mode:active.mode,tint:!!draft}:null;},finish(){
+  window.CommunityFields={renameGroupSettings,deleteGroupPlan(records,features,field,name,resetAt,settings){return optionDeleteModel.plan(records,features,field,name,'',resetAt,CommunityShared.model.createState,CommunitySortModel.legacy(settings,resetAt,currentSort));},appearance,paint,paintDistrictTabs,close,open,getActive(){return active?{id:active.id,field:active.field,mode:active.mode,tint:!!draft}:null;},finish(){
     if(!active)return true;
     if(window._saveBlocked)return false;
     if(document.getElementById('communityDefaultsBg')?.classList.contains('open'))return false;
@@ -14282,7 +14434,7 @@ function paintPropertyState(state){
       refs.swatch.style.background=color||'var(--surface-3)';refs.swatch.classList.toggle('is-original',!color);
       if(updateHex)refs.hex.value=color||'';
       panel.querySelectorAll('[data-clcp-preset]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.clcpPreset===color)));
-      panel.querySelector('[data-clcp-reset]').setAttribute('aria-pressed',String(!color));
+      panel.querySelector('[data-clcp-reset]').setAttribute('aria-pressed',String(options.resetTo?color===options.resetTo:!color));
     }
     function clearError(){refs.error.textContent='';refs.hex.setAttribute('aria-invalid','false');}
     function setColor(value,updateHex=true){if(!alive)return;color=value;if(value)hsv=hexToHSV(value);clearError();render(updateHex);options.onPreview?.(color);}
@@ -14293,7 +14445,7 @@ function paintPropertyState(state){
       if((hex||null)!==color)setColor(hex||null);else refs.hex.value=hex||'';
       clearError();return true;
     }
-    panel.addEventListener('click',event=>{const button=event.target.closest('button');if(!button)return;if(button.hasAttribute('data-clcp-reset'))setColor(null);else if(button.hasAttribute('data-clcp-preset'))setColor(button.dataset.clcpPreset);},{signal});
+    panel.addEventListener('click',event=>{const button=event.target.closest('button');if(!button)return;if(button.hasAttribute('data-clcp-reset'))setColor(options.resetTo||null);else if(button.hasAttribute('data-clcp-preset'))setColor(button.dataset.clcpPreset);},{signal});
     refs.hue.addEventListener('input',()=>{hsv.h=Number(refs.hue.value);fromHSV();},{signal});
     refs.value.addEventListener('input',()=>{hsv.v=Number(refs.value.value);fromHSV();},{signal});
     refs.hex.addEventListener('input',()=>{const text=refs.hex.value.trim(),hex=normalizeHex(text);clearError();if(!text)setColor(null,false);else if(hex)setColor(hex,false);},{signal});
@@ -14524,7 +14676,7 @@ function paintPropertyState(state){
       <label class="cl-height-control"><span>整列高度</span><select data-cl-height aria-label="${scope}整列高度">${heights.map(height=>`<option value="${height}"${look.height===height?' selected':''}>${height} px</option>`).join('')}</select></label>
       <div class="cl-shared-settings-controls">
         <label class="cl-size-control cl-setting-block"><span class="cl-setting-label">字級</span><select data-cl-size aria-label="${scope}字級">${fontSizes.map(size=>`<option value="${size}"${look.fontSize===size?' selected':''}>${size}</option>`).join('')}</select></label>
-        <div class="cl-setting-block"><span class="cl-setting-label">文字顏色</span>${district?'<div class="cl-district-ink-picker">':''}<div class="cl-ink-controls" role="group" aria-label="${scope}文字顏色">${inks.map(([ink,label])=>`<button type="button" data-cl-ink="${ink}" aria-pressed="${look.ink===ink}">${label}</button>`).join('')}</div>${district?`<input type="color" data-district-text aria-label="自訂全部橫桿字色" value="${look.inkColor}"${look.ink==='custom'?'':' hidden' }></div>`:''}</div>
+        <div class="cl-setting-block"><span class="cl-setting-label">文字顏色</span>${district?'<div class="cl-district-ink-picker">':''}<div class="cl-ink-controls" role="group" aria-label="${scope}文字顏色">${inks.map(([ink,label])=>`<button type="button" data-cl-ink="${ink}" aria-pressed="${look.ink===ink}">${label}</button>`).join('')}</div>${district?`<button type="button" class="mini-color-control" data-district-text aria-label="自訂全部橫桿字色" aria-haspopup="dialog" aria-expanded="false" value="${look.inkColor}" style="--mini-ink:${look.inkColor}"${look.ink==='custom'?'':' hidden' }></button></div>`:''}</div>
         <div class="cl-setting-block"><span class="cl-setting-label">字體粗細</span><div class="cl-weight-controls" role="group" aria-label="${scope}字體粗細">${[[400,'細'],[600,'中'],[700,'粗']].map(([weight,label])=>`<button type="button" data-cl-weight="${weight}" aria-pressed="${look.fontWeight===weight}">${label}</button>`).join('')}</div></div>
       </div></fieldset>`;
   }
@@ -15511,29 +15663,33 @@ function paintPropertyState(state){
     // Only the pinned strip above the native track may extend into an occupied gutter.
     const trackTop=scrolling?(parseFloat(body.style.getPropertyValue('--cl-community-scrollbar-top'))||0):body.clientHeight;
     if(!width||trackTop<=0||(scrolling&&!body.classList.contains('cl-community-scrollbar'))){clear(body);return;}
-    const rows=table.querySelectorAll('tbody > .cl-community-row');
-    if(!rows.length){clear(body);return;}
+    const cells=scrolling
+      ?table.querySelectorAll('td.cl-district-pinned,td.cl-community-pinned')
+      :table.querySelectorAll('tbody > .cl-plan-row > td,tbody > .cl-community-row > td');
+    if(!cells.length){clear(body);return;}
     const bounds=body.getBoundingClientRect(),top=body.clientTop,bottom=top+Math.min(trackTop,body.clientHeight);
     const stops=['transparent 0px'];
     let hasBand=false;
+    let covered=top;
     function band(color,start,end){
-      start=Math.max(top,start);end=Math.min(bottom,end);
+      start=Math.max(covered,start);end=Math.min(bottom,end);
       if(end<=start)return;
       stops.push(`${color} ${px(start)} ${px(end)}`);hasBand=true;
     }
-    for(const row of rows){
-      const cell=row.firstElementChild;if(!cell||(scrolling&&!cell.classList.contains('cl-community-pinned')))continue;
+    // The pinned district is above the outgoing community when the bars overlap.
+    for(const cell of cells){
       const rect=cell.getBoundingClientRect(),start=rect.top-bounds.top,end=rect.bottom-bounds.top;
-      if(end<=top||start>=bottom)continue;
+      if(end<=covered||start>=bottom)continue;
       const style=getComputedStyle(cell),slot=cell.querySelector('.cl-link-slot:last-child');
       const slotColor=slot?getComputedStyle(slot).backgroundColor:null;
       const fill=!transparent(slotColor)?slotColor:style.backgroundColor;
       const upper=parseFloat(style.borderTopWidth)||0,lower=parseFloat(style.borderBottomWidth)||0;
-      stops.push(`transparent ${px(Math.max(top,start))}`);
+      stops.push(`transparent ${px(Math.max(covered,start))}`);
       band(style.borderTopColor,start,start+upper);
       band(fill,start+upper,end-lower);
       band(style.borderBottomColor,end-lower,end);
-      stops.push(`transparent ${px(Math.min(bottom,end))}`);
+      covered=Math.min(bottom,end);
+      stops.push(`transparent ${px(covered)}`);
     }
     if(!hasBand){clear(body);return;}
     stops.push(`transparent ${px(bottom)}`);
@@ -15558,7 +15714,7 @@ function paintPropertyState(state){
   'use strict';
   const wrap=document.getElementById('tableWrap');
   if(!wrap)return;
-  let body=null,table=null,groups=[],active=null,scheduled=false;
+  let body=null,table=null,groups=[],districts=[],active=null,activeDistrict=null,scheduled=false;
   let wheelStop=null;
   const pauseMs=160;
   const nativeTrackSupported=typeof CSS!=='undefined'&&CSS.supports('selector(::-webkit-scrollbar)');
@@ -15582,8 +15738,12 @@ function paintPropertyState(state){
   }
   function unpin(entry){
     if(!entry)return;
-    entry.cell.classList.remove('cl-community-pinned');
+    entry.cell.classList.remove('cl-community-pinned','cl-district-pinned');
     entry.cell.style.removeProperty('--cl-sticky-top');
+  }
+  function setOffset(entry,offset){
+    const value=offset+'px';
+    if(entry.cell.style.getPropertyValue('--cl-sticky-top')!==value)entry.cell.style.setProperty('--cl-sticky-top',value);
   }
   let pinnedTop=null;
   function update(){
@@ -15591,18 +15751,29 @@ function paintPropertyState(state){
     const scroll=body.scrollTop;
     pinnedTop=scroll;
     if(wheelStop&&Math.abs(scroll-wheelStop.top)>1)wheelStop=null;
+    // Both levels use the measured positions of their original rows.
+    let districtIndex=-1;
+    for(let i=0;i<districts.length&&districts[i].top<=scroll+.5;i++)districtIndex=i;
+    const district=districts[districtIndex]||null,followingDistrict=districts[districtIndex+1];
+    const districtHeight=district?.height||0;
+    const districtTop=followingDistrict?Math.min(0,followingDistrict.top-scroll-districtHeight):0;
+    if(district!==activeDistrict){unpin(activeDistrict);activeDistrict=district;district?.cell.classList.add('cl-district-pinned');}
+    if(district)setOffset(district,districtTop);
+    const levelTop=districtHeight+districtTop;
     let index=-1;
-    for(let i=0;i<groups.length&&groups[i].top<=scroll+.5;i++)index=i;
-    const entry=index<0?null:groups[index];
-    // Unnamed items end the previous community; they never inherit its links.
-    const next=entry?.row.dataset.community?entry:null;
+    for(let i=0;i<groups.length&&groups[i].top<=scroll+levelTop+.5;i++)index=i;
+    const entry=groups[index];
+    const next=entry?.row.dataset.community&&(!district||entry.top>district.top)?entry:null;
     if(next!==active){unpin(active);active=next;active?.cell.classList.add('cl-community-pinned');}
-    if(!active){body.style.setProperty('--cl-community-scrollbar-top','0px');return;}
-    const following=groups[index+1];
-    const offset=following?Math.min(0,following.top-scroll-active.height):0;
-    const value=offset+'px';
-    if(active.cell.style.getPropertyValue('--cl-sticky-top')!==value)active.cell.style.setProperty('--cl-sticky-top',value);
-    const top=Math.max(0,Math.min(active.height+offset,body.clientHeight-12))+'px';
+    let bottom=levelTop;
+    if(active){
+      // Release the community header at the top of its last property.
+      // As the row scrolls away, its header travels with it under the district.
+      const offset=Math.min(levelTop,active.releaseTop-scroll-active.height);
+      setOffset(active,offset);
+      bottom=Math.max(bottom,offset+active.height);
+    }
+    const top=Math.max(0,Math.min(bottom,body.clientHeight-12))+'px';
     if(body.style.getPropertyValue('--cl-community-scrollbar-top')!==top)body.style.setProperty('--cl-community-scrollbar-top',top);
   }
   function measure(){
@@ -15612,7 +15783,7 @@ function paintPropertyState(state){
       unpin(active);clearScrollbar(body);active=null;wheelStop=null;resize?.disconnect();body=nextBody;table=nextTable;
       if(body)resize?.observe(body);if(table)resize?.observe(table);
     }
-    unpin(active);active=null;groups=[];
+    unpin(active);unpin(activeDistrict);active=null;activeDistrict=null;groups=[];districts=[];
     if(!body||!table)return;
     body.style.setProperty('--district-viewport',body.clientWidth+'px');
     const origin=body.getBoundingClientRect().top+body.clientTop;
@@ -15620,6 +15791,16 @@ function paintPropertyState(state){
       const cell=row.firstElementChild,rect=row.getBoundingClientRect();
       return {row,cell,top:rect.top-origin+body.scrollTop,height:rect.height};
     });
+    for(const [i,entry] of groups.entries()){
+      if(!entry.row.dataset.community)continue;
+      const following=groups[i+1];
+      let last=following?following.row.previousElementSibling:entry.row.parentElement.lastElementChild;
+      while(last&&last!==entry.row&&!last.matches('tr[data-id]'))last=last.previousElementSibling;
+      entry.releaseTop=last&&last!==entry.row
+        ?last.getBoundingClientRect().top-origin+body.scrollTop
+        :following?.top??Infinity;
+    }
+    districts=groups.filter(entry=>entry.row.classList.contains('cl-plan-row'));
     configureScrollbar();
     update();
   }
@@ -15638,15 +15819,18 @@ function paintPropertyState(state){
     const line=table.querySelector('tr[data-id]')?.getBoundingClientRect().height||26;
     const delta=event.deltaY*(event.deltaMode===1?line:event.deltaMode===2?body.clientHeight:1);
     const maximum=body.scrollHeight-body.clientHeight;
-    const boundary=groups.find((entry,i)=>{
+    let boundaryTop=null;
+    groups.some((entry,i)=>{
       const startsDistrict=entry.row.classList.contains('cl-plan-row');
       const startsCommunity=entry.row.dataset.community&&!groups[i-1]?.row.classList.contains('cl-plan-row');
-      return (startsDistrict||startsCommunity)&&entry.top>top+1&&entry.top<=top+delta&&entry.top<=maximum;
+      const target=entry.top-(startsCommunity?(activeDistrict?.height||0):0);
+      if(!(startsDistrict||startsCommunity)||target<=top+1||target>top+delta||target>maximum)return false;
+      boundaryTop=target;return true;
     });
-    if(!boundary)return;
+    if(boundaryTop===null)return;
     event.preventDefault();
-    wheelStop={top:boundary.top,until:now+pauseMs};
-    body.scrollTop=boundary.top;
+    wheelStop={top:boundaryTop,until:now+pauseMs};
+    body.scrollTop=boundaryTop;
     update();
   }
   wrap.addEventListener('wheel',onWheel,{capture:true,passive:false});
@@ -17000,8 +17184,7 @@ gutter.addEventListener('click',e=>{
 <script>
 (()=>{
  const table=document.querySelector('#tableWrap'),button=document.querySelector('#communityRowDrag');
- const tip=document.createElement('div');tip.id='bar-sort-tip';
- tip.textContent='點橫桿調整排序，按住物件列可調整同社區內的順序。';table.before(tip);
+
  const eligible=()=>button.getAttribute('aria-pressed')==='true'&&['group_plan_unit','group_community'].includes(visibleSort());
  let session=null;
  const dialog=document.createElement('dialog');
@@ -17012,7 +17195,7 @@ gutter.addEventListener('click',e=>{
  document.body.append(dialog);
  const tracks=dialog.querySelector('.bar-tracks'),apply=dialog.querySelector('[data-apply]'),error=dialog.querySelector('.bar-error');
  function decorate(){
-  const enabled=eligible();table.classList.toggle('zone-ready',enabled);tip.hidden=!enabled;
+  const enabled=eligible();table.classList.toggle('zone-ready',enabled);
 
  }
  decorate();
@@ -17202,10 +17385,10 @@ function paint(){
  for(const td of painted)if(!next.has(td))td.classList.remove('bulk-cell');
  for(const td of next)if(!painted.has(td))td.classList.add('bulk-cell');
  painted=next;if(!selection.size&&!menu.hidden)hideMenu();
- table.classList.toggle('bulk-on',Boolean(on()));badge.hidden=!selection.size;
+ table.classList.toggle('bulk-on',Boolean(on()));table.classList.toggle('bulk-touch-selecting',touchSelecting);badge.hidden=!selection.size;
  counter.classList.toggle('bulk-counting',!!selection.size);
  if(selection.size)badge.textContent='已選 '+selection.size+' 格';
- touch.hidden=!available()||!!selection.size;touch.textContent=touchSelecting?'取消多選':'多選';
+ touch.hidden=!available();touch.textContent=touchSelecting?'結束多選':'多選';
  touch.setAttribute('aria-pressed',String(touchSelecting));
 }
 function redraw(){if(!frame)frame=requestAnimationFrame(paint)}
@@ -17282,7 +17465,8 @@ function atBadge(){const box=badge.getBoundingClientRect();showMenu(box.left,box
 badge.onclick=atBadge;
 window.addEventListener('contextmenu',e=>{
  const k=cellAt(e.target);if(!k||!available()||!selection.size)return;
- halt(e);if(!selection.has(k)){selection=new Set([k]);anchor=k;paint();}showMenu(e.clientX,e.clientY);
+ halt(e);if(touchSelecting&&(e.pointerType==='touch'||e.sourceCapabilities?.firesTouchEvents))return;
+ if(!selection.has(k)){selection=new Set([k]);anchor=k;paint();}showMenu(e.clientX,e.clientY);
 },true);
 menu.querySelector('[data-end]').onclick=()=>{clear();table.focus({preventScroll:true});};
 menu.querySelector('[data-rows]').onclick=selectRows;
