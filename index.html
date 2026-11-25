@@ -4433,7 +4433,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.25I";
+const APP_VERSION = "2026.11.25J";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -16137,24 +16137,29 @@ function paintPropertyState(state){
 #columnTypeDialog .cl-dialog:focus{outline:none;}
 #columnTypeDialog .cl-dialog :is(button,select,input,[tabindex="0"]):focus{outline:1px solid var(--ink-soft);outline-offset:1px;box-shadow:none;}
 @media(forced-colors:active){#columnTypeDialog .cl-dialog :is(button,select,input,[tabindex="0"]):focus{outline-color:Highlight;}}
-#columnTypeDialog .ct-preview{border:1px solid var(--line);border-radius:10px;overflow:hidden;text-align:center;margin:14px 0;}
-#columnTypeDialog .ct-preview div{padding:6px 12px;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;}
-#columnTypeDialog .ct-controls{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-#columnTypeDialog fieldset{min-width:0;margin:0;padding:10px 12px;border:1px solid var(--line);border-radius:10px;}
-#columnTypeDialog legend{padding:0 5px;font-weight:600;}
-#columnTypeDialog .ct-line{display:flex;align-items:center;justify-content:space-between;gap:6px;margin:4px 0;color:var(--ink-soft);font-size:13px;}
-#columnTypeDialog .ct-line :is(select,button){display:inline-flex;align-items:center;gap:5px;min-width:80px;min-height:32px;padding:4px 8px;background:var(--card);border:1px solid var(--line);border-radius:8px;color:var(--ink);font:inherit;}
-#columnTypeDialog .ct-weights{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;}
-#columnTypeDialog .ct-weights button{justify-content:center;min-width:27px;padding:3px 5px;border:0;border-radius:0;}
-#columnTypeDialog .ct-weights button+button{border-left:1px solid var(--line);}
-#columnTypeDialog .ct-weights button[aria-pressed="true"]{background:var(--accent-tint);color:var(--ink);box-shadow:inset 0 -2px var(--accent-deep);}
-#columnTypeDialog .ct-weights button:focus-visible{outline-offset:-2px;}
-#columnTypeDialog .ct-swatch{width:15px;height:15px;border-radius:4px;border:1px solid var(--line);}
+#columnTypeDialog .cl-dialog{max-width:520px;padding:22px;}
+#columnTypeDialog .ct-preview-label{font-size:12px;color:var(--ink-soft);margin:0 0 6px;}
+#columnTypeDialog .ct-preview{border:1px solid var(--line);border-radius:10px;overflow:hidden;text-align:center;margin:0 0 18px;}
+#columnTypeDialog .ct-preview div{display:grid;place-items:center;min-height:34px;padding:6px 14px;overflow-wrap:anywhere;}
+#columnTypeDialog .ct-preview [data-preview="body"]{min-height:42px;white-space:pre-line;max-height:6em;overflow:auto;}
+#columnTypeDialog .ct-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+#columnTypeDialog fieldset{min-width:0;margin:0;padding:10px 14px 14px;background:var(--surface-1);border:1px solid var(--line);border-radius:12px;}
+#columnTypeDialog legend{padding:0 5px;font-size:14px;font-weight:700;color:var(--ink);}
+#columnTypeDialog .ct-line{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:12px;margin:6px 0;color:var(--ink-soft);font-size:13px;}
+#columnTypeDialog .ct-line:last-child{margin-bottom:0;}
+#columnTypeDialog .ct-line :is(select,button){box-sizing:border-box;display:inline-flex;align-items:center;gap:7px;min-width:0;min-height:34px;padding:4px 8px;background:var(--card);border:1px solid var(--line);border-radius:8px;color:var(--ink);font:inherit;}
+#columnTypeDialog .ct-weights{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:2px;border:1px solid var(--line);border-radius:9px;background:var(--card);}
+#columnTypeDialog .ct-weights button{justify-content:center;padding:2px;min-height:28px;border:0;border-radius:6px;background:transparent;}
+#columnTypeDialog .ct-weights button[aria-pressed="true"]{color:var(--card);background:var(--ink);}
+#columnTypeDialog .ct-weights button:focus-visible{outline-offset:1px;}
+#columnTypeDialog .ct-swatch{width:14px;height:14px;border-radius:50%;border:1px solid var(--line);flex:none;}
+#columnTypeDialog .cl-editor-actions{margin-top:16px;}
+#columnTypeDialog [data-ct-reset]{justify-self:start;color:var(--ink-soft);background:transparent;}
 #columnTypeDialog .ct-palette:not(:empty){margin-top:10px;}
 </style>
 <div id="columnTypeDialog" class="cl-backdrop"><section class="cl-dialog" role="dialog" aria-modal="true" aria-labelledby="columnTypeTitle" tabindex="-1">
 <div class="cl-editor-head"><h2 id="columnTypeTitle"></h2><button type="button" data-ct-close class="fo-close" aria-label="關閉">×</button></div>
-<div class="ct-preview" aria-label="預覽"><div data-preview="head"></div><div data-preview="body"></div></div>
+<div class="ct-preview-label"></div><div class="ct-preview" aria-label="預覽"><div data-preview="head"></div><div data-preview="body"></div></div>
 <div class="ct-controls"></div><div class="ct-palette"></div><p class="cl-error" role="alert"></p>
 <div class="cl-editor-actions"><button type="button" class="fo-secondary" data-ct-reset>回復原始預設</button><button type="button" class="fo-secondary" data-ct-close>取消</button><button type="button" class="fo-primary" data-ct-save>儲存</button></div>
 </section></div>
@@ -16164,14 +16169,16 @@ function paintPropertyState(state){
   const panel=document.getElementById('columnTypeDialog'), controls=panel.querySelector('.ct-controls');
   const rules=document.createElement('style');document.head.append(rules);
   const labels={head:'表頭',body:'內容'}, parts=Object.keys(labels);
-  const weights=[[400,'細'],[600,'中'],[700,'粗']];
+  const weights=[[300,'細'],[500,'中'],[900,'粗']];
+  const legacyWeights={400:300,600:500,700:900};
   const sizes=Array.from({length:15},(_,i)=>i+10);
   let current=null,picker=null,picking=null;
   const clean=value=>{
     const result={};
     for(const part of parts){
       const p=value?.[part],look={};
-      if(weights.some(([n])=>n===p?.weight))look.weight=p.weight;
+      const weight=legacyWeights[p?.weight]??p?.weight;
+      if(weights.some(([n])=>n===weight))look.weight=weight;
       if(sizes.includes(p?.size))look.size=p.size;
       if(/^#[a-f0-9]{6}$/i.test(p?.color||''))look.color=p.color.toUpperCase();
       if(Object.keys(look).length)result[part]=look;
@@ -16209,7 +16216,7 @@ function paintPropertyState(state){
   });
   const options=sizes.map(n=>'<option value="'+n+'">'+n+' px</option>').join('');
   for(const part of parts){
-    const weightButtons=weights.map(([n,label])=>'<button type="button" data-ct-weight="'+n+'" aria-pressed="false">'+label+'</button>').join('');
+    const weightButtons=weights.map(([n,label])=>'<button type="button" style="font-weight:'+n+'" data-ct-weight="'+n+'" aria-pressed="false">'+label+'</button>').join('');
     controls.insertAdjacentHTML('beforeend','<fieldset data-part="'+part+'"><legend>'+labels[part]+'</legend><label class="ct-line">字級<select aria-label="'+labels[part]+'字級">'+options+'</select></label><div class="ct-line">字色<button type="button" aria-label="'+labels[part]+'字色" aria-expanded="false" data-ct-color><span class="ct-swatch"></span><span class="ct-color-label"></span></button></div><div class="ct-line">粗細<div class="ct-weights" role="group" aria-label="'+labels[part]+'字體粗細">'+weightButtons+'</div></div></fieldset>');
   }
   function preview(){
@@ -16222,33 +16229,45 @@ function paintPropertyState(state){
       }
       select.value=String(look.size??basePx);
       const weight=look.weight??Number(base.weight);
-      const selected=weight>=650?700:weight>=500?600:400;
+      const selected=weight>=650?900:weight>=400?500:300;
       group.querySelectorAll('[data-ct-weight]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.ctWeight)===selected)));
       group.querySelector('.ct-swatch').style.backgroundColor=look.color||base.color;
       group.querySelector('.ct-color-label').textContent=look.color||'原字色';
       const sample=panel.querySelector('[data-preview='+part+']');sample.style.color=look.color||base.color;
-      sample.style.fontSize=look.size?look.size+'px':base.size;sample.style.fontWeight=look.weight??base.weight;sample.style.backgroundColor=base.bg;sample.textContent=base.text;
+      sample.style.fontFamily=base.family;sample.style.fontSize=look.size?look.size+'px':base.size;sample.style.fontWeight=look.weight??base.weight;sample.style.backgroundColor=base.bg;sample.textContent=base.text;
     }
   }
   function closePicker(){
     picker?.destroy();picker=null;picking=null;
     controls.querySelectorAll('[data-ct-color]').forEach(b=>b.setAttribute('aria-expanded','false'));
   }
+  function previewBody(selector){
+    const cells=document.querySelectorAll(selector);
+    for(const cell of cells){
+      const text=cell.textContent.trim();
+      if(!text||/^[-—–－＋+]+$/.test(text))continue;
+      if(cell.matches('.property-link:not(.on)')||cell.querySelector('.tneed-ph'))continue;
+      if(cell.getClientRects().length)return {cell,text:cell.innerText.trim()||text};
+    }
+    return {cell:cells[0],text:''};
+  }
   function open(th){
     const field=th.dataset.col;if(!T_FIELDS.includes(field)||current)return;
     const title=th.querySelector('.th-label').textContent,targets=selectors(field);
     reload(field);paint(field);
-    const base={};
+    const base={},body=previewBody(targets.body);
     for(const part of parts){
-      const cell=document.querySelector(targets[part]),node=cell?.querySelector('.link-text,.cv,.tneed-ph')||cell;
+      const cell=part==='body'?body.cell:th.querySelector('.th-label');
+      const node=cell?.querySelector('.link-text,.cv,.tneed-ph')||cell;
       const style=getComputedStyle(node||th),parent=cell?.closest('td,th');
       let bg=parent&&getComputedStyle(parent).backgroundColor;
       if(!bg||bg==='rgba(0, 0, 0, 0)')bg=part==='head'?'var(--accent)':'var(--card)';
-      base[part]={size:style.fontSize,color:style.color,weight:style.fontWeight,bg,text:part==='head'?title:(cell?.innerText.trim()||'—')};
+      base[part]={size:style.fontSize,color:style.color,weight:style.fontWeight,family:style.fontFamily,bg,text:part==='head'?title:(body.text||title+'範例')};
     }
     paint();
     const original=saved.get(field)||{};
     current={field,base,original,draft:{head:{...original.head},body:{...original.body}}};
+    panel.querySelector('.ct-preview-label').textContent=body.text?'即時預覽':'格式示例 · 目前清單此欄皆空白';
     panel.querySelector('h2').textContent=title+' · 欄位文字';
     panel.querySelector('.cl-error').textContent='';preview();lockOverlay(th.querySelector('button')||document.activeElement);
     panel.classList.add('open');panel.querySelector('[role=dialog]').focus({preventScroll:true});
