@@ -2775,6 +2775,7 @@ html[data-mark-style=rail] #mark-outside .mark-action[aria-pressed=true] .mark-s
 #mark-color-dialog .mark-dialog-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}
 #mark-color-dialog .mark-dialog-head h3{margin:0}
 #mark-color-dialog .mark-dialog-head .fo-close{width:44px;height:44px;display:grid;place-items:center;font:500 22px/1 system-ui;background:var(--surface-2);color:var(--ink-soft);border:1px solid var(--line);border-radius:10px;cursor:pointer}
+.cl-community-row .cl-settings-entry[tabindex="-1"]:focus{outline:none;}
 .cl-community-row .cl-settings-entry .cl-community-name-text{flex:1 1 auto;align-self:center;text-align:center;min-width:0;padding-inline:4px}
 #mark-color-dialog .mark-shape-head{display:flex;justify-content:space-between;align-items:center;margin:2px 0 3px}
 #mark-color-dialog .mark-fill-toggle{display:inline-flex;gap:2px;padding:2px;border-radius:8px;background:var(--surface-2)}
@@ -4441,7 +4442,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.25E";
+const APP_VERSION = "2026.11.25F";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -14404,10 +14405,10 @@ function paintPropertyState(state){
     dialog.querySelectorAll('[data-cl-ink]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.clInk===editor.draft.ink)));
     dialog.querySelectorAll('[data-cl-weight]').forEach(button=>button.setAttribute('aria-pressed',String(Number(button.dataset.clWeight)===editor.draft.fontWeight)));
   }
-  function open(kind,community,slot){
+  function open(kind,community,slot,returnTarget){
     if(kind==='url'&&(!Number.isInteger(slot)||slot<0||slot>=slotCount))return;
     if(editor)close();flushEditing();if(document.getElementById('saveErrorRetry'))return;
-    refreshLinks();editor={kind,community,slot,resetAt:window._resetAt||0,base:JSON.stringify(CommunityData.read('links',null)),returnTo:document.activeElement};
+    refreshLinks();editor={kind,community,slot,resetAt:window._resetAt||0,base:JSON.stringify(CommunityData.read('links',null)),returnTo:returnTarget||document.activeElement};
     dialog.classList.toggle('cl-settings-dialog',kind!=='url');
     if(kind==='district'){
       loadDistricts();
@@ -14492,7 +14493,13 @@ function paintPropertyState(state){
       return;
     }
     event.preventDefault();if(!editMode||!manualTableEdit)return;
-    if(action.dataset.clLinkAction==='settings'){open('names');return;}
+    if(action.dataset.clLinkAction==='settings'){
+      const cell=action.closest('.cl-settings-entry');
+      // Pointer users return to the name cell. Keyboard users resume at the Edit button.
+      if(event.detail>0&&cell)cell.tabIndex=-1;
+      open('names',undefined,undefined,event.detail>0&&cell?cell:action);
+      return;
+    }
     open('url',action.dataset.community,Number(action.dataset.slot));
   },true);
   let downOnBackground=false;
