@@ -488,7 +488,9 @@ async function openCommunityTarget(value){
   .list-count-toggle::after{content:"";position:absolute;inset:-5px 0;}
   .list-count-window{display:block;overflow:hidden;}
   #listCountTotal{display:flex;align-items:baseline;justify-content:center;gap:4px;padding:0 12px;white-space:nowrap;}
-  #listCountTotal b{font-size:.82rem;font-weight:700;color:var(--accent-deep);}
+  #listCount{--count-ink:#00645D;}
+  [data-theme="dark"] #listCount{--count-ink:#78DFCF;}
+  #listCountTotal b,.list-count-value b{font-size:.82rem;font-weight:700;color:var(--count-ink);}
   #listCountTotal small{font-size:.7rem;}
   .list-count-measure{position:absolute;inset:0;display:flex;align-items:flex-start;visibility:hidden;overflow:hidden;pointer-events:none;}
   .list-count-track{display:flex;transition:transform .16s ease;}
@@ -498,7 +500,6 @@ async function openCommunityTarget(value){
   .list-count-page .list-count-part:only-child{max-width:100%;}
   .list-count-name{min-width:0;max-width:76px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .list-count-value{display:inline-flex;align-items:baseline;gap:3px;flex:none;font-variant-numeric:tabular-nums;}
-  .list-count-value b{font-size:.82rem;font-weight:700;color:var(--accent-deep);}
   .list-count-value small{font-size:.7rem;}
   .list-count-prev,.list-count-next{appearance:none;position:relative;display:grid;place-items:center;width:24px;flex:0 0 24px;padding:0;border:0;background:transparent;color:var(--ink-soft);cursor:pointer;}
   .list-count-prev{border-radius:999px 0 0 999px;}
@@ -4442,7 +4443,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.25F";
+const APP_VERSION = "2026.11.25G";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
