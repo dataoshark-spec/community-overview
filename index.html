@@ -1221,7 +1221,6 @@ async function openCommunityTarget(value){
   .ptable:not(.ro) tbody tr[data-id] td:nth-last-child(2){border-right:none;}   /* 最後一個可見欄與刪除操作區相接。 */
   .ptable td.tdel{border-left:none;}   /* 刪除欄去左框(仿客戶總覽)*/
   .ptable:not(.ro) thead th:nth-last-child(2){border-right:none;}   /* 編輯模式的最後資料欄與刪除欄相接。 */
-  @media (hover:hover){ .ptable tbody tr:not(.exp-open):not(.needexp):hover td{background:var(--surface-1);} }
   .tcell{padding:4px 6px 5px;height:31px;line-height:22px;outline:none;cursor:text;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .ptable:not(.ro) .tcell[data-field]{transition:background .04s ease;}
@@ -1444,7 +1443,6 @@ async function openCommunityTarget(value){
   .fneed-c:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(78,98,109,.12);}
   .fneed-ed{white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;cursor:text;}
   .fneed-ed div{min-height:1.5em;}
-  @media (hover:hover){ .tcell:hover{background:var(--surface-2);} }
   @media (hover:hover){ .exp-open .tcell:hover{background:transparent;} }
   #needHover{position:fixed;z-index:220;display:none;width:min(1000px,94vw);pointer-events:none;background:var(--accent-tint);border:1px solid var(--accent-tint-bd);border-top:none;border-radius:0 0 14px 14px;padding:13px 16px 15px;box-shadow:0 16px 44px rgba(22,34,42,.26);}
   #needHover.above{border-top:1px solid var(--accent-tint-bd);border-bottom:none;border-radius:14px 14px 0 0;box-shadow:0 -16px 44px rgba(22,34,42,.26);}
@@ -1883,40 +1881,32 @@ button.cl-district-bar{cursor:pointer;}
     .ptable .discreet-revealed{animation:none;box-shadow:var(--reveal-shadow);}
   }
 
-/* Table hover feedback. No row or column geometry changes. */
-@media (hover: hover) and (pointer: fine) {
-  #tableWrap {
-    --community-row-hover-wash: rgba(79, 102, 114, .055);
-    --community-cell-hover-wash: rgba(79, 102, 114, .12);
-    --community-cell-hover-edge: rgba(69, 94, 108, .62);
+  /* table-row-hover:start — visual-only pointer feedback; keep row geometry and alerts. */
+  .table-wrap:not(.tsel-on):not(.zone-ready) .ptable tbody tr.table-row-hover{
+    --row-hover-tint:rgba(15,122,95,.10);--row-hover-line:rgba(15,122,95,.36);
   }
-
-  [data-theme="dark"] #tableWrap {
-    --community-row-hover-wash: rgba(187, 210, 223, .075);
-    --community-cell-hover-wash: rgba(187, 210, 223, .15);
-    --community-cell-hover-edge: rgba(195, 217, 229, .72);
+  .table-wrap:not(.tsel-on):not(.zone-ready) .ptable tbody tr.table-row-hover.due-warn{
+    --row-hover-tint:rgba(193,137,16,.10);--row-hover-line:rgba(169,112,4,.38);
   }
-
-  /* A separate image overlays the cell's existing color, including important
-     field tints and selection/expanded-note backgrounds. Text is not filtered. */
-  #tableWrap .tbody-wrap .ptable > tbody > tr[data-id]:not(.cl-community-row):not(.needexp):hover > td {
-    background-image: linear-gradient(var(--community-row-hover-wash), var(--community-row-hover-wash)) !important;
+  .table-wrap:not(.tsel-on):not(.zone-ready) .ptable tbody tr.table-row-hover.due-over{
+    --row-hover-tint:rgba(204,65,37,.08);--row-hover-line:rgba(192,65,37,.36);
   }
-
-  /* Keep focused editors/buttons in their original focus state. An inward
-     outline does not replace the expanded row's inset shadow or add any width. */
-  #tableWrap:not(.zone-ready) .tbody-wrap .ptable > tbody > tr[data-id]:not(.cl-community-row):not(.needexp):hover > td:hover:not(:focus-within) {
-    background-image: linear-gradient(var(--community-cell-hover-wash), var(--community-cell-hover-wash)) !important;
-    outline: 2px solid var(--community-cell-hover-edge);
-    outline-offset: -2px;
+  [data-theme="dark"] .table-wrap:not(.tsel-on):not(.zone-ready) .ptable tbody tr.table-row-hover{
+    --row-hover-tint:rgba(91,203,167,.13);--row-hover-line:rgba(111,217,183,.40);
   }
-
-  /* Let the cell overlay show through the original generic .tcell:hover fill;
-     actual editor focus keeps its own background and focus ring. */
-  #tableWrap .tbody-wrap .ptable > tbody > tr[data-id]:not(.cl-community-row):not(.needexp):hover > td:hover:not(:focus-within) > .tcell {
-    background-color: transparent;
+  [data-theme="dark"] .table-wrap:not(.tsel-on):not(.zone-ready) .ptable tbody tr.table-row-hover.due-warn{
+    --row-hover-tint:rgba(242,183,64,.12);--row-hover-line:rgba(242,183,64,.45);
   }
-}
+  [data-theme="dark"] .table-wrap:not(.tsel-on):not(.zone-ready) .ptable tbody tr.table-row-hover.due-over{
+    --row-hover-tint:rgba(251,122,94,.12);--row-hover-line:rgba(251,122,94,.45);
+  }
+  .table-wrap:not(.tsel-on):not(.zone-ready) .ptable tbody tr.table-row-hover:not(.exp-open):not(.needexp):not(.duplicate-new):not(.history-highlight):not(.row-drag-ready)>td{
+    box-shadow:inset 0 1px var(--row-hover-line),inset 0 -1px var(--row-hover-line),inset 0 0 0 999px var(--row-hover-tint);
+  }
+  .table-wrap:not(.tsel-on):not(.zone-ready) .ptable tbody tr.table-row-hover:not(.exp-open):not(.needexp):not(.duplicate-new):not(.history-highlight):not(.row-drag-ready) .tcell:not(:focus):not(.saved):hover{
+    background:transparent;
+  }
+  /* table-row-hover:end */
 
 /* Shared link appearance only; object rows, column widths and headers stay intact. */
 .ptable tbody .cl-community-row{height:var(--cl-row-height,32px);}
@@ -4443,7 +4433,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.25G";
+const APP_VERSION = "2026.11.25H";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -5262,6 +5252,31 @@ function sortList(list){
 }
 const cardsEl  = document.getElementById("cards");
 const tableWrap = document.getElementById("tableWrap");
+// table-row-hover:start — follow real mouse movement only; never changes item data.
+(function(){
+  let hoveredRow=null;
+  function clear(){
+    if(hoveredRow){hoveredRow.classList.remove("table-row-hover");hoveredRow=null;}
+  }
+  tableWrap.addEventListener("pointermove",e=>{
+    if(e.pointerType!=="mouse" || e.buttons || document.hidden || !document.hasFocus()) {clear();return;}
+    const td=e.target instanceof Element?e.target.closest("td"):null;
+    const row=td?.parentElement;
+    if(!row?.matches("tr[data-id]") || !tableWrap.contains(row) || row.matches(".exp-open,.needexp,.duplicate-new,.history-highlight,.row-drag-ready") ||
+       tableWrap.matches(".tsel-on,.zone-ready") || document.body.classList.contains("col-resizing")){clear();return;}
+    if(row!==hoveredRow){clear();hoveredRow=row;row.classList.add("table-row-hover");}
+  },{passive:true});
+  tableWrap.addEventListener("pointerleave",clear,{passive:true});
+  document.addEventListener("pointerdown",clear,{passive:true,capture:true});
+  document.addEventListener("pointercancel",clear,{passive:true,capture:true});
+  document.addEventListener("keydown",clear,{passive:true,capture:true});
+  document.addEventListener("scroll",clear,{passive:true,capture:true});
+  document.addEventListener("visibilitychange",clear);
+  window.addEventListener("blur",clear);
+  window.addEventListener("resize",clear);
+  window.addEventListener("pagehide",clear);
+})();
+// table-row-hover:end
 const needHover = document.getElementById("needHover");
 let needHoverCell = null;
 const tableMorePanel = document.getElementById("tableMoreLinks");
