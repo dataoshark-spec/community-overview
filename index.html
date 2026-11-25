@@ -4441,7 +4441,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.25C";
+const APP_VERSION = "2026.11.25D";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -13688,9 +13688,12 @@ function paintPropertyState(state){
   function showMenu(){
     if(!active)return;cancelTint();active.mode='menu';const item=items.find(x=>x.id===active.id);if(!item){close();return;}
     active.options=options(active.field);const current=active.keepNameOpen?valueOf({name:active.fullNameDraft},'name'):valueOf(item,active.field);
+    const availableNames=new Set(active.options.map(option=>option.name));
+    const otherCommunities=active.field==='name'?managerCommunityList().filter(entry=>entry.name&&!availableNames.has(entry.name)):[];
     menu.setAttribute('aria-label',labels[active.field]+'選項');
     menu.innerHTML=head(labels[active.field])+(active.field==='name'?`<div class="fo-full-name"><label for="fieldFullName">編輯完整案名／戶別</label><div class="fo-full-name-row"><input id="fieldFullName" class="fo-input" data-full-name aria-label="編輯完整案名／戶別" value="${esc(active.fullNameDraft??String(item.name||''))}" placeholder="社區名稱／戶別" autocomplete="off"><button type="button" class="fo-primary" data-save-full-name>儲存</button></div><span class="fo-full-name-hint">只修改這筆物件，也可按 Enter 儲存。</span></div>`:'')+`<button type="button" class="fo-clear" data-clear aria-label="清空這筆${labels[active.field]}">—</button>`+
       active.options.map((opt,i)=>`<div class="fo-line"><button type="button" class="fo-option" title="長按調整順序" aria-keyshortcuts="Alt+ArrowDown" data-select="${i}" aria-pressed="${opt.name===current}"><span>${esc(opt.name)}</span>${opt.name===current?'<span class="fo-check">✓</span>':''}</button>${colored.has(active.field)?`<button type="button" class="fo-color" data-color="${i}" aria-label="選擇 ${esc(opt.name)} 的顏色"><span class="fo-dot${opt.hex&&opt.alpha?'':' none'}" style="--dot:${opt.hex||'#64748b'}"></span></button>`:''}<button type="button" class="fo-rename" data-rename="${i}" aria-label="重新命名 ${esc(opt.name)}">重新命名</button><button type="button" class="fo-delete" data-delete-option="${i}" aria-label="刪除 ${esc(opt.name)} 選項">刪除</button></div>`).join('')+
+      otherCommunities.map(({name})=>`<div class="fo-line"><button type="button" class="fo-option" data-community-choice="${esc(name)}" aria-pressed="${name===current}"><span>${esc(name)}</span>${name===current?'<span class="fo-check">✓</span>':''}</button></div>`).join('')+
       `<div class="fo-add"><input class="fo-input" data-add-input placeholder="自訂…" aria-label="新增自訂${labels[active.field]}" ${active.field==='parkingCount'?'inputmode="numeric" maxlength="5000"':'maxlength="80"'} autocomplete="off"><button type="button" class="fo-primary" data-add>加入</button></div><p class="fo-error" role="alert"></p>`;
     if(active.addDraft!=null){menu.querySelector('[data-add-input]').value=active.addDraft;delete active.addDraft;}
     window.CommunityShared?.decorateMenu(menu,item,active.field);
@@ -14003,8 +14006,8 @@ function paintPropertyState(state){
     if(b.hasAttribute('data-close'))close();
     else if(b.hasAttribute('data-order-save'))saveOptionOrder();
     else if(b.hasAttribute('data-clear'))choose('');
-    else if(b.hasAttribute('data-select')){
-      const name=active.options[Number(b.dataset.select)].name;
+    else if(b.hasAttribute('data-select')||b.hasAttribute('data-community-choice')){
+      const name=b.dataset.communityChoice??active.options[Number(b.dataset.select)].name;
       if(active.field==='name'&&active.keepNameOpen){
         active.fullNameDraft=name+(suffixOf(active.fullNameDraft)||'／');
         showMenu();
@@ -14748,7 +14751,7 @@ function paintPropertyState(state){
   function decorateMenu(menu,item,field){
     ensureState();
     if(field==='name'){
-      for(const option of menu.querySelectorAll('.fo-option')){
+      for(const option of menu.querySelectorAll('.fo-option[data-select]')){
         const name=text(option.firstElementChild?.textContent);if(!name)continue;
         const preset=ensureCommunity(state,name,items),conflict=fieldKeys.some(key=>preset[key]===null);
         const info=document.createElement('small');info.className='caf-option-info';
