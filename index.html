@@ -380,9 +380,8 @@ async function openCommunityTarget(value){
   .cover-gear:hover{background:rgba(255,255,255,.16);color:#fff;}
   .cover-gear svg{width:20px;height:20px;}
   .cover-gear:active{transform:scale(.93) rotate(30deg);}
-  #listGear{display:none;position:relative;width:36px;height:36px;padding:0;}
+  #listGear{display:inline-flex;position:relative;width:36px;height:36px;padding:0;}
   :is(#listGear,#setBack)[data-pointer-focus]:focus-visible{box-shadow:none;}
-  #app.table-mode #listGear{display:inline-flex;}
   @media(pointer:coarse){#listGear::after{content:"";position:absolute;inset:-4px;border-radius:50%;}}
   .cover-actions{display:flex;flex-direction:row-reverse;align-items:center;gap:8px;}   /* 齒輪+同步燈成一組,兩圈間距 8px */
   .cover-top .cover-led{flex:none;width:42px;height:42px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
@@ -514,13 +513,16 @@ async function openCommunityTarget(value){
   #listCount [hidden]{display:none!important;}
   #listCount:focus-within{border-color:var(--accent);}
   .list-count-status{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;}
+  @media(max-width:819px){
+    #list .topbar .ttl{min-width:4em;}
+    .list-count-space{min-width:min(136px,34%);}
+  }
   @media(max-width:440px){#list .topbar{gap:7px;padding-left:12px;padding-right:12px;}}
   @media(max-width:360px){#list .topbar{gap:5px;padding-left:9px;padding-right:9px;}}
   @media(max-width:360px){
-    #app.table-mode #list .topbar{padding-inline:6px;}
-    #app.table-mode .list-count-space{min-width:min(100px,42%);}
-    #app.table-mode .list-count-part{padding-inline:2px;gap:2px;}
-    #app.table-mode .list-count-prev,#app.table-mode .list-count-next{width:20px;flex-basis:20px;}
+    #list .topbar{padding-inline:6px;}
+    .list-count-part{padding-inline:2px;gap:2px;}
+    .list-count-prev,.list-count-next{width:20px;flex-basis:20px;}
   }
   @media(prefers-reduced-motion:reduce){.list-count-track{transition:none;}}
   /* list-count:end */
@@ -4433,7 +4435,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.25J";
+const APP_VERSION = "2026.11.25K";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -5292,7 +5294,7 @@ const listCounter=(()=>{
   const space=document.getElementById("listCountSpace"),measure=document.getElementById("listCountSizer");
   const viewport=document.getElementById("listCountWindow"),track=document.getElementById("listCountTrack");
   const prev=document.getElementById("listCountPrev"),next=document.getElementById("listCountNext"),status=document.getElementById("listCountStatus");
-  let mode="total",recordCount=0,entries=[],widths=[],pages=[],page=0;
+  let mode="total",recordCount=0,entries=[],widths=[],pages=[],page=0,anchor=0;
   let dataKey="",measureKey="",renderKey="",gesture=null,ignoreClick=false,wheelAt=0;
   const sizeObserver=window.ResizeObserver?new ResizeObserver(changes=>{
     // 字級、字型或欄距變化也可能只改變筆數文字的寬度。
@@ -5343,20 +5345,26 @@ const listCounter=(()=>{
     const edges=getComputedStyle(countEl);
     const border=parseFloat(edges.borderLeftWidth)+parseFloat(edges.borderRightWidth);
     const contentWidth=available-border,sum=widths.reduce((a,b)=>a+b,0);
-    const paged=entries.length>1&&sum>contentWidth;
+    const singleEntry=window.matchMedia("(max-width:819px)").matches;
+    const paged=entries.length>1&&(singleEntry||sum>contentWidth);
     prev.hidden=next.hidden=!paged;
     const arrows=paged?prev.getBoundingClientRect().width+next.getBoundingClientRect().width:0;
-    const budget=Math.max(0,contentWidth-arrows),startIndex=pages[page]?.start||0;
+    const budget=Math.max(0,contentWidth-arrows),startIndex=Math.min(anchor,entries.length-1);
     pages=[];
     let start=0,used=0;
     for(let i=0;i<widths.length;i++){
-      if(i>start&&used+widths[i]>budget){
+      if(i>start&&(singleEntry||used+widths[i]>budget)){
         pages.push({start,end:i,width:Math.min(available,Math.ceil(used+arrows+border))});
         start=i;used=0;
       }
       used+=widths[i];
     }
     pages.push({start,end:widths.length,width:Math.min(available,Math.ceil(used+arrows+border))});
+    // Keep both mobile arrows stationary across district names of different widths.
+    if(singleEntry){
+      const pageWidth=Math.min(available,Math.ceil(widths.reduce((max,width)=>Math.max(max,width),0)+arrows+border));
+      for(const group of pages)group.width=pageWidth;
+    }
     page=pages.findIndex(group=>group.end>startIndex);if(page<0)page=pages.length-1;
     const key=dataKey+":"+pages.map(g=>g.end).join(",");
     if(key!==renderKey){
@@ -5388,24 +5396,24 @@ const listCounter=(()=>{
   }
   function move(delta){
     if(!pages.length)return;
-    page=Math.max(0,Math.min(pages.length-1,page+delta));paintPage();
+    page=Math.max(0,Math.min(pages.length-1,page+delta));anchor=pages[page].start;paintPage();
   }
   button.addEventListener("click",e=>{
     if(ignoreClick&&e.detail!==0){ignoreClick=false;return;}
-    ignoreClick=false;mode=mode==="districts"?"total":"districts";pages=[];page=0;
+    ignoreClick=false;mode=mode==="districts"?"total":"districts";pages=[];page=0;anchor=0;
     try{if(storageOK)localStorage.setItem(KEY,mode);}catch(err){}
     layout();
   });
   button.addEventListener("pointerdown",e=>{
     ignoreClick=false;
-    if(e.button!==0||!e.isPrimary||pages.length<=1)return;
+    if(e.button!==0||!e.isPrimary)return;
     gesture={id:e.pointerId,x:e.clientX,y:e.clientY,dx:0,dy:0,width:button.clientWidth};
     button.setPointerCapture(e.pointerId);
   });
   button.addEventListener("pointermove",e=>{
     if(!gesture||gesture.id!==e.pointerId)return;
     gesture.dx=e.clientX-gesture.x;gesture.dy=e.clientY-gesture.y;
-    if(Math.abs(gesture.dx)>8&&Math.abs(gesture.dx)>Math.abs(gesture.dy)*1.2){
+    if(pages.length>1&&Math.abs(gesture.dx)>8&&Math.abs(gesture.dx)>Math.abs(gesture.dy)*1.2){
       button.classList.add("dragging");
       const edge=(page===0&&gesture.dx>0)||(page===pages.length-1&&gesture.dx<0),limit=gesture.width*.8;
       position(Math.max(-limit,Math.min(limit,gesture.dx))*(edge?.18:1));
@@ -5426,12 +5434,23 @@ const listCounter=(()=>{
     e.preventDefault();const now=Date.now();if(now-wheelAt<250)return;wheelAt=now;move(e.deltaX>0?1:-1);
   },{passive:false});
   prev.addEventListener("click",()=>move(-1));next.addEventListener("click",()=>move(1));
-  if(sizeObserver)sizeObserver.observe(space);else window.addEventListener("resize",layout);
+  if(sizeObserver)sizeObserver.observe(space);
+  window.addEventListener("resize",layout);
   if(document.fonts){
     const refreshMetrics=()=>{widths=[];layout();};
     document.fonts.ready.then(refreshMetrics);document.fonts.addEventListener("loadingdone",refreshMetrics);
   }
-  return {refresh,firstPage(){page=0;}};
+  return {
+    refresh, firstPage(){page=0;anchor=0;},
+    firstDistrict(){return mode==="districts"?entries[pages[page]?.start]?.name:undefined;},
+    restoreDistrict(name){
+      if(name===undefined||mode!=="districts")return;
+      layout();
+      const index=entries.findIndex(entry=>entry.name===name);
+      const target=pages.findIndex(group=>index>=group.start&&index<group.end);
+      if(target>=0){anchor=index;page=target;paintPage();}
+    }
+  };
 })();
 // list-count:end
 
@@ -11643,7 +11662,7 @@ const listGear=document.getElementById("coverGear").cloneNode(true);
 listGear.id="listGear";
 listGear.type="button";
 document.getElementById("listLed").before(listGear);
-let settingsTableReturn=null;
+let settingsListReturn=null;
 const settingsBack=document.getElementById("setBack");
 // Keep focus on the navigation control without showing a keyboard ring for a pointer round trip.
 function focusSettingsControl(control,quiet){
@@ -11658,14 +11677,14 @@ for(const control of [listGear,settingsBack]){
 
 function openSettings(trigger,fromPointer=false){
   if(settingsView.classList.contains("active"))return;
-  const fromTable=viewMode==="table"&&listView.classList.contains("active");
-  if(fromTable){
+  const fromList=listView.classList.contains("active");
+  if(fromList){
     const body=tableWrap.querySelector(".tbody-wrap");
-    settingsTableReturn={top:body?.scrollTop||0,left:body?.scrollLeft||0,tabsLeft:document.getElementById("tabs").scrollLeft,trigger,quietGearFocus:trigger===listGear&&fromPointer};
-    flushEditing();
+    settingsListReturn={district:listCounter.firstDistrict(),windowTop:window.scrollY,windowLeft:window.scrollX,top:body?.scrollTop||0,left:body?.scrollLeft||0,tabsLeft:document.getElementById("tabs").scrollLeft,trigger,quietGearFocus:trigger===listGear&&fromPointer};
+    if(viewMode==="table")flushEditing();
     closeOtherOverlays("");
   }else{
-    settingsTableReturn=null;
+    settingsListReturn=null;
     if (typeof closeColFlt === "function") closeColFlt();
     if (typeof closeNeedExp === "function") closeNeedExp();
   }
@@ -11676,15 +11695,15 @@ function openSettings(trigger,fromPointer=false){
   syncTableMode();   // 離開表格頁就取消寬版,設定頁維持一般寬度
   saveNav("settings", currentCat);
   window.scrollTo(0,0);
-  if(fromTable)focusSettingsControl(settingsBack,settingsTableReturn.quietGearFocus);
+  if(fromList)focusSettingsControl(settingsBack,settingsListReturn.quietGearFocus);
 }
 function closeSettings(event){
   if (typeof palettePop !== "undefined" && palettePop.classList.contains("link-palette")) closePalette();
   if(linkDeleteUI.picker.hidden===false)setLinkDeleteMode(false);
   settingsView.classList.remove("active");
-  if(settingsTableReturn){
-    const position=settingsTableReturn;
-    settingsTableReturn=null;
+  if(settingsListReturn){
+    const position=settingsListReturn;
+    settingsListReturn=null;
     listView.classList.add("active");
     syncTableMode();
     updateLH();
@@ -11696,6 +11715,8 @@ function closeSettings(event){
       if(head)head.scrollLeft=body.scrollLeft;
     }
     document.getElementById("tabs").scrollLeft=position.tabsLeft;
+    window.scrollTo(position.windowLeft,position.windowTop);
+    listCounter.restoreDistrict(position.district);
     saveNav("list",currentCat);
     const trigger=position.trigger||listGear;
     if(trigger===listGear)focusSettingsControl(trigger,position.quietGearFocus||event?.detail>0);
