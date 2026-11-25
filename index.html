@@ -4441,7 +4441,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.25B";
+const APP_VERSION = "2026.11.25C";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -6379,9 +6379,18 @@ window.addEventListener("pointerup", _rzEnd);
 window.addEventListener("pointercancel", _rzEnd);
 function bindTableScrollSync(headWrap, bodyWrap){
   if (tableWrap._scrollUnbind){ tableWrap._scrollUnbind(); tableWrap._scrollUnbind = null; }
-  let syncing = false;
-  const onBody = () => { if (syncing) return; syncing = true; headWrap.scrollLeft = bodyWrap.scrollLeft; syncing = false; };
-  const onHead = () => { if (syncing) return; syncing = true; bodyWrap.scrollLeft = headWrap.scrollLeft; syncing = false; };
+  // Programmatic scroll events arrive later, after the originating handler returns.
+  // Consume those echoes so the follower cannot rewind the finger's next movement.
+  const mirrored = new Map();
+  function follow(source, target){
+    const left = source.scrollLeft, expected = mirrored.get(source);
+    mirrored.delete(source);
+    if(left === expected || target.scrollLeft === left) return;
+    target.scrollLeft = left;
+    mirrored.set(target,target.scrollLeft);
+  }
+  const onBody = () => follow(bodyWrap,headWrap);
+  const onHead = () => follow(headWrap,bodyWrap);
   bodyWrap.addEventListener("scroll", onBody);
   headWrap.addEventListener("scroll", onHead);
   tableWrap._scrollUnbind = () => { bodyWrap.removeEventListener("scroll", onBody); headWrap.removeEventListener("scroll", onHead); };
@@ -15321,11 +15330,13 @@ function paintPropertyState(state){
     if(body)resize?.observe(body);
     if(table)resize?.observe(table);
   }
+  let paintedTop=null;
   function paint(){
     frame=0;
     const nextBody=wrap.querySelector('.tbody-wrap');
     bind(nextBody,nextBody?.querySelector('.ptable')||null);
     if(!body||!table)return;
+    paintedTop=body.scrollTop;
     const width=Math.max(0,body.offsetWidth-body.clientWidth);
     const scrolling=body.scrollHeight>body.clientHeight;
     // Only the pinned strip above the native track may extend into an occupied gutter.
@@ -15363,7 +15374,7 @@ function paintPropertyState(state){
   }
   // Paint stays on the scroller, underneath its transparent native scrollbar track.
   // Recompute viewport-relative bands; content, hit areas and scroll dimensions never move.
-  wrap.addEventListener('scroll',event=>{if(event.target===body)schedule();},{capture:true,passive:true});
+  wrap.addEventListener('scroll',event=>{if(event.target===body&&body.scrollTop!==paintedTop)schedule();},{capture:true,passive:true});
   new MutationObserver(schedule).observe(wrap,{childList:true,subtree:true,attributes:true,attributeFilter:['data-row-height']});
   new MutationObserver(schedule).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
   window.addEventListener('resize',schedule,{passive:true});
@@ -15405,9 +15416,11 @@ function paintPropertyState(state){
     entry.cell.classList.remove('cl-community-pinned');
     entry.cell.style.removeProperty('--cl-sticky-top');
   }
+  let pinnedTop=null;
   function update(){
     if(!body||!body.isConnected)return;
     const scroll=body.scrollTop;
+    pinnedTop=scroll;
     if(wheelStop&&Math.abs(scroll-wheelStop.top)>1)wheelStop=null;
     let index=-1;
     for(let i=0;i<groups.length&&groups[i].top<=scroll+.5;i++)index=i;
@@ -15468,7 +15481,7 @@ function paintPropertyState(state){
     update();
   }
   wrap.addEventListener('wheel',onWheel,{capture:true,passive:false});
-  wrap.addEventListener('scroll',event=>{if(event.target===body)update();},{capture:true,passive:true});
+  wrap.addEventListener('scroll',event=>{if(event.target===body&&body.scrollTop!==pinnedTop)update();},{capture:true,passive:true});
   new MutationObserver(schedule).observe(wrap,{subtree:true,childList:true,attributes:true,attributeFilter:['data-row-height']});
   window.addEventListener('resize',schedule,{passive:true});
   schedule();
@@ -16651,6 +16664,7 @@ const track=document.createElement('div');
 track.className='mark-track';gutter.append(track);
 const touchView=matchMedia('(hover:none)');
 let recordList=null,records=new Map(),rowBody=null,rows=[];
+let measuredScroller=null,measuredTop=null;
 function isBlocked(){return viewMode!=='table'||!listView.classList.contains('active')||tselMode||document.getElementById('communityRowDrag')?.getAttribute('aria-pressed')==='true'}
 function styleIfChanged(el,key,value){if(el.style[key]!==value)el.style[key]=value}
 function layout(){
@@ -16661,7 +16675,8 @@ function layout(){
  if(recordList!==items){recordList=items;records=new Map(items.map(row=>[row.id,row]))}
  const rect=scroll.getBoundingClientRect(),top=Math.max(rect.top,0),bottom=Math.min(innerHeight,rect.top+scroll.clientHeight);
  if(bottom<=top){gutter.hidden=true;return}
- const left=table.getBoundingClientRect().left-26,offset=rect.top-top-scroll.scrollTop;
+ measuredScroller=scroll;measuredTop=scroll.scrollTop;
+ const left=table.getBoundingClientRect().left-26,offset=rect.top-top-measuredTop;
  const pinned=touchView.matches?body.querySelector('.cl-community-pinned')?.getBoundingClientRect():null;
  const visible=new Map();
  let lo=0,hi=rows.length;
@@ -16696,7 +16711,14 @@ const observe=new MutationObserver(changes=>{
 observe.observe(table,{childList:true,subtree:true,attributes:true,attributeFilter:['style','class']});
 touchView.addEventListener('change',schedule);
 const resize=new ResizeObserver(schedule);resize.observe(table);
-document.addEventListener('scroll',schedule,true);window.addEventListener('resize',schedule);
+document.addEventListener('scroll',event=>{
+ if(touchView.matches){
+  if(event.target===measuredScroller&&measuredScroller.scrollTop===measuredTop)return;
+  if(event.target?.classList?.contains('thead-wrap'))return;
+ }
+ schedule();
+},{capture:true,passive:true});
+window.addEventListener('resize',schedule);
 document.addEventListener('focusin',schedule);
 schedule();
 CommunityData.subscribe(schedule);
