@@ -2899,10 +2899,10 @@ html[data-mark-style=rail] #mark-outside .mark-action[aria-pressed=true] .mark-s
         <button class="back" id="backBtn" aria-label="返回">←</button>
         <span class="ttl" id="listTitle">全部物件</span>
         <span class="list-count-space" id="listCountSpace"><span class="ct" id="listCount">
-          <button type="button" class="list-count-prev" id="listCountPrev" aria-label="查看上一個連結筆數" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button>
+          <button type="button" class="list-count-prev" id="listCountPrev" aria-label="查看上一頁重劃區筆數" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button>
           <button type="button" class="list-count-toggle" id="listCountToggle" aria-label="切換筆數顯示" aria-pressed="false"><span id="listCountTotal">欄位 <b>0</b> <small>筆</small></span><span class="list-count-window" id="listCountWindow" hidden><span class="list-count-track" id="listCountTrack" aria-hidden="true"></span></span></button>
           <span class="list-count-measure" id="listCountSizer" aria-hidden="true"></span>
-          <button type="button" class="list-count-next" id="listCountNext" aria-label="查看下一個連結筆數" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
+          <button type="button" class="list-count-next" id="listCountNext" aria-label="查看下一頁重劃區筆數" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
           <span class="list-count-status" id="listCountStatus" role="status" aria-live="polite"></span>
         </span></span>
         <button class="sync-led" id="listLed" type="button" aria-label="同步" title="點一下立即同步・長按進入設定"><span class="led"></span></button>
@@ -4441,7 +4441,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.25D";
+const APP_VERSION = "2026.11.25E";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -5282,7 +5282,7 @@ const listCounter=(()=>{
     if(changes.some(change=>change.target!==space))widths=[];
     layout();
   }):null;
-  try{if(storageOK&&localStorage.getItem(KEY)==="links")mode="links";}catch(e){}
+  try{if(storageOK&&["links","districts"].includes(localStorage.getItem(KEY)))mode="districts";}catch(e){}
   function partHTML(entry){
     return '<span class="list-count-part"><span class="list-count-name">'+esc(entry.name)+'</span><span class="list-count-value"><b>'+entry.count+'</b><small>筆</small></span></span>';
   }
@@ -5301,14 +5301,14 @@ const listCounter=(()=>{
     position();
   }
   function layout(){
-    const detailed=mode==="links"&&entries.length>0;
+    const detailed=mode==="districts"&&entries.length>0;
     button.setAttribute("aria-pressed",String(detailed));button.disabled=!entries.length;
     total.hidden=detailed;viewport.hidden=!detailed;
     if(!detailed){
       pages=[];page=0;countEl.style.removeProperty("width");countEl.classList.remove("count-expanded");
       prev.hidden=next.hidden=true;
       const label="欄位 "+recordCount+" 筆";
-      button.title=label+(entries.length?"。點一下切換連結筆數":"");button.setAttribute("aria-label",button.title);
+      button.title=label+(entries.length?"。點一下切換重劃區筆數":"");button.setAttribute("aria-label",button.title);
       if(status.textContent!==label)status.textContent=label;
       return;
     }
@@ -5350,9 +5350,19 @@ const listCounter=(()=>{
     paintPage();
   }
   function refresh(list){
-    const slots=viewMode==="table" ? [] : linkSlotIds(),counts=slots.map(()=>0);
-    for(const item of list)slots.forEach((slot,i)=>{if(linkState(item,slot)==="has")counts[i]++;});
-    entries=slots.map((id,i)=>({id,name:linkDefaultName(id),count:counts[i]}));
+    entries=[];
+    if(districtTabsVisible()){
+      const counts=new Map();
+      for(const item of list){
+        const name=districtOf(item);
+        counts.set(name,(counts.get(name)||0)+1);
+      }
+      const options=PropertyCore.local().current.settings.communityFeatures?.values.catalogs?.planUnit||[];
+      const names=new Set([...orderedDistrictTabs(),...options.map(option=>option.name)]);
+      names.delete('');
+      entries=Array.from(names,name=>({name,count:counts.get(name)||0}));
+      if(counts.has(''))entries.push({name:'未填重劃區',count:counts.get('')});
+    }
     const key=JSON.stringify(entries);
     if(key!==dataKey){widths=[];dataKey=key;}
     recordCount=list.length;
@@ -5365,7 +5375,7 @@ const listCounter=(()=>{
   }
   button.addEventListener("click",e=>{
     if(ignoreClick&&e.detail!==0){ignoreClick=false;return;}
-    ignoreClick=false;mode=mode==="links"?"total":"links";pages=[];page=0;
+    ignoreClick=false;mode=mode==="districts"?"total":"districts";pages=[];page=0;
     try{if(storageOK)localStorage.setItem(KEY,mode);}catch(err){}
     layout();
   });
