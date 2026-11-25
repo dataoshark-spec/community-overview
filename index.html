@@ -1904,7 +1904,7 @@ button.cl-district-bar{cursor:pointer;}
 
   /* Keep focused editors/buttons in their original focus state. An inward
      outline does not replace the expanded row's inset shadow or add any width. */
-  #tableWrap .tbody-wrap .ptable > tbody > tr[data-id]:not(.cl-community-row):not(.needexp):hover > td:hover:not(:focus-within) {
+  #tableWrap:not(.zone-ready) .tbody-wrap .ptable > tbody > tr[data-id]:not(.cl-community-row):not(.needexp):hover > td:hover:not(:focus-within) {
     background-image: linear-gradient(var(--community-cell-hover-wash), var(--community-cell-hover-wash)) !important;
     outline: 2px solid var(--community-cell-hover-edge);
     outline-offset: -2px;
@@ -2791,7 +2791,65 @@ html[data-mark-style=rail] #mark-outside .mark-action[aria-pressed=true] .mark-s
 .mark-display-pref{display:flex;align-items:center;gap:6px;margin:8px 0;font-size:13px;color:var(--ink-soft)}
 .mark-display-pref select{margin-left:auto;border:1px solid var(--line);border-radius:6px;padding:3px 8px;background:var(--card);color:inherit}
 </style>
-</head>
+<style>
+#tableWrap.zone-ready :is(.cl-district-bar,.cl-community-row,.cl-community-row .cl-link-slot){cursor:pointer}
+#bar-sort-tip{font-size:12px;color:var(--muted);padding:5px 15px}
+#bar-sort-dialog{position:fixed;inset:0;margin:auto;width:min(382px,calc(100vw - 28px));max-height:min(540px,calc(100dvh - 32px));height:fit-content;box-sizing:border-box;padding:0;border:1px solid var(--line);border-radius:18px;background:var(--card,#fff);color:var(--ink);box-shadow:0 16px 60px #15283233;overflow:hidden}
+#bar-sort-dialog[open]{display:flex;flex-direction:column}
+#bar-sort-dialog::backdrop{background:rgba(25,42,50,.29)}
+#bar-sort-dialog header{padding:21px 20px 15px}
+#bar-sort-dialog h2{margin:0;font-weight:700;font-family:inherit;font-size:20px;line-height:1.35}
+#bar-sort-dialog p{margin:5px 0 0;color:var(--ink-soft);font-size:13px}
+.bar-tracks{min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:0 16px;scrollbar-width:thin}
+.bar-track{box-sizing:border-box;display:grid;grid-template-columns:25px minmax(0,1fr) auto 16px;align-items:center;gap:8px;width:100%;height:48px;margin:0 0 6px;padding:0 12px;text-align:start;color:var(--ink);background:var(--card,#fff);border:1px solid var(--line);border-radius:10px;font:inherit;cursor:grab;touch-action:none;position:relative;user-select:none;transition:transform 145ms ease}
+.bar-track.chosen{background:color-mix(in srgb,var(--sort-tone) 16%,var(--card));border-color:color-mix(in srgb,var(--sort-tone) 50%,var(--line))}
+.bar-track.sort-lift{z-index:2;box-shadow:0 4px 11px #182f4122;cursor:grabbing;transition:none}
+.bar-track:focus-visible,#bar-sort-dialog footer button:focus-visible{outline:1px solid var(--ink-soft);outline-offset:-3px}
+.bar-rank{color:var(--ink-soft);font:12px system-ui;font-variant-numeric:tabular-nums}
+.bar-title{font-weight:650;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-track small{font-size:12px;color:var(--ink-soft)}
+.bar-grip{width:9px;height:14px;justify-self:end;color:var(--ink-soft);background:radial-gradient(circle at 1.5px 1.5px,currentColor 1.1px,transparent 1.4px) 0 0/5px 5px;opacity:.65}
+#bar-sort-dialog footer{display:flex;justify-content:flex-end;gap:8px;padding:14px 16px 16px}
+#bar-sort-dialog footer button{min-width:84px;height:39px;border-radius:9px;font:inherit;font-size:14px;font-weight:600;cursor:pointer;color:var(--ink);background:var(--card);border:1px solid var(--line)}
+#bar-sort-dialog [data-apply]:enabled{background:var(--ink);color:var(--card);border-color:var(--ink)}
+#bar-sort-dialog [data-apply]:disabled{opacity:.48;cursor:default;background:var(--bg)}
+#bar-sort-dialog .bar-error{padding:0 16px;color:var(--ink)}
+@media(prefers-reduced-motion:reduce){.bar-track{transition:none}}
+#bar-sort-dialog .bar-rank{display:grid;place-items:center;height:24px;border-radius:6px;color:var(--ink);background:color-mix(in srgb,var(--sort-tone) 32%,var(--card))}
+#bar-sort-dialog .bar-track:focus-visible{box-shadow:none;outline:1px solid var(--ink-soft);outline-offset:-2px}
+
+#bar-sort-dialog footer button{touch-action:manipulation}
+
+/* Keep the hit area stationary while the row casts a shadow. */
+@media (hover:hover) and (pointer:fine) {
+  #tableWrap.zone-ready {
+    --row-lift-shadow: 0 2px 4px rgb(30 50 62 / 21%);
+  }
+  #tableWrap.zone-ready .tbody-wrap:not(.is-dragging) :is(.row-drag-ready,.cl-plan-row):hover {
+    position:relative;
+    z-index:2;
+    filter:drop-shadow(var(--row-lift-shadow));
+  }
+  #tableWrap.zone-ready .tbody-wrap:not(.is-dragging) .cl-community-row:hover > td {
+    box-shadow:var(--row-lift-shadow);
+    filter:brightness(1.035);
+  }
+  #tableWrap.zone-ready .cl-community-row:hover > td:not(.cl-community-pinned) {
+    position:relative;
+    z-index:2;
+  }
+  #tableWrap.zone-ready .cl-community-row :is(.cl-link-slot,.cl-link-open,.cl-community-name) {
+    cursor:pointer;
+  }
+  #tableWrap.zone-ready .cl-community-row .cl-link-slot:hover::after {background:transparent}
+  #tableWrap.zone-ready .tbody-wrap.is-dragging .row-drag-ready.fo-moving {
+    outline:0;
+    filter:drop-shadow(0 4px 5px rgb(30 50 62 / 32%));
+  }
+}
+
+@media(max-width:640px){#toast.row-drag-help{white-space:pre-line;width:max-content;max-width:calc(100vw - 32px);line-height:1.45;padding:9px 17px;border-radius:14px}}
+</style></head>
 <body>
 <div id="app">
 
@@ -3625,6 +3683,13 @@ function communityFeatures(value){
     result.orders[kind]=strings(source.orders[kind],5000,5000,true);
     if(['property','planRows','communityRows'].includes(kind)&&result.orders[kind].some(id=>!safeId(id)))fail('物件排序識別碼不正確');
    }
+   if(own(source.orders,'districtCommunities')){
+    const orders={};
+    for(const [district,names] of dictionary(source.orders.districtCommunities)){
+     text(district,5000);put(orders,district,strings(names,5000,5000,true));
+    }
+    result.orders.districtCommunities=orders;
+   }
   }
   out.values[section]=result;out.clocks[section]=value.clocks[section];
  }
@@ -4375,7 +4440,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.24R";
+const APP_VERSION = "2026.11.25A";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -7957,6 +8022,7 @@ const toastEl = document.getElementById("toast");
 let toastTimer = null;
 function toast(msg){
   if (window._saveBlocked) return;
+  toastEl.classList.toggle('row-drag-help',msg==='按住物件列上下拖曳\n調整同社區內的順序');
   toastEl.textContent = msg;
   toastEl.classList.add("show");
   clearTimeout(toastTimer);
@@ -14172,7 +14238,7 @@ function paintPropertyState(state){
     return bar;
   }
   function districtBar(name,columns){
-    const row=document.createElement('tr');row.className='cl-plan-row';
+    const row=document.createElement('tr');row.className='cl-plan-row';row.dataset.district=name;
     const cell=row.insertCell();cell.colSpan=columns;
     paintDistrict(row,name,{...districtShared,...(districtLooks.get(name)||defaultDistrictColor())});cell.append(districtControl(name));return row;
   }
@@ -14262,7 +14328,7 @@ function paintPropertyState(state){
       }
       if(!showCommunity)continue;
       const community=communityOf(item);if(community===previous)continue;previous=community;
-      const group=document.createElement('tr');group.className='cl-community-row';group.dataset.community=community;group.style.setProperty('--cl-row-height',appearance.height+'px');
+      const group=document.createElement('tr');group.className='cl-community-row';group.dataset.community=community;group.dataset.district=String(item.planUnit||'').trim();group.style.setProperty('--cl-row-height',appearance.height+'px');
       const cell=document.createElement('td');cell.colSpan=tableColumnCount();group.appendChild(cell);
       if(!community){cell.className='cl-unnamed';cell.textContent='尚未填社區名稱';row.before(group);continue;}
       cell.appendChild(buildBar(community,names,communities.get(community)||Array(slotCount).fill(''),appearance));row.before(group);
@@ -14859,6 +14925,7 @@ function paintPropertyState(state){
       result.orders[kind]=[...new Set(saved.orders[kind])];
     }
     for(const key of ['planRows','communityRows'])if(Array.isArray(saved.orders[key]))result.orders[key]=saved.orders[key].slice();
+    if(saved.orders.districtCommunities)result.orders.districtCommunities=copy(saved.orders.districtCommunities);
     return result;
   }
   function complete(saved,available){
@@ -14917,8 +14984,16 @@ function paintPropertyState(state){
     const base=kind==='property'?list.slice():sortCommunityGroups(rows?PropertyCore.naturalOrder(list,rows):list,kind==='planUnit');
     const available=customOrderValues(items)[kind];
     const ranks=new Map(completeCustomOrder(profiles.orders[kind],available).map((key,index)=>[key,index]));
-    return base.map((item,index)=>({item,index,key:customOrderKeys(item)[kind]}))
-      .sort((a,b)=>(ranks.get(a.key)??Infinity)-(ranks.get(b.key)??Infinity)||a.index-b.index)
+    const districtRanks=new Map();
+    if(kind==='planUnit'&&viewMode==='table'){
+      for(const [district,names] of Object.entries(profiles.orders.districtCommunities||{})){
+        districtRanks.set(district,new Map(names.map((name,index)=>[name,index])));
+      }
+    }
+    return base.map((item,index)=>{
+      const key=customOrderKeys(item)[kind];
+      return {item,index,key,communityRank:districtRanks.get(key)?.get(namedCommunity(item))??Infinity};
+    }).sort((a,b)=>(ranks.get(a.key)??Infinity)-(ranks.get(b.key)??Infinity)||a.communityRank-b.communityRank||a.index-b.index)
       .map(entry=>entry.item);
   }
 
@@ -16220,7 +16295,7 @@ function paintPropertyState(state){
     if(!mode()||flushEditing()===false||window._saveBlocked)return;
     if(!activeMode&&openNeedId)closeNeedExp();
     activeMode=activeMode?null:mode();applyFilter();
-    if(activeMode)toast('按住物件列上下拖曳，調整同社區內的順序');
+    if(activeMode)toast(matchMedia('(max-width:640px)').matches?'按住物件列上下拖曳\n調整同社區內的順序':'按住物件列上下拖曳，調整同社區內的順序');
   });
   function begin(row){
     const sort=activeMode;
@@ -16618,5 +16693,168 @@ gutter.addEventListener('click',e=>{
 });
 })();
 </script>
-</body>
+<script>
+(()=>{
+ const table=document.querySelector('#tableWrap'),button=document.querySelector('#communityRowDrag');
+ const tip=document.createElement('div');tip.id='bar-sort-tip';
+ tip.textContent='點橫桿調整排序，按住物件列可調整同社區內的順序。';table.before(tip);
+ const eligible=()=>button.getAttribute('aria-pressed')==='true'&&['group_plan_unit','group_community'].includes(visibleSort());
+ let session=null;
+ const dialog=document.createElement('dialog');
+ dialog.id='bar-sort-dialog';
+ dialog.setAttribute('aria-labelledby','bar-sort-heading');
+ dialog.setAttribute('aria-describedby','bar-sort-context');
+ dialog.innerHTML='<header><h2 id="bar-sort-heading"></h2><p id="bar-sort-context"></p></header><div class="bar-tracks"></div><p class="bar-error" role="alert" hidden></p><footer><button type="button" data-cancel>取消</button><button type="button" data-apply disabled>套用</button></footer>';
+ document.body.append(dialog);
+ const tracks=dialog.querySelector('.bar-tracks'),apply=dialog.querySelector('[data-apply]'),error=dialog.querySelector('.bar-error');
+ function decorate(){
+  const enabled=eligible();table.classList.toggle('zone-ready',enabled);tip.hidden=!enabled;
+
+ }
+ decorate();
+ new MutationObserver(decorate).observe(button,{attributes:true,attributeFilter:['aria-pressed']});
+ function collect(row,isCommunity,global){
+  const list=new Map();let group=null;
+  for(const r of table.querySelectorAll('.tbody-wrap tr')){
+   if(r.matches('.cl-plan-row')){
+    const name=r.dataset.district;
+    group=null;
+    if(!isCommunity){if(!list.has(name))list.set(name,{name,count:0,color:getComputedStyle(r).getPropertyValue('--district-bg').trim()||getComputedStyle(r.querySelector('.cl-district-bar')).backgroundColor});group=list.get(name)}
+   }else if(r.matches('.cl-community-row')&&isCommunity){
+    if(!global&&r.dataset.district!==row){group=null;continue}
+    const name=r.dataset.community||'';if(!list.has(name))list.set(name,{name,count:0,color:'var(--accent,#899fa6)'});group=list.get(name);
+   }else if(r.dataset.id&&group)group.count++;
+  }
+  return list;
+ }
+ function show(source){
+  if(session||!eligible())return;
+  const isCommunity=source.matches('.cl-community-row'),global=isCommunity&&visibleSort()==='group_community';
+  const district=source.dataset.district||'';
+  const list=collect(district,isCommunity,global);
+  const selected=isCommunity?source.dataset.community||'':district;
+  if(!list.has(selected))return;
+  const order=[...list.keys()],field=global||visibleSort()==='group_community'?'community':'planUnit';
+  session={order,initial:order.slice(),list,selected,source,isCommunity,global,district,field,mode:visibleSort(),epoch:window._resetAt||0,
+   prior:JSON.stringify(CommunityData.read('orders',null)?.orders?.[field]||[]),districtPrior:JSON.stringify(Object.entries(CommunityData.read('orders',null)?.orders?.districtCommunities||{}).find(([key])=>key===district)?.[1]||[]),moves:[]};
+  dialog.querySelector('h2').textContent=isCommunity?'調整社區順序':'調整重劃區順序';
+  const count=order.length+(isCommunity?' 個社區':' 個重劃區');
+  dialog.querySelector('header p').textContent=[isCommunity&&!global&&tableFields().includes('planUnit')?(district||'未填寫重劃區'):'',count,order.length===1?'目前只有一項':'上下拖曳調整'].filter(Boolean).join(' · ');
+  error.hidden=true;render();dialog.showModal();focusSelected();
+ }
+ function focusSelected(){const row=tracks.children[session.order.indexOf(session.selected)];row?.focus({preventScroll:true});row?.scrollIntoView({block:'nearest'})}
+ function render(){
+  const s=session;
+  tracks.replaceChildren(...s.order.map((name,i)=>{
+   const item=s.list.get(name),row=document.createElement('button');row.type='button';row.className='bar-track';row.classList.toggle('chosen',name===s.selected);
+   row.style.setProperty('--sort-tone',item.color);row.dataset.name=name;
+   row.innerHTML='<span class="bar-rank"></span><span class="bar-title"></span><small></small><span aria-hidden="true" class="bar-grip"></span>';
+   row.children[0].textContent=String(i+1).padStart(2,'0');row.children[1].textContent=name||(s.isCommunity?'未填寫社區名稱':'未填寫重劃區');
+   row.children[2].textContent=item.count+' 筆';row.setAttribute('aria-keyshortcuts','ArrowUp ArrowDown');return row;
+  }));
+  apply.disabled=s.order.every((v,i)=>v===s.initial[i]);
+ }
+ function reorder(from,to){
+  if(from===to)return;const s=session;
+  s.moves.push({name:s.order[from],other:s.order[to],after:to>from});
+  s.order.splice(to,0,s.order.splice(from,1)[0]);render();focusSelected();
+ }
+ function save(){
+  const s=session;if(!s||apply.disabled)return;
+  if(s.epoch!==(window._resetAt||0)||s.mode!==visibleSort())throw Error('資料已更新，請取消後重新開啟。');
+   const ok=CommunityData.transaction(features=>{
+    const p=CommunitySortModel.read(features.orders,s.epoch,CommunitySortModel.legacy(PropertyCore.local().current.settings,s.epoch,s.mode));
+    if(s.isCommunity&&!s.global){
+     const prefs=new Map(Object.entries(p.orders.districtCommunities||{})),before=prefs.get(s.district)||[];
+     if(JSON.stringify(before)!==s.districtPrior)throw Error('區內社區順序已更新，請重新開啟。');
+     const available=customOrderValues(items.filter(it=>String(it.planUnit||'').trim()===s.district)).community;
+     if(s.order.some(name=>!available.includes(name)))throw Error('社區已更新，請重新開啟。');
+     prefs.set(s.district,replaceCustomOrderSlots(completeCustomOrder(before,available),s.order));
+     p.orders.districtCommunities=Object.fromEntries(prefs);features.orders=p;return;
+    }
+    if(JSON.stringify(p.orders[s.field]||[])!==s.prior)throw Error('順序已更新');
+    let order=completeCustomOrder(p.orders[s.field],customOrderValues(items)[s.field]);
+    if((s.isCommunity||s.field==='planUnit')&&s.order.some(n=>!order.includes(n)))throw Error('排序資料已更新，請重新開啟。');
+    if(!s.isCommunity&&s.field==='community'){
+     const zones=new Map(items.map(it=>[namedCommunity(it),String(it.planUnit||'').trim()]));
+     for(const move of s.moves){
+      const chunk=order.filter(n=>zones.get(n)===move.name);order=order.filter(n=>zones.get(n)!==move.name);
+      const targets=order.filter(n=>zones.get(n)===move.other);if(!targets.length||!chunk.length)throw Error('社區已更新');
+      const at=move.after?order.indexOf(targets.at(-1))+1:order.indexOf(targets[0]);order.splice(at,0,...chunk);
+     }
+     p.orders.community=order;
+    }else p.orders[s.field]=replaceCustomOrderSlots(order,s.order);
+    features.orders=p;
+   },[],{resetAt:s.epoch});
+   if(!ok)throw Error('順序未能儲存，請確認資料後再試。');
+   CommunitySortProfiles.refresh();
+  dialog.close();
+ }
+ apply.onclick=()=>{try{save()}catch(e){error.textContent=e.message;error.hidden=false}};
+ dialog.querySelector('[data-cancel]').onclick=()=>dialog.close();
+ const footer=dialog.querySelector('footer');
+ let tap=null;
+ footer.addEventListener('touchstart',e=>{
+  const b=e.target.closest('button'),t=e.touches[0];
+  tap=b&&!b.disabled&&e.touches.length===1?{b,id:t.identifier,x:t.clientX,y:t.clientY}:null;
+ },{passive:true});
+ footer.addEventListener('touchcancel',()=>{tap=null});
+ footer.addEventListener('touchend',e=>{
+  const start=tap;tap=null;if(!start)return;
+  const t=[...e.changedTouches].find(t=>t.identifier===start.id);
+  if(!t||Math.hypot(t.clientX-start.x,t.clientY-start.y)>8||!start.b.contains(document.elementFromPoint(t.clientX,t.clientY)))return;
+  e.preventDefault();start.b.click();
+ },{passive:false});
+ let drag=null;
+ function stopDrag(){
+  if(!drag)return;cancelAnimationFrame(drag.frame);
+  const {id,row}=drag;drag=null;
+  if(tracks.hasPointerCapture(id))tracks.releasePointerCapture(id);
+  row.classList.remove('sort-lift');
+  for(const el of tracks.children)el.style.transform='';
+ }
+ window.addEventListener('keydown',event=>{
+  if(dialog.open&&event.key==='Escape'){event.preventDefault();event.stopImmediatePropagation();dialog.close()}
+ },true);
+ dialog.addEventListener('close',()=>{stopDrag();session=null});
+ function point(y){
+  const d=drag;if(!d)return;
+  const rows=[...tracks.children],stride=d.stride;
+  const base=tracks.getBoundingClientRect().top-tracks.scrollTop;
+  const offset=Math.max(0,Math.min((rows.length-1)*stride,y-base-d.grip));
+  d.to=Math.round(offset/stride);
+  rows.forEach((row,i)=>{const shift=i===d.from?offset-i*stride:i>d.from&&i<=d.to?-stride:i<d.from&&i>=d.to?stride:0;row.style.transform='translateY('+shift+'px)'});
+ }
+ function scrollEdge(){
+  const d=drag;if(!d||!d.active)return;const r=tracks.getBoundingClientRect(),before=tracks.scrollTop;
+  tracks.scrollTop+=d.y>r.bottom-18?5:d.y<r.top+18?-5:0;
+  if(before!==tracks.scrollTop)point(d.y);d.frame=requestAnimationFrame(scrollEdge);
+ }
+ tracks.onpointerdown=e=>{
+  const row=e.target.closest('.bar-track');if(!row||!e.isPrimary||e.button!==0||drag)return;
+  const from=session.order.indexOf(row.dataset.name);session.selected=row.dataset.name;
+  for(const r of tracks.children)r.classList.toggle('chosen',r===row);
+  if(session.order.length<2)return;
+  e.preventDefault();row.focus({preventScroll:true});
+  const stride=tracks.children[1].offsetTop-tracks.children[0].offsetTop;
+  drag={id:e.pointerId,row,from,to:from,start:e.clientY,y:e.clientY,grip:e.clientY-row.getBoundingClientRect().top,stride,active:false,frame:0};
+  tracks.setPointerCapture(e.pointerId);
+ };
+ tracks.onpointermove=e=>{
+  const d=drag;if(!d||d.id!==e.pointerId)return;d.y=e.clientY;
+  if(!d.active){if(Math.abs(d.y-d.start)<4)return;d.active=true;d.row.classList.add('sort-lift');scrollEdge()}
+  point(d.y);
+ };
+ tracks.onpointerup=e=>{const d=drag;if(!d||d.id!==e.pointerId)return;if(d.active)point(e.clientY);stopDrag();if(d.active)reorder(d.from,d.to)};
+ tracks.onpointercancel=tracks.onlostpointercapture=stopDrag;
+ tracks.onkeydown=e=>{
+  const row=e.target.closest('.bar-track');if(!row||!['ArrowUp','ArrowDown'].includes(e.key))return;
+  e.preventDefault();session.selected=row.dataset.name;const i=session.order.indexOf(session.selected);
+  reorder(i,Math.max(0,Math.min(session.order.length-1,i+(e.key==='ArrowUp'?-1:1))));
+ };
+ function sourceOf(target){return eligible()&&table.contains(target)&&target.closest('.cl-community-row,.cl-plan-row')}
+ window.addEventListener('pointerdown',e=>{if(sourceOf(e.target)&&e.button===0)e.stopImmediatePropagation()},true);
+ window.addEventListener('click',e=>{const row=sourceOf(e.target);if(!row)return;e.preventDefault();e.stopImmediatePropagation();show(row)},true);
+})();
+</script></body>
 </html>
