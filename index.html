@@ -2739,7 +2739,8 @@ html[data-mark-style=rail] .mark-action[aria-pressed=true] span{font-size:0;widt
 #mark-outside .mark-action{width:100%;bottom:auto;pointer-events:auto;color:#815810;touch-action:manipulation;}
 #mark-outside .mark-action:hover,#mark-outside .mark-action:focus-visible{opacity:1}
 html[data-mark-style=combo] #mark-outside .mark-action[aria-pressed=true]::after{content:'';position:absolute;right:1px;top:18%;bottom:18%;width:2px;background:#ad640c;border-radius:2px}
-@media(hover:none){#mark-outside .mark-action[aria-pressed=false]{opacity:.6}}
+#mark-outside .mark-track{position:absolute;inset:0;pointer-events:none}
+@media(hover:none){#mark-outside .mark-action[aria-pressed=false]:not(:focus-visible){opacity:0}}
 #mark-color-dialog{width:min(340px,calc(100vw - 24px));box-sizing:border-box;border:1px solid var(--line);border-radius:15px;padding:16px;background:var(--card);color:var(--ink);box-shadow:0 10px 35px #13283130}
 #mark-color-dialog::backdrop{background:#21323a33}
 #mark-color-dialog h3{margin:0 0 12px}
@@ -4440,7 +4441,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.25A";
+const APP_VERSION = "2026.11.25B";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -16454,7 +16455,7 @@ function markIconHTML(key){
   markDrawings.set(key,markup);
   return markup;
 }
-function paint(b,on,shape){b.setAttribute('aria-pressed',on);b.setAttribute('aria-label',b.title=on?'取消重點標記':'標記為重點物件');if(b.firstElementChild.dataset.shape!==shape){b.firstElementChild.dataset.shape=shape;b.firstElementChild.innerHTML=markIconHTML(shape)}}
+function paint(b,on,shape){if(b.getAttribute('aria-pressed')!==String(on)){b.setAttribute('aria-pressed',on);b.setAttribute('aria-label',b.title=on?'取消重點標記':'標記為重點物件')}if(b.firstElementChild.dataset.shape!==shape){b.firstElementChild.dataset.shape=shape;b.firstElementChild.innerHTML=markIconHTML(shape)}}
 
 const table=document.getElementById("tableWrap");
 const gutter=document.createElement('div');
@@ -16646,40 +16647,54 @@ colorDialog.addEventListener('keydown',event=>{
 colorDialog.addEventListener('close',()=>{stopIconDrag();picker?.destroy();picker=null;schedule()});
 let frame=0;
 const schedule=()=>{if(!frame)frame=requestAnimationFrame(layout)};
-let recordList=null,records=new Map();
-function isBlocked(){return viewMode!=='table'||!listView.classList.contains('active')||tselMode||!!table.querySelector('tr.row-drag-ready')}
+const track=document.createElement('div');
+track.className='mark-track';gutter.append(track);
+const touchView=matchMedia('(hover:none)');
+let recordList=null,records=new Map(),rowBody=null,rows=[];
+function isBlocked(){return viewMode!=='table'||!listView.classList.contains('active')||tselMode||document.getElementById('communityRowDrag')?.getAttribute('aria-pressed')==='true'}
+function styleIfChanged(el,key,value){if(el.style[key]!==value)el.style[key]=value}
 function layout(){
  frame=0;
- const scroll=table.querySelector('.tbody-wrap');
- if(!scroll||!scroll.clientHeight||isBlocked()){gutter.hidden=true;return}
- const rect=scroll.getBoundingClientRect();
- const top=Math.max(rect.top,0),bottom=Math.min(innerHeight,rect.top+scroll.clientHeight);
- gutter.hidden=bottom<=top;
- if(gutter.hidden)return;
- Object.assign(gutter.style,{top:top+'px',height:(bottom-top)+'px',left:(table.getBoundingClientRect().left-26)+'px'});
- const visible=new Set();
+ const scroll=table.querySelector('.tbody-wrap'),body=scroll?.querySelector('tbody');
+ if(!body||isBlocked()||!scroll.clientHeight){gutter.hidden=true;return}
+ if(rowBody!==body){rowBody=body;rows=Array.from(body.querySelectorAll('tr[data-id]'))}
  if(recordList!==items){recordList=items;records=new Map(items.map(row=>[row.id,row]))}
- const rows=scroll.querySelector('tbody')?.rows||[];
- let first=0,end=rows.length;
- // Group bars can stick to the top; only use ordinary rows for the search.
- if(rows.length>100){const regular=scroll.querySelectorAll('tr[data-id]');let lo=0,hi=regular.length;while(lo<hi){const mid=(lo+hi)>>>1;if(regular[mid].getBoundingClientRect().bottom<top)lo=mid+1;else hi=mid}first=regular[lo]?.sectionRowIndex??end;}
- for(let i=first;i<end;i++){
-   const row=rows[i];if(!row.hasAttribute('data-id'))continue;
-   if(row.getBoundingClientRect().top>=bottom)break;
-   const box=row.getBoundingClientRect(),mid=(box.top+box.bottom)/2;
-   if(mid<top||mid>=bottom)continue;
-   const at=document.elementFromPoint(rect.left+Math.min(8,rect.width/2),mid);
-   if(at?.closest('tr')!==row)continue;
-   const id=row.dataset.id;
-   visible.add(id);
-   let b=controls.get(id);
-   if(!b){b=document.createElement('button');b.type='button';b.className='mark-action';b.dataset.markId=id;b.append(document.createElement('span'));controls.set(id,b);gutter.append(b)}
-   b.style.top=(box.top-top)+'px';b.style.height=box.height+'px';
-   const value=records.get(id)?.priorityMark||'',mark=markParts(value);b.style.setProperty('--marked-ink',mark.color||defaultInk);paint(b,!!value,mark.shape||defaultShape);
+ const rect=scroll.getBoundingClientRect(),top=Math.max(rect.top,0),bottom=Math.min(innerHeight,rect.top+scroll.clientHeight);
+ if(bottom<=top){gutter.hidden=true;return}
+ const left=table.getBoundingClientRect().left-26,offset=rect.top-top-scroll.scrollTop;
+ const pinned=touchView.matches?body.querySelector('.cl-community-pinned')?.getBoundingClientRect():null;
+ const visible=new Map();
+ let lo=0,hi=rows.length;
+ while(lo<hi){const mid=(lo+hi)>>>1;if(rows[mid].getBoundingClientRect().bottom<=top)lo=mid+1;else hi=mid}
+ // Finish reading row positions before changing any controls in the fixed gutter.
+ for(let i=lo;i<rows.length;i++){
+  const row=rows[i],box=row.getBoundingClientRect();
+  if(box.top>=bottom)break;
+  const mid=box.top+box.height/2;
+  if(mid<top||mid>=bottom)continue;
+  if(pinned&&mid>=pinned.top&&mid<pinned.bottom)continue;
+  if(!touchView.matches&&document.elementFromPoint(rect.left+Math.min(8,rect.width/2),mid)?.closest('tr')!==row)continue;
+  visible.set(row.dataset.id,{y:box.top-top-offset,height:box.height});
+ }
+ if(gutter.hidden)gutter.hidden=false;
+ styleIfChanged(gutter,'top',top+'px');styleIfChanged(gutter,'height',(bottom-top)+'px');styleIfChanged(gutter,'left',left+'px');
+ styleIfChanged(track,'transform','translateY('+offset+'px)');
+ for(const [id,box] of visible){
+  let b=controls.get(id);
+  if(!b){b=document.createElement('button');b.type='button';b.className='mark-action';b.dataset.markId=id;b.append(document.createElement('span'));controls.set(id,b);track.append(b)}
+  styleIfChanged(b,'top',box.y+'px');styleIfChanged(b,'height',box.height+'px');
+  const value=records.get(id)?.priorityMark||'',mark=markParts(value),color=mark.color||defaultInk;
+  if(b.style.getPropertyValue('--marked-ink')!==color)b.style.setProperty('--marked-ink',color);
+  paint(b,!!value,mark.shape||defaultShape);
  }
  for(const [id,b] of controls)if(!visible.has(id)){b.remove();controls.delete(id)}
 }
-const observe=new MutationObserver(schedule);observe.observe(table,{childList:true,subtree:true,attributes:true,attributeFilter:['style','class']});
+const observe=new MutationObserver(changes=>{
+ if(changes.some(m=>m.type==='childList'&&(m.target===rowBody||!rowBody?.isConnected)))rowBody=null;
+ schedule();
+});
+observe.observe(table,{childList:true,subtree:true,attributes:true,attributeFilter:['style','class']});
+touchView.addEventListener('change',schedule);
 const resize=new ResizeObserver(schedule);resize.observe(table);
 document.addEventListener('scroll',schedule,true);window.addEventListener('resize',schedule);
 document.addEventListener('focusin',schedule);
