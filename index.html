@@ -2285,6 +2285,13 @@ button.cl-district-bar{cursor:pointer;}
   #fltBody .floor-range-error,#fltBody .floor-range-legacy{margin:7px 2px 0;font-size:12px;line-height:1.5;color:var(--danger);}
   #fltBody .floor-range-legacy{color:var(--ink-soft);}
   #fltBody .floor-range-error:empty{display:none;}
+  #fltBody .floor-order{display:flex;gap:4px;border:0;margin:4px 0 12px;padding:0;min-width:0;}
+  #fltBody .floor-order legend{font-size:14px;font-weight:600;color:var(--ink);padding:0 2px 6px;}
+  .floor-order label{flex:1;position:relative;cursor:pointer;}
+  .floor-order input{position:absolute;opacity:0;width:1px;height:1px;}
+  .floor-order span{display:grid;place-items:center;min-height:38px;border:1px solid var(--line);border-radius:8px;color:var(--ink-soft);font-size:13px;}
+  .floor-order input:checked+span{background:var(--ink);border-color:var(--ink);color:var(--card);}
+  .floor-order input:focus-visible+span{outline:2px solid var(--accent-deep);outline-offset:2px;}
   #fltDone:disabled{opacity:.45;cursor:not-allowed;}
   </style><style id="community-select-style">
 /* Community dialog choices share the table option catalog. */
@@ -3345,12 +3352,13 @@ html[data-mark-style=rail] #mark-outside .mark-action[aria-pressed=true] .mark-s
       }
       result[kind] = {lo,hi};
     }
+    if (value.order === 'asc' || value.order === 'desc') result.order = value.order;
     return result;
   }
   const active = range => range.lo != null || range.hi != null;
   function has(ranges) {
     const normalized = normalize(ranges);
-    return active(normalized.unit) || active(normalized.total);
+    return Boolean(normalized.order) || active(normalized.unit) || active(normalized.total);
   }
   function matches(value,ranges) {
     const wanted = normalize(ranges), floor = parse(value);
@@ -3364,7 +3372,16 @@ html[data-mark-style=rail] #mark-outside .mark-action[aria-pressed=true] .mark-s
     }
     return true;
   }
-  return {empty,bound,parse,normalize,has,matches};
+  // Stable sort keeps the current ordering for properties on the same floor.
+  function ordered(list,direction) {
+    if (direction !== 'asc' && direction !== 'desc') return list;
+    const sign = direction === 'asc' ? 1 : -1;
+    return list.map(item => ({item,level:parse(item.floor).unit?.lo}))
+      .sort((a,b) => a.level == null ? Number(b.level != null)
+        : b.level == null ? -1 : sign * (a.level - b.level))
+      .map(entry => entry.item);
+  }
+  return {empty,bound,parse,normalize,has,matches,ordered};
 })();</script>
 <script id="property-core-source">
 /* 社區總覽 2026.11.06B：資料驗證、背景多視窗合併、持久化修改紀錄與草稿隔離。 */
@@ -4458,7 +4475,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.25M";
+const APP_VERSION = "2026.11.25N";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -5509,7 +5526,7 @@ function matchesAreaRanges(row,ranges){
 }
 function refreshAreaFilteredRow(cell){
   if(viewMode==="table" && cell.dataset.field==="floor" && !window._saveBlocked && FloorRangePreview.has(listFilters().tableFloorRanges)){
-    const row=tFindItem(cell);if(row && !FloorRangePreview.matches(row.floor,listFilters().tableFloorRanges)){applyFilter();return true;}
+    const row=tFindItem(cell);if(row && (tableFloorOrder() || !FloorRangePreview.matches(row.floor,listFilters().tableFloorRanges))){applyFilter();return true;}
   }
   if(viewMode!=="table" || !isAreaRangeField(cell.dataset.field) || window._saveBlocked)return false;
   const ranges=activeAreaRanges(),row=tFindItem(cell);
@@ -5801,6 +5818,7 @@ function closeColFlt(){
 }
 window.closeColFlt = closeColFlt;
 
+function tableFloorOrder(){return viewMode==='table' ? listFilters().tableFloorRanges.order : null;}
 function renderFloorRangeBody(body){
   const ranges=listFilters().tableFloorRanges,legacy=currentColumns().floor;
   body.innerHTML='<div class="floor-range-preview">'+[['unit','物件樓層'],['total','總樓高']].map(([key,label])=>
@@ -5808,11 +5826,16 @@ function renderFloorRangeBody(body){
     '<input data-floor-group="'+key+'" data-floor-bound="lo" aria-label="'+label+'下限" inputmode="'+(key==='total'?'numeric':'text')+'" placeholder="下限" value="'+esc(ranges[key].lo??'')+'"><span class="bsep">–</span>'+
     '<input data-floor-group="'+key+'" data-floor-bound="hi" aria-label="'+label+'上限" inputmode="'+(key==='total'?'numeric':'text')+'" placeholder="上限" value="'+esc(ranges[key].hi??'')+'"></div></section>'
   ).join('')+(legacy?.size?'<p class="floor-range-legacy">原勾選：'+[...legacy].map(v=>esc(v==='__EMPTY__'?'空白':v)).join('、')+'；輸入區間後取代。</p>':'')+
+    '<fieldset class="floor-order"><legend>物件樓層排序</legend>'+[['','維持原排序'],['asc','低樓到高樓'],['desc','高樓到低樓']].map(([value,label])=>
+      '<label><input type="radio" name="floor-order" value="'+value+'"'+((ranges.order||'')===value?' checked':'')+'><span>'+label+'</span></label>'
+    ).join('')+'</fieldset>'+
     '<div class="floor-range-summary"><span>留白不限</span><span id="floorRangeCount" role="status"></span></div><p class="floor-range-error" role="alert"></p></div>';
   const done=document.getElementById('fltDone'),inputs=[...body.querySelectorAll('[data-floor-bound]')],error=body.querySelector('.floor-range-error');
   const updateCount=()=>{body.querySelector('#floorRangeCount').textContent='符合 '+getFilteredItems().length+' 筆';};
   const update=()=>{
-    const next=FloorRangePreview.empty();let message='';
+    const next=FloorRangePreview.empty();
+    if(listFilters().tableFloorRanges.order)next.order=listFilters().tableFloorRanges.order;
+    let message='';
     for(const input of inputs){input.removeAttribute('aria-invalid');const group=input.dataset.floorGroup;next[group][input.dataset.floorBound]=FloorRangePreview.bound(input.value,group==='total');}
     for(const [group,label] of [['unit','物件樓層'],['total','總樓高']]){
       const values=next[group],groupInputs=inputs.filter(input=>input.dataset.floorGroup===group);
@@ -5825,6 +5848,13 @@ function renderFloorRangeBody(body){
     listFilters().tableFloorRanges=next;currentColumns().floor=null;body.querySelector('.floor-range-legacy')?.remove();
     saveColFilterState();applyFilter();persistColumnFilterEdit();updateCount();
   };
+  body.querySelector('.floor-order').addEventListener('change',event=>{
+    if(event.target.checked){
+      const ranges=listFilters().tableFloorRanges;
+      if(event.target.value)ranges.order=event.target.value;else delete ranges.order;
+      saveColFilterState();applyFilter();persistColumnFilterEdit();
+    }
+  });
   inputs.forEach(input=>{input.addEventListener('input',update);input.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.isComposing){event.preventDefault();update();if(!done.disabled)done.click();}});});
   updateCount();
 }
@@ -6107,7 +6137,7 @@ function tHeadHTML(){
     const h = f === "planUnit" ? "重劃" : T_COLS[T_FIELDS.indexOf(f)];
     const rz = (f && f !== flex) ? `<span class="col-resize" data-field="${f}"></span>` : "";
     const lab = (f && FILTERABLE[f])
-      ? `<button type="button" class="th-flt${colFilterOn(f) ? " on" : ""}" data-flt="${f}" aria-haspopup="dialog" aria-controls="fltBg"><span class="th-label">${h}</span><span class="fmk" aria-hidden="true">▾</span></button>`
+      ? `<button type="button" class="th-flt${colFilterOn(f) ? " on" : ""}" data-flt="${f}" aria-haspopup="dialog" aria-controls="fltBg"><span class="th-label">${h}</span><span class="fmk" aria-hidden="true">${f==='floor'&&tableFloorOrder()?(tableFloorOrder()==='asc'?'↑':'↓'):'▾'}</span></button>`
       : `<span class="th-label">${h}</span>`;
     return `<th data-col="${f}">${lab}${rz}</th>`;
   }).join("") + (editMode ? `<th></th>` : "");   // 只有編輯模式預留刪除欄。
@@ -7659,6 +7689,7 @@ function applyFilter(){
   let list = getFilteredItems(listFilters().links, scope);
   const fca = document.getElementById("fltClearAll"); if (fca) fca.classList.toggle("on", anyColFilter());   // 有篩選才顯示漏斗清除鈕
   list = sortList(list);
+  if(viewMode==='table')list=FloorRangePreview.ordered(list,listFilters().tableFloorRanges.order);
   let emptyText = "";
   if (!list.length){
     if (isUnassignedCommunityFilterActive() && !scope.length) emptyText = "目前沒有未指定社區的物件。";
@@ -7886,7 +7917,7 @@ function visibleSort(){
 }
 function refreshVisibleSort(){
   const menu=document.getElementById("sortMenu");
-  if(menu.dataset.view!==viewMode || menu.dataset.selected!==visibleSort())renderSortOptions();
+  if(menu.dataset.view!==viewMode || menu.dataset.selected!==visibleSort() || menu.dataset.floorOrder!==(tableFloorOrder()||''))renderSortOptions();
 }
 function updateSortLabel(){
   // Rendering also runs before the sort control constants are initialized.
@@ -7912,12 +7943,13 @@ function renderSortOptions(){
   updateSortLabel();
   sortMenu.dataset.view=viewMode;
   sortMenu.dataset.selected=selected;
+  sortMenu.dataset.floorOrder=tableFloorOrder()||'';
   sortMenu.innerHTML = '<div class="sort-menu-caption" role="presentation">排列依據</div>' + SORTS.filter(sortAllowedHere).map(s => `
     <button type="button" class="cselect-opt${s.description ? " sort-group" : ""}" data-key="${s.key}" role="option">
       <span class="sort-copy"><span class="nm">${s.label}${s.suffix ? `<span class="sort-label-suffix">${s.suffix}</span>` : ""}</span>${s.description ? `<span class="sort-help">${s.description}</span>` : ""}</span>
       <span class="chk">✓</span>
     </button>`).join("");
-  sortMenu.querySelectorAll(".cselect-opt").forEach(o => o.classList.toggle("sel", o.dataset.key === visibleSort()));
+  sortMenu.querySelectorAll(".cselect-opt").forEach(o => o.classList.toggle("sel", !tableFloorOrder() && o.dataset.key === visibleSort()));
 }
 function setSort(key){
   currentSort = SORTS.some(s => s.key === key && sortAllowedHere(s)) ? key : "default";
@@ -15101,11 +15133,12 @@ function paintPropertyState(state){
   updateSortLabel=function(...args){
     refreshProfiles();
     originalUpdateLabel(...args);
+    if(tableFloorOrder())document.getElementById("sortTxt").textContent=tableFloorOrder()==="asc"?"樓層 低→高":"樓層 高→低";
     const kind=selectedKind(),button=document.getElementById('customOrderBtn');
     button.hidden=!kind;
     button.disabled=!!kind&&!privacyAllows(kind);
     button.title=button.disabled?'低調模式已隱藏此排序欄位':'調整'+(labels[visibleSort()]||'順序');
-    if(visibleSort()==='custom'){
+    if(!tableFloorOrder()&&visibleSort()==='custom'){
       const label=document.getElementById('sortTxt'),option=SORTS.find(entry=>entry.key==='custom');
       label.textContent=option.label;
       const suffix=document.createElement('span');
@@ -15124,6 +15157,10 @@ function paintPropertyState(state){
       const next=model.read(features.orders,epoch,legacyProfile(epoch));next.mode=mode;features.orders=next;
     },undefined,{resetAt:epoch});
     if(!saved)return false;
+    if(tableFloorOrder()){
+      delete listFilters().tableFloorRanges.order;
+      saveColFilterState();persistColumnFilterEdit();
+    }
     refreshProfiles();saveSort();renderSortOptions();applyFilter();return true;
   };
   const customChoice=SORTS.find(entry=>entry.key==='custom');
@@ -16392,7 +16429,7 @@ function paintPropertyState(state){
   window.isTableBusy=()=>!!cancelDrag||wasBusy();
   function mode(){
     const sort=visibleSort();
-    return viewMode==='table'&&listView.classList.contains('active')&&!tselMode&&tableFields().includes('name')
+    return viewMode==='table'&&!tableFloorOrder()&&listView.classList.contains('active')&&!tselMode&&tableFields().includes('name')
       &&(sort==='group_plan_unit'||sort==='group_community')?sort:null;
   }
   function toolbar(){
