@@ -4433,7 +4433,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.25H";
+const APP_VERSION = "2026.11.25I";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -16144,6 +16144,11 @@ function paintPropertyState(state){
 #columnTypeDialog legend{padding:0 5px;font-weight:600;}
 #columnTypeDialog .ct-line{display:flex;align-items:center;justify-content:space-between;gap:6px;margin:4px 0;color:var(--ink-soft);font-size:13px;}
 #columnTypeDialog .ct-line :is(select,button){display:inline-flex;align-items:center;gap:5px;min-width:80px;min-height:32px;padding:4px 8px;background:var(--card);border:1px solid var(--line);border-radius:8px;color:var(--ink);font:inherit;}
+#columnTypeDialog .ct-weights{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;}
+#columnTypeDialog .ct-weights button{justify-content:center;min-width:27px;padding:3px 5px;border:0;border-radius:0;}
+#columnTypeDialog .ct-weights button+button{border-left:1px solid var(--line);}
+#columnTypeDialog .ct-weights button[aria-pressed="true"]{background:var(--accent-tint);color:var(--ink);box-shadow:inset 0 -2px var(--accent-deep);}
+#columnTypeDialog .ct-weights button:focus-visible{outline-offset:-2px;}
 #columnTypeDialog .ct-swatch{width:15px;height:15px;border-radius:4px;border:1px solid var(--line);}
 #columnTypeDialog .ct-palette:not(:empty){margin-top:10px;}
 </style>
@@ -16159,12 +16164,14 @@ function paintPropertyState(state){
   const panel=document.getElementById('columnTypeDialog'), controls=panel.querySelector('.ct-controls');
   const rules=document.createElement('style');document.head.append(rules);
   const labels={head:'表頭',body:'內容'}, parts=Object.keys(labels);
+  const weights=[[400,'細'],[600,'中'],[700,'粗']];
   const sizes=Array.from({length:15},(_,i)=>i+10);
   let current=null,picker=null,picking=null;
   const clean=value=>{
     const result={};
     for(const part of parts){
       const p=value?.[part],look={};
+      if(weights.some(([n])=>n===p?.weight))look.weight=p.weight;
       if(sizes.includes(p?.size))look.size=p.size;
       if(/^#[a-f0-9]{6}$/i.test(p?.color||''))look.color=p.color.toUpperCase();
       if(Object.keys(look).length)result[part]=look;
@@ -16180,13 +16187,18 @@ function paintPropertyState(state){
   }
   function paint(skip){
     const css=[];
+    if(skip){
+      // Read the underlying style, not a color still transitioning from a saved override.
+      const {head,body}=selectors(skip);
+      css.push(head+', '+body+', '+body+' *{transition:none!important;}');
+    }
     for(const [field,looks] of saved){
       if(field===skip)continue;
       const targets=selectors(field);
       for(const part of parts){
         const look=looks[part];if(!look)continue;
         const target=targets[part],selector=part==='body'?target+', '+target+' :is(span,a,b,strong,em)':target;
-        css.push(selector+'{'+(look.size?'font-size:'+look.size+'px!important;':'')+(look.color?'color:'+look.color+'!important;':'')+'}');
+        css.push(selector+'{'+(look.size?'font-size:'+look.size+'px!important;':'')+(look.color?'color:'+look.color+'!important;':'')+(look.weight?'font-weight:'+look.weight+'!important;':'')+'}');
       }
     }
     rules.textContent='@media (min-width:820px){'+css.join('\n')+'}';
@@ -16197,7 +16209,8 @@ function paintPropertyState(state){
   });
   const options=sizes.map(n=>'<option value="'+n+'">'+n+' px</option>').join('');
   for(const part of parts){
-    controls.insertAdjacentHTML('beforeend','<fieldset data-part="'+part+'"><legend>'+labels[part]+'</legend><label class="ct-line">字級<select aria-label="'+labels[part]+'字級">'+options+'</select></label><div class="ct-line">字色<button type="button" aria-label="'+labels[part]+'字色" aria-expanded="false" data-ct-color><span class="ct-swatch"></span><span class="ct-color-label"></span></button></div></fieldset>');
+    const weightButtons=weights.map(([n,label])=>'<button type="button" data-ct-weight="'+n+'" aria-pressed="false">'+label+'</button>').join('');
+    controls.insertAdjacentHTML('beforeend','<fieldset data-part="'+part+'"><legend>'+labels[part]+'</legend><label class="ct-line">字級<select aria-label="'+labels[part]+'字級">'+options+'</select></label><div class="ct-line">字色<button type="button" aria-label="'+labels[part]+'字色" aria-expanded="false" data-ct-color><span class="ct-swatch"></span><span class="ct-color-label"></span></button></div><div class="ct-line">粗細<div class="ct-weights" role="group" aria-label="'+labels[part]+'字體粗細">'+weightButtons+'</div></div></fieldset>');
   }
   function preview(){
     for(const part of parts){
@@ -16208,10 +16221,13 @@ function paintPropertyState(state){
         select.replaceChildren(...choices.map(n=>new Option(n+' px',String(n))));select.dataset.base=String(basePx);
       }
       select.value=String(look.size??basePx);
+      const weight=look.weight??Number(base.weight);
+      const selected=weight>=650?700:weight>=500?600:400;
+      group.querySelectorAll('[data-ct-weight]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.ctWeight)===selected)));
       group.querySelector('.ct-swatch').style.backgroundColor=look.color||base.color;
       group.querySelector('.ct-color-label').textContent=look.color||'原字色';
       const sample=panel.querySelector('[data-preview='+part+']');sample.style.color=look.color||base.color;
-      sample.style.fontSize=look.size?look.size+'px':base.size;sample.style.fontWeight=base.weight;sample.style.backgroundColor=base.bg;sample.textContent=base.text;
+      sample.style.fontSize=look.size?look.size+'px':base.size;sample.style.fontWeight=look.weight??base.weight;sample.style.backgroundColor=base.bg;sample.textContent=base.text;
     }
   }
   function closePicker(){
@@ -16243,7 +16259,7 @@ function paintPropertyState(state){
     const {field,original,draft}=current,error=panel.querySelector('.cl-error');
     try{
       const latest=read(field);
-      for(const part of parts)for(const prop of ['size','color']){
+      for(const part of parts)for(const prop of ['size','color','weight']){
         const before=original[part]?.[prop],value=draft[part][prop];if(value===before)continue;
         if(latest[part]?.[prop]!==before&&latest[part]?.[prop]!==value){error.textContent='這個設定已在其他視窗變更，請重新開啟。';return;}
         (latest[part]||={})[prop]=value;
@@ -16260,6 +16276,11 @@ function paintPropertyState(state){
     const b=e.target.closest('button');if(!b)return;
     if(b.hasAttribute('data-ct-close'))close();
     if(b.hasAttribute('data-ct-save'))save();
+    if(b.hasAttribute('data-ct-weight')){
+      const part=b.closest('fieldset').dataset.part;
+      current.draft[part].weight=Number(b.dataset.ctWeight);
+      preview();
+    }
     if(b.hasAttribute('data-ct-reset')){closePicker();current.draft={head:{},body:{}};preview();}
     if(b.hasAttribute('data-ct-color')){
       const part=b.closest('fieldset').dataset.part,again=part===picking;
