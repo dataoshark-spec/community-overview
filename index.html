@@ -3496,6 +3496,11 @@ function compareAreaDecimals(left,right){
  const width=Math.max(af.length,bf.length),av=af.padEnd(width,"0"),bv=bf.padEnd(width,"0");
  return av===bv?0:av<bv?-1:1;
 }
+const numericOrderFields=Object.freeze(['price','totalArea','mainPlus','mainArea','ancillaryArea']);
+function numericOrder(value){
+ if(!value||!numericOrderFields.includes(value.field)||!['asc','desc'].includes(value.direction))return null;
+ return {field:value.field,direction:value.direction};
+}
 function areaRanges(value){
  if(value!=null&&!obj(value))fail("坪數篩選格式不正確");
  const ranges={};
@@ -3786,6 +3791,7 @@ function settings(value){
   s[key]={};
   for(const f of ["lo","hi"]) s[key][f]=value[key][f]==null?null:price(value[key][f]);
  }
+ if(own(value,"tableNumericOrder"))s.tableNumericOrder=numericOrder(value.tableNumericOrder);
  if(value.tableAreaRanges!=null)s.tableAreaRanges=areaRanges(value.tableAreaRanges);
  if(value.tableFloorRanges!=null)s.tableFloorRanges=FloorRangePreview.normalize(value.tableFloorRanges);
  if(value.defaultLinkNames!=null){
@@ -3996,6 +4002,7 @@ function merge(local,remote,legacySource=false){
   mergedSettings.colw=clone(otherSettings.colw||{});
  }
  // Older clients cannot express floor ranges; only an explicit empty range clears them.
+ if(!own(mergedSettings,"tableNumericOrder")&&own(otherSettings,"tableNumericOrder"))mergedSettings.tableNumericOrder=clone(otherSettings.tableNumericOrder);
  if(!own(mergedSettings,"tableFloorRanges") && own(otherSettings,"tableFloorRanges"))mergedSettings.tableFloorRanges=clone(otherSettings.tableFloorRanges);
  // Previous clients cannot express area ranges. Only an explicit empty range clears them.
  if(!own(mergedSettings,"tableAreaRanges")){
@@ -4396,7 +4403,7 @@ function createStore(storage){
  return {load,commit,readLatest,acknowledge,compact,rawBackup,get history(){return clone(history)},get current(){return current?clone(current):null},get blocked(){return blocked}};
 }
 
-const api={KEY,FIELDS,naturalOrder,emptyDistrictBars:defaultDistrictBars,communityFeatures,mergeCommunityFeatures,areaRangeFields,areaRanges,compareAreaDecimals,parkingCount,UNKNOWN_DUE,dueValue,setDueValue,recordFields,linkSlots,rebaseLinkSlots,price,tableDecimal,mainAreaSum,areaTrio,dependentArea,linkedArea,areaValue,fontSize,noteOrder,draftValues,mergeDraft,deleteStamp,record,records,categories,settings,validateState,backup,fieldMerge,track,merge,mergeLegacy:(main,previous)=>merge(main,previous,true),stateWriteKey,restore,mainFrom,stateFromMain,createStore,clone,defaults,ready:false};
+const api={KEY,FIELDS,naturalOrder,emptyDistrictBars:defaultDistrictBars,communityFeatures,mergeCommunityFeatures,areaRangeFields,areaRanges,numericOrderFields,numericOrder,compareAreaDecimals,parkingCount,UNKNOWN_DUE,dueValue,setDueValue,recordFields,linkSlots,rebaseLinkSlots,price,tableDecimal,mainAreaSum,areaTrio,dependentArea,linkedArea,areaValue,fontSize,noteOrder,draftValues,mergeDraft,deleteStamp,record,records,categories,settings,validateState,backup,fieldMerge,track,merge,mergeLegacy:(main,previous)=>merge(main,previous,true),stateWriteKey,restore,mainFrom,stateFromMain,createStore,clone,defaults,ready:false};
 if(typeof module==="object"&&module.exports) module.exports=api;
 root.PropertyCore=api;
 if(!root.document) return;
@@ -4470,7 +4477,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.25Q";
+const APP_VERSION = "2026.11.25R";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -4787,6 +4794,7 @@ function persistLocal(opts){
       effective.tableColwVersion=1;
       effective.colw=shown.colw;
     }
+    if(!Object.hasOwn(effective,"tableNumericOrder")&&shown.tableNumericOrder)effective.tableNumericOrder=shown.tableNumericOrder;
     // An older app may have compacted the main store without these settings.
     if(!Object.hasOwn(effective,"tableFloorRanges") && FloorRangePreview.has(shown.tableFloorRanges)){
       effective.tableFloorRanges=FloorRangePreview.normalize(shown.tableFloorRanges);
@@ -5521,6 +5529,11 @@ function matchesAreaRanges(row,ranges){
   });
 }
 function refreshAreaFilteredRow(cell){
+  const order=viewMode==='table'&&listFilters().tableNumericOrder;
+  if(order&&!window._saveBlocked&&(cell.dataset.field===order.field||
+    (PropertyCore.areaTrio.includes(order.field)&&PropertyCore.areaTrio.includes(cell.dataset.field)))){
+    applyFilter();return true;
+  }
   if(viewMode==="table" && cell.dataset.field==="floor" && !window._saveBlocked && FloorRangePreview.has(listFilters().tableFloorRanges)){
     const row=tFindItem(cell);if(row && (tableFloorOrder() || !FloorRangePreview.matches(row.floor,listFilters().tableFloorRanges))){applyFilter();return true;}
   }
@@ -5533,7 +5546,7 @@ function createListFilters(){
   return {
     colFilter:{cat:null, layout:null, floor:null, agent:null, store:null},
     tableColFilter:{planUnit:null, area:null, layout:null, status:null, floor:null, parkingType:null, parkingCount:null, agent:null, store:null},
-    fltP:{lo:null, hi:null}, tableFltP:{lo:null, hi:null}, tableAreaRanges:PropertyCore.areaRanges(), tableFloorRanges:FloorRangePreview.empty(), due:new Set(), links:{}
+    fltP:{lo:null, hi:null}, tableFltP:{lo:null, hi:null}, tableAreaRanges:PropertyCore.areaRanges(), tableFloorRanges:FloorRangePreview.empty(), tableNumericOrder:null, due:new Set(), links:{}
   };
 }
 const regularFilters = createListFilters();
@@ -5652,7 +5665,7 @@ function refreshLinkSlotConsumers(){
 }
 function anyColFilter(){
   const range=currentRange();
-  return range.lo!=null || range.hi!=null || (viewMode==="table" && (activeAreaRanges().length>0 || FloorRangePreview.has(listFilters().tableFloorRanges))) || Object.values(currentColumns()).some(set=>set?.size)
+  return range.lo!=null || range.hi!=null || (viewMode==="table" && (listFilters().tableNumericOrder || activeAreaRanges().length>0 || FloorRangePreview.has(listFilters().tableFloorRanges))) || Object.values(currentColumns()).some(set=>set?.size)
     || (viewMode!=="table" && (listFilters().due.size>0 || anyLinkFilter()));
 }
 function clearAllColFilters(allViews=false, filters=listFilters()){
@@ -5662,7 +5675,7 @@ function clearAllColFilters(allViews=false, filters=listFilters()){
     for(const key of Object.keys(columns))columns[key]=null;
     range.lo=range.hi=null;
   }
-  if(allViews || viewMode==="table"){filters.tableAreaRanges=PropertyCore.areaRanges();filters.tableFloorRanges=FloorRangePreview.empty();}
+  if(allViews || viewMode==="table"){filters.tableAreaRanges=PropertyCore.areaRanges();filters.tableFloorRanges=FloorRangePreview.empty();filters.tableNumericOrder=null;}
   if(allViews || viewMode!=="table"){filters.due.clear();clearLinkFilters(filters);}
   saveColFilterState(filters);
 }
@@ -5677,10 +5690,11 @@ function serializeColFilterState(){
   function selections(columns){
     return Object.fromEntries(Object.entries(columns).map(([key,set])=>[key,set?.size ? [...set] : null]));
   }
-  return {colFilter:selections(colFilter),fltP:{...fltP},tableColFilter:selections(tableColFilter),tableFltP:{...tableFltP},tableAreaRanges:PropertyCore.areaRanges(regularFilters.tableAreaRanges),tableFloorRanges:FloorRangePreview.normalize(regularFilters.tableFloorRanges)};
+  return {colFilter:selections(colFilter),fltP:{...fltP},tableColFilter:selections(tableColFilter),tableFltP:{...tableFltP},tableAreaRanges:PropertyCore.areaRanges(regularFilters.tableAreaRanges),tableFloorRanges:FloorRangePreview.normalize(regularFilters.tableFloorRanges),tableNumericOrder:regularFilters.tableNumericOrder};
 }
 function applyColFilterState(s){
   if (!s || typeof s!=="object")return;
+  regularFilters.tableNumericOrder=PropertyCore.numericOrder(s.tableNumericOrder);
   if(s.tableFloorRanges!=null){try{regularFilters.tableFloorRanges=FloorRangePreview.normalize(s.tableFloorRanges);}catch(_){regularFilters.tableFloorRanges=FloorRangePreview.empty();}}
   const {colFilter,fltP,tableColFilter,tableFltP} = regularFilters;
   // Older preferences can supply the shared fields on first load. Cat and due have no table counterpart.
@@ -5749,6 +5763,7 @@ function remapColFilterCat(oldKey, newKey){
   if (!st.size) regularFilters.colFilter.cat = null;
 }
 function colFilterOn(f){
+  if(viewMode==="table"&&listFilters().tableNumericOrder?.field===f)return true;
   if(f==="floor" && viewMode==="table")return FloorRangePreview.has(listFilters().tableFloorRanges)||!!currentColumns().floor?.size;
   if(isAreaRangeField(f))return viewMode==="table" && hasRange(listFilters().tableAreaRanges[f]);
   if(f==="price"){const r=currentRange();return r.lo!=null || r.hi!=null;}
@@ -5815,6 +5830,44 @@ function closeColFlt(){
 window.closeColFlt = closeColFlt;
 
 function tableFloorOrder(){return viewMode==='table' ? listFilters().tableFloorRanges.order : null;}
+function tableRangeOrder(){
+  if(viewMode!=='table')return null;
+  const filters=listFilters();
+  return filters.tableNumericOrder || (filters.tableFloorRanges.order?{field:'floor',direction:filters.tableFloorRanges.order}:null);
+}
+function rangeOrderKey(){const order=tableRangeOrder();return order?order.field+'-'+order.direction:'';}
+function bindRangeOrder(body,field,label){
+  const floor=field==='floor',order=tableRangeOrder();
+  const active=order?.field===field?order.direction:'';
+  const box=document.createElement('fieldset');
+  box.className='floor-order';
+  box.innerHTML='<legend>'+label+'排序</legend>'+[['','維持原排序'],['asc',floor?'低樓到高樓':'數值低到高'],['desc',floor?'高樓到低樓':'數值高到低']].map(([value,text])=>
+    '<label><input type="radio" name="floor-order" value="'+value+'"'+(active===value?' checked':'')+'><span>'+text+'</span></label>'
+  ).join('');
+  const summary=body.querySelector('.floor-range-summary');
+  if(summary)summary.before(box);else body.append(box);
+  box.addEventListener('change',event=>{
+    const direction=event.target.value,filters=listFilters();
+    delete filters.tableFloorRanges.order;
+    filters.tableNumericOrder=null;
+    if(direction){
+      if(floor)filters.tableFloorRanges.order=direction;
+      else filters.tableNumericOrder={field,direction};
+    }
+    saveColFilterState();applyFilter();persistColumnFilterEdit();
+  });
+}
+function applyRangeOrder(list){
+  const order=tableRangeOrder();
+  if(!order)return list;
+  if(order.field==='floor')return FloorRangePreview.ordered(list,order.direction);
+  const sign=order.direction==='asc'?1:-1,price=order.field==='price';
+  return list.map(item=>({item,value:price?item.price:PropertyCore.areaValue(item,order.field)})).sort((a,b)=>{
+    const emptyA=a.value==null||a.value==='',emptyB=b.value==null||b.value==='';
+    if(emptyA||emptyB)return Number(emptyA)-Number(emptyB);
+    return sign*(price?Number(a.value)-Number(b.value):PropertyCore.compareAreaDecimals(a.value,b.value));
+  }).map(entry=>entry.item);
+}
 function renderFloorRangeBody(body){
   const ranges=listFilters().tableFloorRanges,legacy=currentColumns().floor;
   body.innerHTML='<div class="floor-range-preview">'+[['unit','物件樓層'],['total','總樓高']].map(([key,label])=>
@@ -5822,9 +5875,6 @@ function renderFloorRangeBody(body){
     '<input data-floor-group="'+key+'" data-floor-bound="lo" aria-label="'+label+'下限" inputmode="'+(key==='total'?'numeric':'text')+'" placeholder="下限" value="'+esc(ranges[key].lo??'')+'"><span class="bsep">–</span>'+
     '<input data-floor-group="'+key+'" data-floor-bound="hi" aria-label="'+label+'上限" inputmode="'+(key==='total'?'numeric':'text')+'" placeholder="上限" value="'+esc(ranges[key].hi??'')+'"></div></section>'
   ).join('')+(legacy?.size?'<p class="floor-range-legacy">原勾選：'+[...legacy].map(v=>esc(v==='__EMPTY__'?'空白':v)).join('、')+'；輸入區間後取代。</p>':'')+
-    '<fieldset class="floor-order"><legend>物件樓層排序</legend>'+[['','維持原排序'],['asc','低樓到高樓'],['desc','高樓到低樓']].map(([value,label])=>
-      '<label><input type="radio" name="floor-order" value="'+value+'"'+((ranges.order||'')===value?' checked':'')+'><span>'+label+'</span></label>'
-    ).join('')+'</fieldset>'+
     '<div class="floor-range-summary"><span>留白不限</span><span id="floorRangeCount" role="status"></span></div><p class="floor-range-error" role="alert"></p></div>';
   const done=document.getElementById('fltDone'),inputs=[...body.querySelectorAll('[data-floor-bound]')],error=body.querySelector('.floor-range-error');
   const updateCount=()=>{body.querySelector('#floorRangeCount').textContent='符合 '+getFilteredItems().length+' 筆';};
@@ -5844,13 +5894,7 @@ function renderFloorRangeBody(body){
     listFilters().tableFloorRanges=next;currentColumns().floor=null;body.querySelector('.floor-range-legacy')?.remove();
     saveColFilterState();applyFilter();persistColumnFilterEdit();updateCount();
   };
-  body.querySelector('.floor-order').addEventListener('change',event=>{
-    if(event.target.checked){
-      const ranges=listFilters().tableFloorRanges;
-      if(event.target.value)ranges.order=event.target.value;else delete ranges.order;
-      saveColFilterState();applyFilter();persistColumnFilterEdit();
-    }
-  });
+  bindRangeOrder(body,'floor','物件樓層');
   inputs.forEach(input=>{input.addEventListener('input',update);input.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.isComposing){event.preventDefault();update();if(!done.disabled)done.click();}});});
   updateCount();
 }
@@ -5884,11 +5928,13 @@ function renderFltBody(){
       hint.textContent = badLo || badHi ? (area ? "請輸入有效坪數（例如 32.5）；目前保留上次有效範圍。" : "請輸入有效售價（例如 1288.5）；目前保留上次有效範圍。") : reversed ? "下限不可大於上限；目前保留上次有效範圍。" : defaultHint;
       hint.style.color = badLo || badHi || reversed ? "var(--danger)" : "";
       if (badLo || badHi || reversed) return;
+      const range=area?listFilters().tableAreaRanges[fltField]:currentRange();
       if(area && range.lo===nextLo && range.hi===nextHi)return;
       range.lo = nextLo; range.hi = nextHi; saveColFilterState(); applyFilter();
       persistColumnFilterEdit();
     };
     lo.addEventListener("input", upd); hi.addEventListener("input", upd);
+    if(viewMode==="table"&&PropertyCore.numericOrderFields.includes(fltField))bindRangeOrder(body,fltField,label);
     return;
   }
   const f = fltField;
@@ -5916,6 +5962,7 @@ document.getElementById("fltX").addEventListener("click", closeColFlt);
 document.getElementById("fltDone").addEventListener("click", closeColFlt);
 document.getElementById("fltClear").addEventListener("click", () => {
   if (document.getElementById("fltBody").classList.contains("editing")){ exitFltEditing(); return; }
+  if(viewMode==="table"&&listFilters().tableNumericOrder?.field===fltField)listFilters().tableNumericOrder=null;
   if(fltField==="floor" && viewMode==="table"){listFilters().tableFloorRanges=FloorRangePreview.empty();currentColumns().floor=null;document.getElementById("fltDone").disabled=false;}
   else if (fltField === "due"){ listFilters().due.clear(); }
   else if (isAreaRangeField(fltField)){ const range=listFilters().tableAreaRanges[fltField];range.lo=range.hi=null; }
@@ -6133,7 +6180,7 @@ function tHeadHTML(){
     const h = f === "planUnit" ? "重劃" : T_COLS[T_FIELDS.indexOf(f)];
     const rz = (f && f !== flex) ? `<span class="col-resize" data-field="${f}"></span>` : "";
     const lab = (f && FILTERABLE[f])
-      ? `<button type="button" class="th-flt${colFilterOn(f) ? " on" : ""}" data-flt="${f}" aria-haspopup="dialog" aria-controls="fltBg"><span class="th-label">${h}</span><span class="fmk" aria-hidden="true">${f==='floor'&&tableFloorOrder()?(tableFloorOrder()==='asc'?'↑':'↓'):'▾'}</span></button>`
+      ? `<button type="button" class="th-flt${colFilterOn(f) ? " on" : ""}" data-flt="${f}" aria-haspopup="dialog" aria-controls="fltBg"><span class="th-label">${h}</span><span class="fmk" aria-hidden="true">${tableRangeOrder()?.field===f?(tableRangeOrder().direction==='asc'?'↑':'↓'):'▾'}</span></button>`
       : `<span class="th-label">${h}</span>`;
     return `<th data-col="${f}">${lab}${rz}</th>`;
   }).join("") + (editMode ? `<th></th>` : "");   // 只有編輯模式預留刪除欄。
@@ -7685,7 +7732,7 @@ function applyFilter(){
   let list = getFilteredItems(listFilters().links, scope);
   const fca = document.getElementById("fltClearAll"); if (fca) fca.classList.toggle("on", anyColFilter());   // 有篩選才顯示漏斗清除鈕
   list = sortList(list);
-  if(viewMode==='table')list=FloorRangePreview.ordered(list,listFilters().tableFloorRanges.order);
+  list=applyRangeOrder(list);
   let emptyText = "";
   if (!list.length){
     if (isUnassignedCommunityFilterActive() && !scope.length) emptyText = "目前沒有未指定社區的物件。";
@@ -7917,7 +7964,7 @@ function visibleSortOption(){
 }
 function refreshVisibleSort(){
   const menu=document.getElementById("sortMenu");
-  if(menu.dataset.view!==viewMode || menu.dataset.selected!==visibleSortOption() || menu.dataset.floorOrder!==(tableFloorOrder()||''))renderSortOptions();
+  if(menu.dataset.view!==viewMode || menu.dataset.selected!==visibleSortOption() || menu.dataset.rangeOrder!==rangeOrderKey())renderSortOptions();
 }
 function updateSortLabel(){
   // Rendering also runs before the sort control constants are initialized.
@@ -7943,13 +7990,13 @@ function renderSortOptions(){
   updateSortLabel();
   sortMenu.dataset.view=viewMode;
   sortMenu.dataset.selected=selected;
-  sortMenu.dataset.floorOrder=tableFloorOrder()||'';
+  sortMenu.dataset.rangeOrder=rangeOrderKey();
   sortMenu.innerHTML = '<div class="sort-menu-caption" role="presentation">排列依據</div>' + SORTS.filter(sortAllowedHere).map(s => `
     <button type="button" class="cselect-opt${s.description ? " sort-group" : ""}" data-key="${s.key}" role="option">
       <span class="sort-copy"><span class="nm">${s.label}${s.suffix ? `<span class="sort-label-suffix">${s.suffix}</span>` : ""}</span>${s.description ? `<span class="sort-help">${s.description}</span>` : ""}</span>
       <span class="chk">✓</span>
     </button>`).join("");
-  sortMenu.querySelectorAll(".cselect-opt").forEach(o => o.classList.toggle("sel", !tableFloorOrder() && o.dataset.key === visibleSortOption()));
+  sortMenu.querySelectorAll(".cselect-opt").forEach(o => o.classList.toggle("sel", !tableRangeOrder() && o.dataset.key === visibleSortOption()));
 }
 function setSort(key){
   currentSort = SORTS.some(s => s.key === key && sortAllowedHere(s)) ? key : "default";
@@ -12133,7 +12180,7 @@ function applySettings(s){
   if (typeof s.expfocus === "boolean"){ expFocus = s.expfocus; saveExpFocus(); if (typeof applyExpFocus === "function") applyExpFocus(); }
   loadAreaFilterSettings(s);
   loadFloorFilterSettings(s);
-  if (s.colFilter || s.fltP || s.tableColFilter || s.tableFltP || s.tableAreaRanges || s.tableFloorRanges){ applyColFilterState(s); saveColFilterState(regularFilters); }
+  if (s.colFilter || s.fltP || s.tableColFilter || s.tableFltP || s.tableAreaRanges || s.tableFloorRanges || Object.hasOwn(s,"tableNumericOrder")){ applyColFilterState(s); saveColFilterState(regularFilters); }
   window.CommunityData?.refresh("apply");
   applyFilter();
 }
@@ -15140,7 +15187,11 @@ function paintPropertyState(state){
   updateSortLabel=function(...args){
     refreshProfiles();
     originalUpdateLabel(...args);
-    if(tableFloorOrder())document.getElementById("sortTxt").textContent=tableFloorOrder()==="asc"?"樓層 低→高":"樓層 高→低";
+    const rangeOrder=tableRangeOrder();
+    if(rangeOrder){
+      const field=rangeOrder.field,title=AREA_LABELS[field]||(field==='price'?'售價':'樓層');
+      document.getElementById("sortTxt").textContent=title+(rangeOrder.direction==='asc'?' 低→高':' 高→低');
+    }
     const kind=selectedKind(),button=document.getElementById('customOrderBtn');
     button.hidden=!kind;
     button.disabled=!!kind&&!privacyAllows(kind);
@@ -15160,7 +15211,8 @@ function paintPropertyState(state){
       features.orders=next;
     },undefined,{resetAt:epoch});
     if(!saved)return false;
-    if(tableFloorOrder()){
+    if(tableRangeOrder()){
+      listFilters().tableNumericOrder=null;
       delete listFilters().tableFloorRanges.order;
       saveColFilterState();persistColumnFilterEdit();
     }
@@ -16483,7 +16535,7 @@ function paintPropertyState(state){
   window.isTableBusy=()=>!!cancelDrag||wasBusy();
   function mode(){
     const sort=visibleSort();
-    return viewMode==='table'&&!tableFloorOrder()&&listView.classList.contains('active')&&!tselMode&&tableFields().includes('name')
+    return viewMode==='table'&&!tableRangeOrder()&&listView.classList.contains('active')&&!tselMode&&tableFields().includes('name')
       &&(sort==='group_plan_unit'||sort==='group_community')?sort:null;
   }
   function toolbar(){
