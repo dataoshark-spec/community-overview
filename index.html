@@ -4470,7 +4470,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.25P";
+const APP_VERSION = "2026.11.25Q";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -15663,6 +15663,11 @@ function paintPropertyState(state){
   indicator();return true;
  }
  const scalar={
+  openInEdit(spec){
+   const row=tableWrap.querySelector('tr[data-id="'+CSS.escape(spec.id)+'"]');
+   const cell=row?.querySelector('.tcell[data-field="'+CSS.escape(spec.field)+'"]');
+   if(cell)tCellEnterEdit(cell);
+  },
   target(target){const el=target.closest('.tcell[data-field]');return el&&tableWrap.contains(el)&&!['planUnit','area','layout','status','parkingType','parkingCount','name'].includes(el.dataset.field)&&el.getAttribute('aria-readonly')!=='true'?{id:tFindItem(el)?.id,field:el.dataset.field}:null;},
   open(spec){const el=Array.from(tableWrap.querySelectorAll('.tcell[data-field]')).find(cell=>tFindItem(cell)?.id===spec.id&&cell.dataset.field===spec.field);if(!el)return null;if(el.querySelector('.area-extra'))el.textContent=el.textContent;el.dataset.quickEdit='cell';el.contentEditable='true';el.tabIndex=0;el.focus({preventScroll:true});caretEnd(el);tScrollFieldIntoView(el);return {...spec,el,kind:'cell'};},
   commit(state){
@@ -15712,12 +15717,22 @@ function paintPropertyState(state){
   if(!finish({redraw:false})){blockedPointer=event.button===0;event.preventDefault();event.stopImmediatePropagation();}else pendingRedraw=true;
  },true);
  window.addEventListener('contextmenu',event=>{
-  if(tableWrap.classList.contains('bulk-on')||editMode||tselMode||viewMode!=='table'||!tableWrap.contains(event.target)||event.pointerType==='touch'||event.sourceCapabilities?.firesTouchEvents)return;
+  if(tableWrap.classList.contains('bulk-on')||document.getElementById('communityRowDrag')?.getAttribute('aria-pressed')==='true'||tselMode||viewMode!=='table'||!tableWrap.contains(event.target)||event.pointerType==='touch'||event.sourceCapabilities?.firesTouchEvents)return;
   if(!lastPointer||lastPointer.type!=='mouse'||lastPointer.button!==2||performance.now()-lastPointer.time>2000)return;
   const selection=window.getSelection();
   if(selection&&!selection.isCollapsed&&(tableWrap.contains(selection.anchorNode)||tableWrap.contains(selection.focusNode)))return;
   if(blocked(event.target))return;
-  for(const adapter of adapters){const spec=adapter.target(event.target);if(!spec?.id)continue;event.preventDefault();event.stopImmediatePropagation();pendingRedraw=false;open(adapter,spec);return;}
+  const target=event.target.matches('tr[data-id]>td')?(event.target.querySelector('.tcell')||event.target):event.target;
+  for(const adapter of adapters){
+   const spec=adapter.target(target);if(!spec?.id)continue;
+   event.preventDefault();event.stopImmediatePropagation();pendingRedraw=false;
+   if(editMode){
+    if(window._saveBlocked||!CommunityFields.finish())return;
+    if(lpTableTarget||lpNeed){commitLink(false);if(window._saveBlocked)return;}
+    (adapter.openInEdit||adapter.open)(spec);
+   }else open(adapter,spec);
+   return;
+  }
  },true);
  window.addEventListener('click',event=>{
   // A mouse selection can start inside the editor and dispatch its click on the page body.
@@ -15894,6 +15909,13 @@ function paintPropertyState(state){
   }
   const adapter = {
     kind:'note',target,open,commit,finish,commitNoteLink,
+    openInEdit(spec){
+      const row=tableWrap.querySelector('tr[data-id="'+CSS.escape(spec.id)+'"]');
+      if(!row)return;
+      if(!spec.expansion?.isConnected)openNeedExp(row,false);
+      const section=tableWrap.querySelector('tr.needexp[data-for="'+CSS.escape(spec.id)+'"] [data-need-font-seg="'+spec.sg+'"]');
+      section?.querySelector(spec.title?'.nseg-t':'.nseg-ed')?.focus({preventScroll:true});
+    },
     contains(state, element) {
       return state.el.contains(element) || state.formatButtons.some(pair => pair.button.contains(element)) ||
         (lpNeed?.ed === state.el && lpop.contains(element));
