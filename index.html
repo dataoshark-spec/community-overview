@@ -1124,6 +1124,8 @@ async function openCommunityTarget(value){
     background:var(--ink);color:#fff;font-size:.9rem;font-weight:600;padding:12px 20px;border-radius:999px;
     box-shadow:0 8px 24px rgba(0,0,0,.28);opacity:0;pointer-events:none;
     transition:opacity .2s ease,transform .2s ease;max-width:88%;text-align:center;}
+  .toast.copy-result{width:max-content;max-width:88%;line-height:1.5;}
+  .toast .copied-value{color:#ffda83;overflow-wrap:anywhere;}
   .toast.show{opacity:1;transform:translate(-50%,0);}
 
   @media (prefers-reduced-motion:reduce){
@@ -4616,7 +4618,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.26A";
+const APP_VERSION = "2026.11.26B";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -7265,7 +7267,7 @@ function copyCellText(cell, overrideText){
     if (!stillVisible()) return;
     cell.classList.remove("saved"); void cell.offsetWidth; cell.classList.add("saved");
     setTimeout(() => cell.classList.remove("saved"), 700);
-    toast("已複製：" + text);
+    toast("已複製：", text);
   };
   if (navigator.clipboard && navigator.clipboard.writeText){
     navigator.clipboard.writeText(text).then(ok).catch(() => { if (stillVisible() && legacyCopy(text)) ok(); });
@@ -7293,7 +7295,7 @@ function copyFieldText(el){
     if (!stillVisible()) return;
     el.classList.remove("copied"); void el.offsetWidth; el.classList.add("copied");
     setTimeout(() => el.classList.remove("copied"), 700);
-    toast("已複製：" + text);
+    toast("已複製：", text);
   };
   if (navigator.clipboard && navigator.clipboard.writeText){
     navigator.clipboard.writeText(text).then(ok).catch(() => { if (stillVisible() && legacyCopy(text)) ok(); });
@@ -8318,10 +8320,17 @@ customOrderUI.list.addEventListener("lostpointercapture",()=>stopCustomDrag(true
 // ---- Toast + confirm dialog (native alert/confirm are blocked in the sandbox) ----
 const toastEl = document.getElementById("toast");
 let toastTimer = null;
-function toast(msg){
+function toast(msg, copiedText){
   if (window._saveBlocked) return;
   toastEl.classList.toggle('row-drag-help',msg==='按住物件列上下拖曳\n調整同社區內的順序');
   toastEl.textContent = msg;
+  toastEl.classList.toggle("copy-result", copiedText !== undefined);
+  if (copiedText !== undefined){
+    const value = document.createElement("span");
+    value.className = "copied-value";
+    value.textContent = copiedText;
+    toastEl.append(value);
+  }
   toastEl.classList.add("show");
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => toastEl.classList.remove("show"), 2200);
