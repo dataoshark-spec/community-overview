@@ -2857,7 +2857,9 @@ html[data-mark-style=rail] #mark-outside .mark-action .mark-star-glyph{display:n
 #tableWrap .tbody-wrap td.bulk-cell{background:color-mix(in srgb,var(--accent) 22%,var(--card))!important;box-shadow:inset 0 0 0 1px var(--accent-deep)!important}
 #tableWrap td.bulk-cell>*{background:transparent!important;outline:none!important}
 #tableWrap.bulk-on,#tableWrap.bulk-on .tbody-wrap td{user-select:none}
-#tableWrap.bulk-on:focus{outline:none}
+#tableWrap:focus{outline:none}
+#tableWrap:focus-visible:not(.bulk-on){border-color:var(--ink-soft)}
+@media(forced-colors:active){#tableWrap:focus-visible:not(.bulk-on){border-color:Highlight}}
 #bulkTouch[aria-pressed=true]{background:var(--ink);color:var(--card);border-color:var(--ink)}
 @media(pointer:coarse){
  #tableWrap.bulk-touch-selecting .tbody-wrap tr[data-id]>td>*{pointer-events:none}
@@ -4615,7 +4617,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.26E";
+const APP_VERSION = "2026.11.26F";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
