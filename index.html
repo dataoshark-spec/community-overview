@@ -43,28 +43,34 @@ function communityTargetHref(value){
   return file?COMMUNITY_FILE_MARK+encodeURIComponent(file):safeUrl(value);
 }
 let openingLocalFile=false;
-async function openCommunityTarget(value){
-  const file=localLinkPath(value);
-  if(!file){openExtUrl(value);return;}
-  if(openingLocalFile)return;
-  openingLocalFile=true;
+async function requestLocalFile(file){
   async function request(action,token,body){
     return fetch(COMMUNITY_FILE_SERVICE+action,{method:"POST",credentials:"omit",redirect:"error",referrerPolicy:"no-referrer",
       headers:{"Content-Type":"text/plain;charset=UTF-8","X-Community-Opener":token},body,cache:"no-store",
       signal:AbortSignal.timeout(action==="pair"?120000:20000)});
   }
-  try{
-    let token=localStorage.getItem(COMMUNITY_FILE_PAIR);
-    let response=token?await request("open",token,file):null;
-    if(!response||response.status===401){
-      toast("首次使用，請在 Windows 視窗確認連接。");
-      const pair=await request("pair","pair","");
-      if(!pair.ok)throw new Error(await pair.text());
-      token=await pair.text();localStorage.setItem(COMMUNITY_FILE_PAIR,token);
-      response=await request("open",token,file);
-    }
-    toast(await response.text()||"請檢查這台電腦的開檔工具。");
-  }catch(error){toast(error instanceof TypeError||error.name==="TimeoutError"?"無法連接 Windows 開檔工具，請確認工具已啟動並允許瀏覽器連接本機。":error.message);}
+
+  let token=localStorage.getItem(COMMUNITY_FILE_PAIR);
+  let response=token?await request("open",token,file):null;
+  if(!response||response.status===401){
+    toast("首次使用，請在 Windows 視窗確認連接。");
+    const pair=await request("pair","pair","");
+    if(!pair.ok)throw new Error(await pair.text()||"未能連接 Windows 開檔工具。");
+    token=await pair.text();localStorage.setItem(COMMUNITY_FILE_PAIR,token);
+    response=await request("open",token,file);
+  }
+  return {ok:response.ok,message:await response.text()};
+}
+function localOpenError(error){
+  return error instanceof TypeError||error.name==="TimeoutError"?"無法連接 Windows 開檔工具，請確認工具已啟動並允許瀏覽器連接本機。":error.message;
+}
+async function openCommunityTarget(value){
+  const file=localLinkPath(value);
+  if(!file){openExtUrl(value);return;}
+  if(openingLocalFile)return;
+  openingLocalFile=true;
+  try{const result=await requestLocalFile(file);toast(result.message||"請檢查這台電腦的開檔工具。");}
+  catch(error){toast(localOpenError(error));}
   finally{openingLocalFile=false;}
 }
 
@@ -4610,7 +4616,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.25S";
+const APP_VERSION = "2026.11.26A";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -17356,7 +17362,7 @@ const touch=document.createElement('button');
 touch.id='bulkTouch';touch.type='button';touch.textContent='多選';
 document.querySelector('.table-setup-tools').append(touch);
 const menu=document.createElement('div');menu.id='bulkMenu';menu.hidden=true;
-menu.innerHTML='<div role="menu" aria-label="選取操作"><button type="button" role="menuitem" data-rows>選取整列</button><button type="button" role="menuitem" data-copy>複製</button><button type="button" role="menuitem" data-fill>批次填入</button><button type="button" role="menuitem" data-end>結束多選</button></div><form hidden><label><span data-label></span><input aria-label="填入內容" autocomplete="off"></label><div class="bulk-choices"></div><div role="alert"></div><footer><button type="button" data-cancel>取消</button><button type="submit">套用</button></footer></form>';
+menu.innerHTML='<div role="menu" aria-label="選取操作"><button type="button" role="menuitem" data-rows>選取整列</button><button type="button" role="menuitem" data-copy>複製</button><button type="button" role="menuitem" data-open-links hidden>全部開啟</button><button type="button" role="menuitem" data-fill>批次填入</button><button type="button" role="menuitem" data-end>結束多選</button></div><form hidden><label><span data-label></span><input aria-label="填入內容" autocomplete="off"></label><div class="bulk-choices"></div><div role="alert"></div><footer><button type="button" data-cancel>取消</button><button type="submit">套用</button></footer></form>';
 document.body.append(menu);
 const actions=menu.firstElementChild,form=menu.querySelector('form'),input=form.querySelector('input'),error=form.querySelector('[role=alert]');
 const fieldsSelected=()=>new Set([...selection].map(k=>JSON.parse(k)[1]));
@@ -17455,9 +17461,58 @@ function fitMenu(){
  const b=menu.getBoundingClientRect();menu.style.left=Math.max(5,Math.min(point.x,innerWidth-b.width-5))+'px';
  menu.style.top=Math.max(5,Math.min(point.y,innerHeight-b.height-5))+'px';
 }
+const openLinksAction=actions.querySelector('[data-open-links]');
+let openingSelection=false;
+function selectedLinkTargets(){
+ const byId=new Map(items.map(item=>[item.id,item])),targets=[];
+ for(const row of rows()){
+  const id=row.dataset.id;
+  if(!selection.has(token(id,'links')))continue;
+  const item=byId.get(id);
+  if(!item||linkIsNone(item,slot))continue;
+  const value=item[urlKey],file=localLinkPath(value);
+  if(file){targets.push({file});continue;}
+  const href=safeUrl(value);
+  if(href&&URL.canParse(href))targets.push({href});
+ }
+ return targets;
+}
+openLinksAction.onclick=async()=>{
+ if(openingSelection)return;
+ const targets=selectedLinkTargets();hideMenu(true);
+ if(!targets.length)return;
+ const hasFiles=targets.some(target=>target.file);
+ if(hasFiles&&openingLocalFile){report('開檔工具正在使用中，請稍後再試。');return;}
+ openingSelection=true;if(hasFiles)openingLocalFile=true;
+ let blocked=0,failed=0,opened=0,serviceError='';
+ try{
+  // Reserve web tabs during the click. Waiting for the file service consumes user activation.
+  for(const target of targets){
+   if(!target.href)continue;
+   target.tab=window.open('about:blank','_blank');
+   if(target.tab)target.tab.opener=null;else blocked++;
+  }
+  for(const target of targets){
+   if(target.file){
+    if(serviceError){failed++;continue;}
+    try{const result=await requestLocalFile(target.file);if(result.ok)opened++;else failed++;}
+    catch(error){failed++;serviceError=localOpenError(error);}
+   }else if(target.tab){
+    try{target.tab.location.replace(target.href);opened++;}catch{target.tab.close();failed++;}
+   }
+  }
+  const status=['已送出 '+opened+' 個開啟要求'];
+  if(blocked)status.push(blocked+' 個分頁遭封鎖，請允許本站開啟彈出式視窗');
+  if(failed)status.push(failed+' 個未能開啟');
+  if(serviceError)status.push(serviceError);
+  report(status.join('。'));
+ }finally{openingSelection=false;if(hasFiles)openingLocalFile=false;}
+};
 function showMenu(x,y){
  if(!on()||!selection.size)return;
  point={x,y};actions.hidden=false;form.hidden=true;menu.hidden=false;
+ const links=selectedLinkTargets();openLinksAction.hidden=!links.length;openLinksAction.disabled=openingSelection;
+ openLinksAction.textContent='全部開啟（'+links.length+'）';
  actions.querySelector('[data-fill]').disabled=fieldsSelected().size!==1;fitMenu();
  actions.querySelector('button').focus({preventScroll:true});
 }
@@ -17488,7 +17543,7 @@ window.addEventListener('keydown',e=>{
  if(e.isComposing)return;
  if(!menu.hidden&&e.key==='Escape'){halt(e);hideMenu(true);return;}
  if(!menu.hidden&&menu.contains(e.target)&&!actions.hidden){
-  const bs=Array.from(actions.querySelectorAll('button:not(:disabled)')),i=bs.indexOf(document.activeElement);
+  const bs=Array.from(actions.querySelectorAll('button:not(:disabled):not([hidden])')),i=bs.indexOf(document.activeElement);
   if(e.key==='ArrowDown'||e.key==='ArrowUp'){halt(e);bs[(i+bs.length+(e.key==='ArrowDown'?1:-1))%bs.length].focus();}else if(e.key==='Tab')hideMenu(true);
  }
 },true);
