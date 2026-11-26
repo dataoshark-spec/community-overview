@@ -4627,7 +4627,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.26M";
+const APP_VERSION = "2026.11.26N";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -7919,7 +7919,8 @@ function releaseReturnTable(){
   syncTableMode();
 }
 function tableContentKey(list,emptyText){
-  return JSON.stringify([list,emptyText,cats,PropertyCore.local().current.settings,listFilters(),currentCat,
+  const filters=JSON.stringify(listFilters(),(_key,value)=>value instanceof Set?[...value]:value);
+  return JSON.stringify([list,emptyText,cats,PropertyCore.local().current.settings,filters,currentCat,unassignedOnly,
     activeDistrict,currentSort,simpleGroupView,tableFields(),colW,density,searchEl.value,innerWidth,innerHeight,
     editMode,selectMode,tselMode,Array.from(selected),theme,new Date().toDateString()]);
 }
@@ -8008,7 +8009,7 @@ function openList(cat, {unassignedOnly:restoreUnassigned, fromUnassignedShortcut
   const resume=fromCoverTable&&desktopTableLayout.matches?returnTable:null;
   const position=fromCoverTable&&returnPosition?.district===activeDistrict&&performance.now()-returnPosition.at<1500?returnPosition:null;
   returnPosition=null;
-  if(!resume)applyFilter();
+  if(!resume)applyFilter(navigationRender);
   cover.style.display = "none";
   listView.classList.add("active");
   document.getElementById("app").classList.remove("returning-to-cover");
@@ -8016,9 +8017,12 @@ function openList(cat, {unassignedOnly:restoreUnassigned, fromUnassignedShortcut
   if(resume){
     applyFilter(resume);
   }
-  if(position){
-    const body=tableWrap.querySelector(".tbody-wrap");
-    if(body){body.scrollTop=position.top;body.scrollLeft=position.left;}
+  if(viewMode==="table"){
+    const body=tableWrap.querySelector(".tbody-wrap"),head=tableWrap.querySelector(".thead-wrap");
+    if(body){
+      body.scrollTop=position?.top??0;body.scrollLeft=position?.left??0;
+      if(head)head.scrollLeft=position?.left??0;
+    }
   }
   clearTimeout(returnTimer);returnTable=null;
   if(viewMode==="table")fitTableDueDates();
