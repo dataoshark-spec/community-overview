@@ -1554,7 +1554,7 @@ async function openCommunityTarget(value){
     box-shadow:0 6px 18px rgba(0,0,0,.14);transition:background .15s ease;}
   .cover-search:hover{background:var(--surface-2);}
   .cover-search svg{width:19px;height:19px;flex:none;}
-  .cover-search span{flex:1;}
+  .cover-search span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   /* ===== 手機橫躺:蓋住畫面,提示轉回直向 =====
      只在「觸控裝置 + 手機尺寸 + 裝置真的橫躺」時出現。桌機(滑鼠)、平板、手機直向一律不觸發,
      原本的顯示完全不受影響。Android 安裝成 App 後由 manifest 直接不轉,根本走不到這層;
@@ -3020,7 +3020,7 @@ html[data-mark-style=rail] #mark-outside .mark-action .mark-star-glyph{display:n
     </header>
     <button class="cover-search" id="coverSearch" type="button">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
-      <span>搜尋重劃區、社區、案名、門牌、售價、格局、樓層…</span>
+      <span>搜尋重劃區、社區、案名、門牌、售價…</span>
     </button>
     <button class="all-btn cover-community-manage" id="coverCatManage" type="button" aria-haspopup="dialog" aria-controls="catBg">＋ 社區／重劃區管理</button>
     <div class="cover-scrollwrap">
@@ -4617,7 +4617,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.26F";
+const APP_VERSION = "2026.11.26G";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
