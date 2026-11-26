@@ -4627,7 +4627,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.26L";
+const APP_VERSION = "2026.11.26M";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -8169,6 +8169,7 @@ tableWrap.addEventListener("focusout", function(){ setTimeout(function(){ if (wi
 // ---- Card density (正常 / 緊湊):不再有獨立按鈕,藏在卡片「正常」模式的長按裡 ----
 function loadDensity(){ if (storageOK){ try { return localStorage.getItem("community_table_v3_app_density_v1") || "normal"; } catch (e) {} } return "normal"; }
 function saveDensity(){ if (storageOK){ try { localStorage.setItem("community_table_v3_app_density_v1", density); } catch (e) {} } }
+let theme = loadTheme();
 let density = loadDensity();
 if (storageOK){ try { localStorage.removeItem("community_table_v3_app_duedays_v1"); } catch (e) {} }   // 到期天數已固定 7 天,清掉舊設定殘留
 function setDensity(d){
@@ -12263,7 +12264,6 @@ function dragOrderRow(down,handle,row,isCurrent,onMove,scope={}){
 // ===== 外觀主題 (淺色 / 深色) =====
 function loadTheme(){ if (storageOK){ try { const t = localStorage.getItem("community_table_v3_app_theme_v1"); if (t === "dark") return "dark"; } catch(e){} } return "light"; }
 function saveTheme(){ if (storageOK){ try { localStorage.setItem("community_table_v3_app_theme_v1", theme); } catch(e){} } }
-let theme = loadTheme();
 function applyTheme(){
   document.documentElement.setAttribute("data-theme", theme);
   document.querySelectorAll("#themePicker button").forEach(b => b.classList.toggle("on", b.dataset.themeVal === theme));
