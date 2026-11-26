@@ -1155,10 +1155,23 @@ async function openCommunityTarget(value){
     from{clip-path:inset(0 calc(50% - 240px));}
     to{clip-path:inset(0 0);}
   }
-  #app.table-mode.opened-from-cover{transition:none;}
+  #app.table-mode.opened-from-cover,#app.narrow-view-entry{transition:none;}
   @media(min-width:820px){
-    #app.table-mode.returning-to-cover{max-width:480px;}
-    #app.returning-to-cover .list:not(.active){
+    #cards .cp-card{content-visibility:auto;contain-intrinsic-block-size:auto 235px;}
+    #cards .compact-card{contain-intrinsic-block-size:auto 86px;}
+  }
+  @media(prefers-reduced-motion:reduce),(max-width:819px){#app{transition:none;}}
+  @media(min-width:820px) and (prefers-reduced-motion:no-preference){
+    #app.narrow-view-entry{isolation:isolate;}
+    #app.narrow-view-entry::before{
+      content:"";position:fixed;inset:0 2vw;pointer-events:none;z-index:-1;background:var(--paper);
+      animation:listNarrow .28s ease both;
+    }
+    @keyframes listNarrow{to{clip-path:inset(0 calc(50% - 240px));}from{clip-path:inset(0 0);}}
+  }
+  @media(min-width:820px){
+    #app.table-mode.returning-to-cover,#app.table-mode.table-behind-settings{max-width:480px;}
+    #app:is(.returning-to-cover,.table-behind-settings) .list:not(.active){
       display:flex;position:fixed;top:0;left:2vw;width:96vw;visibility:hidden;pointer-events:none;
     }
   }
@@ -4633,7 +4646,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.26J";
+const APP_VERSION = "2026.11.26K";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -6268,16 +6281,17 @@ function syncToggleUI(){
 function syncTableMode(){
   const app=document.getElementById("app");
   const active=viewMode==="table" && listView.classList.contains("active");
-  app.classList.toggle("table-mode",active||app.classList.contains("returning-to-cover"));
+  app.classList.toggle("table-mode",active||app.classList.contains("returning-to-cover")||app.classList.contains("table-behind-settings"));
   if(!active)app.classList.remove("opened-from-cover");
 }
-function setViewMode(vm){
+function setViewMode(vm,resume=null){
   viewMode = (vm==="table") ? "table" : "card"; saveViewMode();
   if (viewMode !== "table"){                                     // 離開表格:收合展開,避免殘留的隱藏展開之後把舊內容寫回
     if (typeof closeNeedExp === "function") closeNeedExp();
     if (typeof hideNeedHover === "function") hideNeedHover();
   }
-  applyFilter();
+  syncTableMode();
+  applyFilter(resume);
 }
 
 // ---- table rendering ----
@@ -7722,7 +7736,16 @@ document.getElementById("viewBtn").addEventListener("click", () => {
   closeCatMenu();
   if (lpop.classList.contains("show")) commitLink(); else closeLinkPop();
   if (typeof closeDetail === "function") closeDetail();
-  setViewMode(vm);
+  const scroller=tableWrap.querySelector(".tbody-wrap");
+  if(viewMode==="table"&&scroller)viewPositions.table={top:scroller.scrollTop,left:scroller.scrollLeft};
+  if(viewMode==="card")viewPositions.card=window.scrollY;
+  prepareListTransition(vm==="table");
+  setViewMode(vm,navigationRender);
+  if(vm==="table"){
+    const body=tableWrap.querySelector(".tbody-wrap");
+    if(body){body.scrollTop=viewPositions.table.top;body.scrollLeft=viewPositions.table.left;}
+    window.scrollTo(0,0);
+  }else window.scrollTo(0,viewPositions.card);
 });
 const discreetDialog = document.getElementById("discreetDialog");
 (function(){
@@ -7905,7 +7928,18 @@ function getFilteredItems(linkSelections = listFilters().links, scope = itemsInC
 }
 // Keep the final table layout briefly while the cover contracts. Only an identical
 // normal view can reuse its rows; other entries use the regular render path.
-let lastTableKey=null,returnTable=null,returnTimer=0,returnPosition=null;
+let lastTableKey=null,lastCardKey=null,lastTableBody=null,lastCardNode=null;
+let returnTable=null,returnTimer=0,returnPosition=null;
+const navigationRender=Symbol("navigationRender");
+const viewPositions={card:0,table:{top:0,left:0}};
+function prepareListTransition(wide){
+  const app=document.getElementById("app");
+  app.classList.toggle("narrow-view-entry",!wide&&desktopReveal.matches);
+  if(wide&&desktopReveal.matches)app.classList.add("opened-from-cover");
+}
+document.getElementById("app").addEventListener("animationend",event=>{
+  if(event.animationName==="listNarrow")event.currentTarget.classList.remove("narrow-view-entry");
+});
 const desktopReveal=matchMedia("(min-width:820px) and (prefers-reduced-motion:no-preference)");
 function releaseReturnTable(){
   clearTimeout(returnTimer);
@@ -7915,7 +7949,8 @@ function releaseReturnTable(){
 }
 function tableContentKey(list,emptyText){
   return JSON.stringify([list,emptyText,cats,PropertyCore.local().current.settings,listFilters(),currentCat,
-    activeDistrict,currentSort,simpleGroupView,tableFields(),colW,density,searchEl.value,innerWidth,innerHeight]);
+    activeDistrict,currentSort,simpleGroupView,tableFields(),colW,density,searchEl.value,innerWidth,innerHeight,
+    editMode,selectMode,tselMode,Array.from(selected),theme,new Date().toDateString()]);
 }
 function applyFilter(resumeTable=null){
   closeTableMoreLinks();
@@ -7957,15 +7992,21 @@ function applyFilter(resumeTable=null){
 
   if (viewMode === "table"){
     cardsEl.style.display = "none"; tableWrap.style.display = "";
-    const key=desktopReveal.matches&&!editMode&&!openNeedId?tableContentKey(list,emptyText):null;
-    if(!resumeTable||resumeTable!==returnTable||!key||resumeTable.key!==key||
-       resumeTable.body!==tableWrap.querySelector(".tbody-wrap"))renderTable(list,emptyText);
+    const reusable=!editMode&&!openNeedId&&!tselMode&&!tableWrap.classList.contains("bulk-on")&&
+      !tableWrap.querySelector('.row-drag-ready,[contenteditable="true"]');
+    const key=reusable?tableContentKey(list,emptyText):null;
+    const body=tableWrap.querySelector(".tbody-wrap");
+    const reuse=resumeTable===navigationRender&&key&&key===lastTableKey&&body&&body===lastTableBody;
+    if(!reuse&&!(resumeTable&&resumeTable===returnTable&&key&&resumeTable.key===key&&resumeTable.body===body))renderTable(list,emptyText);
+    lastTableBody=tableWrap.querySelector(".tbody-wrap");
     lastTableKey=key;
   } else {
     tableWrap.style.display = "none"; cardsEl.style.display = "";
-    cardsEl.innerHTML = list.length
-      ? list.map(cardHTML).join("")
-      : `<p class="empty">${emptyText}</p>`;
+    const key=!editMode&&!selectMode?tableContentKey(list,emptyText):null;
+    if(resumeTable!==navigationRender||!key||key!==lastCardKey||lastCardNode!==cardsEl.firstElementChild){
+      cardsEl.innerHTML=list.length?list.map(cardHTML).join(""):`<p class="empty">${emptyText}</p>`;
+    }
+    lastCardNode=cardsEl.firstElementChild;lastCardKey=key;
   }
   syncTableMode();
   if(viewMode==="table")fitTableDueDates();
@@ -7981,6 +8022,7 @@ function updateLH(){
 window.addEventListener("resize", function(){ requestAnimationFrame(updateLH); });
 let returnToUnassignedShortcut = false;
 function openList(cat, {unassignedOnly:restoreUnassigned, fromUnassignedShortcut, district=districtTabs.initial, revealTable=false} = {}){
+  viewPositions.card=0;viewPositions.table={top:0,left:0};
   returnToUnassignedShortcut = false;
   listCounter.firstPage();
   /* search-help:start */ closeSearchHelp(); /* search-help:end */
@@ -12040,6 +12082,10 @@ function openSettings(trigger,fromPointer=false){
     if (typeof closeNeedExp === "function") closeNeedExp();
   }
   exitSelectMode();
+  if(fromList&&viewMode==="table"){
+    document.getElementById("app").classList.toggle("table-behind-settings",desktopReveal.matches);
+    prepareListTransition(false);
+  }
   settingsView.classList.add("active");
   cover.style.display = "none";
   listView.classList.remove("active");
@@ -12052,13 +12098,16 @@ function closeSettings(event){
   if (typeof palettePop !== "undefined" && palettePop.classList.contains("link-palette")) closePalette();
   if(linkDeleteUI.picker.hidden===false)setLinkDeleteMode(false);
   settingsView.classList.remove("active");
+  document.getElementById("app").classList.remove("table-behind-settings");
   if(settingsListReturn){
     const position=settingsListReturn;
     settingsListReturn=null;
+    if(viewMode==="table")prepareListTransition(true);
     listView.classList.add("active");
     syncTableMode();
+    applyFilter(navigationRender);
     updateLH();
-    syncTableChrome();
+    if(viewMode==="table")syncTableChrome();
     const body=tableWrap.querySelector(".tbody-wrap"),head=tableWrap.querySelector(".thead-wrap");
     if(body){
       body.scrollTop=position.top;
@@ -14750,6 +14799,7 @@ function paintPropertyState(state){
     return bar;
   }
   function drawGroups(){
+    if(viewMode!=='table')lastTableKey=null;
     tableWrap.querySelectorAll('.cl-plan-row,.cl-community-row').forEach(row=>row.remove());
     const showCommunity=visible(),showDistrict=groupedTable()&&tableFields().includes('planUnit');
     namesButton.hidden=true;if(!showCommunity&&!showDistrict)return;
