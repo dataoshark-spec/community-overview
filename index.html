@@ -4627,7 +4627,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.26H";
+const APP_VERSION = "2026.11.26I";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -15840,9 +15840,9 @@ function paintPropertyState(state){
     if(next!==active){unpin(active);active=next;active?.cell.classList.add('cl-community-pinned');}
     let bottom=levelTop;
     if(active){
-      // Release the community header at the top of its last property.
-      // As the row scrolls away, its header travels with it under the district.
-      const offset=Math.min(levelTop,active.releaseTop-scroll-active.height);
+      // The next group can push this bar only after the final property is fully covered.
+      const nextGroupTop=groups[index+1]?.top??Infinity;
+      const offset=Math.min(levelTop,nextGroupTop-scroll-active.height);
       setOffset(active,offset);
       bottom=Math.max(bottom,offset+active.height);
     }
@@ -15864,15 +15864,6 @@ function paintPropertyState(state){
       const cell=row.firstElementChild,rect=row.getBoundingClientRect();
       return {row,cell,top:rect.top-origin+body.scrollTop,height:rect.height};
     });
-    for(const [i,entry] of groups.entries()){
-      if(!entry.row.dataset.community)continue;
-      const following=groups[i+1];
-      let last=following?following.row.previousElementSibling:entry.row.parentElement.lastElementChild;
-      while(last&&last!==entry.row&&!last.matches('tr[data-id]'))last=last.previousElementSibling;
-      entry.releaseTop=last&&last!==entry.row
-        ?last.getBoundingClientRect().top-origin+body.scrollTop
-        :following?.top??Infinity;
-    }
     districts=groups.filter(entry=>entry.row.classList.contains('cl-plan-row'));
     configureScrollbar();
     update();
