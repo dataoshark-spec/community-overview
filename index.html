@@ -988,19 +988,16 @@ async function openCommunityTarget(value){
   /* Confirm dialog (centered) + toast */
   .modal-bg.center{align-items:center;padding:24px;}
   /* ==== 表格欄位標題篩選(參考客戶總覽:勾選式 + 售價範圍 + 長按拖曳排序) ==== */
-  .th-flt{display:inline-flex;align-items:center;justify-content:center;gap:4px;background:none;border:0;padding:3px 8px;margin:-3px -8px;border-radius:999px;color:inherit;font:inherit;cursor:pointer;
-    transition:background .16s ease,box-shadow .16s ease,gap .12s ease,padding .12s ease;}
-  .th-flt:focus{outline:none;}
-  /* TAB 選中:藏箭頭、文字置中,柔光膠囊焦點(避免右緣被裁) */
-  .th-flt:focus-visible{outline:none;gap:0;padding:3px 11px;background:rgba(255,255,255,.14);
-    box-shadow:inset 0 0 0 1px rgba(255,255,255,.92),0 0 0 3px rgba(255,255,255,.16),0 2px 10px rgba(0,0,0,.12);}
-  .th-flt:focus-visible:not(.on) .fmk{display:none;}
-  .th-flt.on:focus-visible{gap:4px;padding:3px 8px;}
-  .th-flt .fmk{opacity:.55;font-size:.72em;line-height:1;transition:opacity .12s ease;}
+  .th-flt{position:absolute;inset:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;margin:0;padding:0;border:0;background:none;font:inherit;color:inherit;cursor:pointer;}
+  .th-flt:focus-visible{outline:1px solid currentColor;outline-offset:-2px;}
+  .th-flt .fmk{position:absolute;top:3px;right:3px;width:5px;height:5px;background:currentColor;opacity:.65;clip-path:polygon(0 0,100% 0,100% 100%);pointer-events:none;}
+  .th-flt.on{background:#c3e3d6;color:#064f44;}
+  [data-theme="dark"] .th-flt.on{background:#294a43;color:#c6f3df;}
+  .th-flt.on .fmk{opacity:1;}
+  .th-flt .fmk.sorted{width:auto;height:auto;top:0;right:2px;font:700 9px/1 sans-serif;clip-path:none;background:none;}
   /* 關鍵字搜尋中(聚焦或已有文字):點亮「會被比對」的欄位標題,讓使用者知道搜尋範圍(到期日/連結/電話不在搜尋範圍故不亮) */
   .thead-wrap th .th-label{transition:color .15s;}
   .table-wrap.search-hint th[data-col]:not([data-col="tel"]):not([data-col="del"]) .th-label{color:var(--baseline-header-emphasis,#FFE08A);}
-  .th-flt.on .fmk{opacity:1;color:#FFE08A;}   /* 已套用此欄篩選:標記加亮 */
   .fpanel{background:var(--card);width:100%;max-width:390px;max-height:80dvh;border-radius:20px;padding:15px 16px 16px;box-shadow:0 18px 50px rgba(22,34,42,.3);display:flex;flex-direction:column;}
   .fpanel-head{display:flex;align-items:center;justify-content:space-between;font-weight:800;font-size:1.02rem;color:var(--ink);margin-bottom:8px;}
   .fpanel-head .fx{border:0;background:var(--surface-1);color:var(--ink-soft);width:34px;height:34px;border-radius:11px;font-size:1rem;cursor:pointer;}
@@ -3909,7 +3906,7 @@ function settings(value){
  if(value.colw!=null){
   if(!obj(value.colw)) fail("欄寬設定不正確");s.colw={};
   for(const f of [...TABLE_ADDITIONS,"due","cat","layout","name","addr","floor","price","links","agent","tel","store","note"]){
-   if(own(value.colw,f)){const n=value.colw[f];if(typeof n!=="number"||!Number.isFinite(n)) fail("欄寬必須是數字");s.colw[f]=Math.max(48,Math.min(640,n));}
+   if(own(value.colw,f)){const n=value.colw[f];if(typeof n!=="number"||!Number.isFinite(n)) fail("欄寬必須是數字");s.colw[f]=Math.max(24,Math.min(640,n));}
   }
  }
  for(const key of ["fltorder","colFilter","tableColFilter"]){
@@ -4618,7 +4615,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.26B";
+const APP_VERSION = "2026.11.26C";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -6287,7 +6284,7 @@ function tableFields(){return discreet.on?columnOrder.filter(field=>!discreet.fi
 function tableColumnCount(){ return tableFields().length + (editMode ? 1 : 0); }
 // 緊湊欄寬；註下限依標題量測，並依原本操作承接剩餘寬度。
 const DEFAULT_COLW = {"planUnit":64,"area":48,"layout":48,"status":48,"name":104,"addr":84,"floor":48,"links":52,"price":52,"floorPrice":52,"cost":52,"totalArea":48,"mainPlus":48,"mainArea":48,"ancillaryArea":48,"parkingType":52,"parkingCount":48,"parkingArea":48,"agent":48,"tel":60,"store":76,"note":64};
-const COLW_MIN = 48, COLW_MAX = 640, FLEX_MIN_FALLBACK = 36, DEL_W = 40;
+const COLW_MIN = 24, COLW_MAX = 640, FLEX_MIN_FALLBACK = 36, DEL_W = 40;
 function loadColW(){ if (storageOK){ try { const s = JSON.parse(localStorage.getItem("community_table_v3_app_colw_v2") || "null"); if (s && typeof s === "object") return {...DEFAULT_COLW, ...s, note:64}; } catch(e){} } return {...DEFAULT_COLW}; }
 function saveColW(){ if (storageOK){ try { localStorage.setItem("community_table_v3_app_colw_v2", JSON.stringify(colW)); } catch(e){} } }
 let colW = loadColW();
@@ -6321,8 +6318,10 @@ function tHeadHTML(){
   return fields.map(f => {
     const h = f === "planUnit" ? "重劃" : T_COLS[T_FIELDS.indexOf(f)];
     const rz = (f && f !== flex) ? `<span class="col-resize" data-field="${f}"></span>` : "";
+    const order=tableRangeOrder();
+    const direction=order?.field===f?order.direction:null;
     const lab = (f && FILTERABLE[f])
-      ? `<button type="button" class="th-flt${colFilterOn(f) ? " on" : ""}" data-flt="${f}" aria-haspopup="dialog" aria-controls="fltBg"><span class="th-label">${h}</span><span class="fmk" aria-hidden="true">${tableRangeOrder()?.field===f?(tableRangeOrder().direction==='asc'?'↑':'↓'):'▾'}</span></button>`
+      ? `<button type="button" class="th-flt${colFilterOn(f) ? " on" : ""}" data-flt="${f}" aria-haspopup="dialog" aria-controls="fltBg"><span class="th-label">${h}</span><span class="fmk${direction?' sorted':''}" aria-hidden="true">${direction?(direction==='asc'?'↑':'↓'):''}</span></button>`
       : `<span class="th-label">${h}</span>`;
     return `<th data-col="${f}">${lab}${rz}</th>`;
   }).join("") + (editMode ? `<th></th>` : "");   // 只有編輯模式預留刪除欄。
@@ -6584,7 +6583,7 @@ function colHeaderMin(idx){
   const cs = getComputedStyle(th);
   const pad = (parseFloat(cs.paddingLeft)||0) + (parseFloat(cs.paddingRight)||0);
   const lw = label ? label.getBoundingClientRect().width : 0;   // 量 .th-label 內容寬,不受欄寬影響
-  const base = Math.max(COLW_MIN, Math.ceil(lw + pad + 6));
+  const base = Math.max(COLW_MIN, Math.ceil(lw + pad));
   return base;
 }
 function naturalLinkColumnWidth(bodyTable){
@@ -6614,7 +6613,7 @@ function autoFitColumn(field){
     const pad = (parseFloat(cs.paddingLeft)||0) + (parseFloat(cs.paddingRight)||0);
     maxW = _measText(label.textContent, label) + pad;
   }
-  const hMin = Math.max(COLW_MIN, Math.ceil(maxW));
+  const hMin = colHeaderMin(idx);
   bodyTbl.querySelectorAll("tbody tr").forEach(tr => {
     const td = tr.children[idx]; if (!td) return;
     const cell = td.querySelector(".tcell");
