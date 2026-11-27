@@ -2555,7 +2555,7 @@ body.column-moving,body.column-moving *{cursor:grabbing!important;user-select:no
 @media(max-width:360px){#cards .cp-card .body{padding:11px}.cp-meta,.cp-sizes{column-gap:6px}}
 
 #cards .rd-card .body{padding:16px 17px 12px;gap:0}
-.rd-header,.rd-location,.rd-footer,.rd-actions,.rd-note{display:flex;align-items:center;gap:10px;min-width:0}
+.rd-header,.rd-location,.rd-note{display:flex;align-items:center;gap:10px;min-width:0}
 .rd-header{justify-content:space-between;align-items:baseline}
 .rd-header .cp-price{margin-inline-start:auto;white-space:nowrap}
 .rd-header .num,.rd-metrics .cc-value{font-variant-numeric:tabular-nums}
@@ -2575,11 +2575,16 @@ body.column-moving,body.column-moving *{cursor:grabbing!important;user-select:no
 .rd-card .rd-prices .cc-value{color:var(--ink-soft)}
 .rd-note{align-items:baseline;margin-top:9px;line-height:1.5;font-size:13px;color:var(--ink)}
 .rd-note .cc-note-text{margin:0;overflow-wrap:anywhere}
-.rd-footer{border-top:1px solid var(--line);margin-top:11px;padding-top:9px;justify-content:space-between;flex-wrap:wrap}
-.rd-footer .cp-person{display:flex;flex-wrap:wrap;gap:3px 7px;align-items:baseline}
-.rd-actions{margin-left:auto;gap:12px;flex-wrap:wrap}
-.rd-card .rd-actions .tel{min-height:30px}
-@media(max-width:380px){#cards .rd-card .body{padding:12px}.rd-header .cp-price .num{font-size:21px}.rd-parts,.rd-prices{column-gap:10px}.rd-footer .cp-person{display:block}}
+.rd-title-line{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px;min-width:0}
+.rd-title-line .name{flex:0 1 auto}
+.rd-title-line .cp-site{margin:0;white-space:nowrap}
+.rd-footer{margin-top:11px}
+.rd-footer .agent-info{display:grid;justify-items:start;overflow-wrap:anywhere}
+.rd-footer .agent-info [data-community-field="agent"]{color:var(--ink);font-weight:700}
+.rd-footer .agent-info [data-community-field="store"]{color:inherit;font-weight:400}
+.rd-footer .tel{margin-inline-start:auto;max-width:100%}
+.rd-footer .tel span{min-width:0;white-space:normal;overflow-wrap:anywhere}
+@media(max-width:380px){#cards .rd-card .body{padding:12px}.rd-header .cp-price .num{font-size:21px}.rd-parts,.rd-prices{column-gap:10px}}
 
 .rd-card .rd-metrics > span > .cc-value[data-copy]{place-self:center start;max-width:100%;line-height:1.2}
 
@@ -2640,7 +2645,7 @@ body.column-moving,body.column-moving *{cursor:grabbing!important;user-select:no
 .rd-area-emphasis .rd-parts [data-fact="layout"] { grid-column: 3; }
 .rd-area-emphasis .rd-parts [data-fact="floor"] { grid-column: 4; }
 .rd-area-emphasis .rd-parts i { font-size: 12px; }
-.rd-area-emphasis .rd-parts .cc-value { font-size: 17px; font-weight: 600; max-width: 100%; overflow-wrap: anywhere; }
+.rd-area-emphasis .rd-parts .cc-value { font-size: 17px; font-weight: 500; max-width: 100%; overflow-wrap: anywhere; }
 .rd-area-emphasis .rd-parts small { margin-left: 2px; font-size: 11px; }
 @container (max-width: 355px) {
   .rd-area-emphasis .rd-parts .cc-value { font-size: 15px; }
@@ -4638,7 +4643,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.27B";
+const APP_VERSION = "2026.11.27C";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -4890,7 +4895,9 @@ function cardHTML(d){
     html=group("cp-head",name+group("cp-status badge",value("status")))+group("cp-bottom",address+price);
   }else{
     const location=["area","planUnit"].map(k=>value(k)).filter(Boolean).join('<span aria-hidden="true"> · </span>');
-    const identity=group("rd-identity",name+group("rd-location",group("rd-status",value("status"))+group("rd-zone",location))+address);
+    const href=visible.has("links")&&!linkIsNone(d,COMMUNITY_PROPERTY_LINK_SLOT)?communityTargetHref(d[linkUrlField(COMMUNITY_PROPERTY_LINK_SLOT)]):"";
+    const site=href?'<a class="cp-site" href="'+esc(href)+'" target="_blank" rel="noopener">網站 ↗</a>':"";
+    const identity=group("rd-identity",group("rd-title-line",name+site)+group("rd-location",group("rd-status",value("status"))+group("rd-zone",location)));
     const prices=group("rd-prices",fact("floorPrice","")+fact("cost",""));
     const parking=[has("parkingType")?esc(raw("parkingType")):"",has("parkingCount")?esc(raw("parkingCount"))+" 個":""].filter(Boolean).join(" ");
     const area=has("parkingArea")?'<small title="'+esc(raw("parkingArea"))+'">'+esc(communityFieldValue(d,"parkingArea"))+' 坪</small>':"";
@@ -4899,11 +4906,9 @@ function cardHTML(d){
     const parts=group("rd-parts",["mainArea","ancillaryArea","layout","floor"].map(k=>fact(k)).join(""));
     const sg=visible.has("note")?needOrder(d).find(k=>needSeg(d,k).trim()):null;
     const note=sg!=null?group("rd-note",'<i>備註</i><div class="cc-note-text">'+needToViewHTML(needDisplayText(needSeg(d,sg)).trim().split("\n",2).join("\n"))+'</div>'):"";
-    const href=visible.has("links")&&!linkIsNone(d,COMMUNITY_PROPERTY_LINK_SLOT)?communityTargetHref(d[linkUrlField(COMMUNITY_PROPERTY_LINK_SLOT)]):"";
-    const site=href?'<a class="cp-site" href="'+esc(href)+'" target="_blank" rel="noopener">網站 ↗</a>':"";
     const phone=has("tel")?'<a class="tel" href="tel:'+esc(raw("tel"))+'"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79a15.53 15.53 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.24 11.36 11.36 0 0 0 3.57.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1.02l-2.2 2.2z"/></svg><span>'+esc(raw("tel"))+'</span></a>':"";
-    const contacts=group("cp-person",value("agent")+group("cp-company",value("store")));
-    html=group("rd-header rd-split-header",identity+group("rd-price-stack",price+prices))+metrics+parts+note+group("rd-footer",contacts+group("rd-actions",site+phone));
+    const contacts=group("agent-info",value("agent")+value("store"));
+    html=group("rd-header rd-split-header",identity+group("rd-price-stack",price+prices))+address+metrics+parts+note+group("rd-footer agent",contacts+phone);
   }
   return `<article class="card cp-card${compact?" compact-card":" rd-card rd-area-emphasis"}${selected.has(d.id)?" selected":""}" data-id="${esc(d.id)}"><svg class="lp-ring" aria-hidden="true"><rect class="lp-track"/><rect class="lp-draw" pathLength="100"/><rect class="lp-tip" pathLength="100"/></svg>
     ${selMark(d)}
