@@ -131,7 +131,7 @@ async function openCommunityTarget(value){
       return window.innerWidth > window.innerHeight;
     }
     function sync() {
-      try { document.documentElement.classList.toggle("rot-block", isPhone() && isLandscape()); } catch (e) {}
+      try { document.documentElement.classList.toggle("rot-block", isPhone() && isLandscape()); document.documentElement.classList.add("rotation-ready"); } catch (e) {}
     }
     function apply() { lockPortrait(); sync(); }
     apply();
@@ -1652,7 +1652,7 @@ async function openCommunityTarget(value){
   #rotateGate .rg-s{font-size:.84rem;color:var(--ink-soft);}
   html.rot-block #rotateGate{display:grid;}                                    /* 主要:JS 依裝置方向掛上 */
   @media (orientation:landscape) and (max-height:560px) and (pointer:coarse){   /* 備援:JS 被擋時仍有效 */
-    #rotateGate{display:grid;}
+    html:not(.rotation-ready) #rotateGate{display:grid;}
   }
 
 /* 每筆物件的三欄交換：只加入小把手，保留原標題及工具列。 */
@@ -4728,7 +4728,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.27S";
+const APP_VERSION = "2026.11.27T";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -9027,7 +9027,21 @@ function positionFormChoice(){
   choiceMenu.classList.toggle("opens-up",up);
   choiceMenu.style.maxHeight=space+"px";
   // On very short screens the footer scrolls with the choices so both remain reachable.
-  choiceMenu.classList.toggle("short-choice-space",space < fixedHeight+44);
+
+  // With the keyboard open the anchor itself can sit outside the visible area.
+  // If neither side fits the input and its action, let the menu overlap the anchor.
+  const editing=choiceMenu.contains(document.activeElement) && document.activeElement.matches("[data-custom]");
+  const availableTop=up ? anchor.top-6-space : anchor.bottom+6;
+  const overlap=editing && ((up && anchor.top-6>bottom) || space<fixedHeight+44 || availableTop<top || availableTop+Math.min(space,fixedHeight+44)>bottom);
+  if(overlap){
+    choiceMenu.style.maxHeight=Math.max(0,bottom-top-4)+"px";
+    choiceMenu.style.top=(top+2-anchor.top)+"px";
+    choiceMenu.style.bottom="auto";
+  }else{
+    choiceMenu.style.removeProperty("top");
+    choiceMenu.style.removeProperty("bottom");
+  }
+  choiceMenu.classList.toggle("short-choice-space",!editing && space < fixedHeight+44);
 }
 function applyChoiceValue(button,value){
   const input=F[button.dataset.optionsFor];
@@ -9172,6 +9186,7 @@ choiceMenu.addEventListener("keydown",e=>{
 document.addEventListener("pointerdown",e=>{
   if(activeChoice && !choiceMenu.contains(e.target) && !activeChoice.contains(e.target)) closeFormChoice();
 },true);
+choiceMenu.addEventListener("focusin",e=>{if(e.target.matches("[data-custom]")) positionFormChoice();});
 window.addEventListener("resize",positionFormChoice);
 window.visualViewport?.addEventListener("resize",positionFormChoice);
 window.visualViewport?.addEventListener("scroll",positionFormChoice);
@@ -14418,9 +14433,17 @@ function paintPropertyState(state){
   function cellForActive(){return active&&Array.from(tableWrap.querySelectorAll(`.tcell[data-field="${active.field}"]`)).find(c=>c.closest('tr').dataset.id===active.id);}
   function place(){
     const cell=cellForActive();if(!cell){close();return;}
+    const view=window.visualViewport,top=view?.offsetTop??0,left=view?.offsetLeft??0;
+    const bottom=top+(view?.height??innerHeight),right=left+(view?.width??innerWidth);
+    menu.style.maxHeight=Math.max(0,bottom-top-20)+'px';
     const r=cell.getBoundingClientRect(),mw=menu.offsetWidth,mh=menu.offsetHeight;
-    menu.style.left=Math.max(10,Math.min(r.left,innerWidth-mw-10))+'px';
-    menu.style.top=Math.max(10,Math.min(r.bottom+5,innerHeight-mh-10))+'px';
+    menu.style.left=Math.max(left+10,Math.min(r.left,right-mw-10))+'px';
+    menu.style.top=Math.max(top+10,Math.min(r.bottom+5,bottom-mh-10))+'px';
+    if(document.activeElement===menu.querySelector('[data-add-input]')){
+      const button=menu.querySelector('[data-add]');
+      const overflow=button.getBoundingClientRect().bottom-menu.getBoundingClientRect().bottom+6;
+      if(overflow>0)menu.scrollTop+=overflow;
+    }
     if(draft){const m=menu.getBoundingClientRect(),w=tint.offsetWidth,h=tint.offsetHeight;tint.style.left=Math.max(10,Math.min(m.right+8+w<innerWidth?m.right+8:m.left-w-8,innerWidth-w-10))+'px';tint.style.top=Math.max(10,Math.min(m.top,innerHeight-h-10))+'px';}
   }
   function close(){const cell=cellForActive();active=null;draft=null;menu.classList.remove('show');tint.classList.remove('show');paint();if(cell?.isConnected)cell.focus({preventScroll:true});}
@@ -14815,7 +14838,11 @@ function paintPropertyState(state){
     if(tint.contains(event.target)&&!event.target.closest('#miniColorDialog')){event.stopPropagation();return;}
     if(editMode&&!tselMode&&(event.key==='Enter'||event.key===' ')&&event.target.matches('.tcell[data-field]')&&fields.includes(event.target.dataset.field)&&!tCellIsEditing(event.target)){event.preventDefault();event.stopImmediatePropagation();open(event.target);}
   },true);
-  window.addEventListener('resize',()=>{if(active)place();});
+  const placeOpen=()=>{if(active)place();};
+  window.addEventListener('resize',placeOpen);
+  window.visualViewport?.addEventListener('resize',placeOpen);
+  window.visualViewport?.addEventListener('scroll',placeOpen);
+  menu.addEventListener('focusin',e=>{if(e.target.matches('[data-add-input]'))placeOpen();});
   tableWrap.addEventListener('scroll',()=>{if(active)close();},true);
   CommunityData.subscribe(()=>{refreshCatalogs();if(active&&active.resetAt!==(window._resetAt||0)){close();toast('資料已還原，請重新開啟欄位設定。');}paint();});
   window.CommunityFields={renameGroupSettings,deleteGroupPlan(records,features,field,name,resetAt,settings){return optionDeleteModel.plan(records,features,field,name,'',resetAt,CommunityShared.model.createState,CommunitySortModel.legacy(settings,resetAt,currentSort));},appearance,paint,paintDistrictTabs,close,open,getActive(){return active?{id:active.id,field:active.field,mode:active.mode,tint:!!draft}:null;},finish(){
