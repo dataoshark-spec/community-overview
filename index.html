@@ -852,6 +852,10 @@ async function openCommunityTarget(value){
   .modal-bg{position:fixed;inset:0;z-index:50;background:rgba(12,20,18,.55);
     display:none;align-items:flex-end;justify-content:center;}
   .modal-bg.open{display:flex;}
+  @media (width > 819px){
+    #modalBg{align-items:center;}
+    #modalBg > .modal{max-height:90dvh;border-radius:20px;}
+  }
   .modal{background:var(--card);width:100%;max-width:480px;max-height:92dvh;display:flex;flex-direction:column;
     border-radius:20px 20px 0 0;overflow:hidden;animation:sheet .22s ease;}
   @keyframes sheet{from{transform:translateY(26px);opacity:.5;}to{transform:translateY(0);opacity:1;}}
@@ -873,7 +877,13 @@ async function openCommunityTarget(value){
   #modalBg .form-choice-control input{padding-right:26px;}
   .form-choice-arrow{position:absolute;inset:1px 1px 1px auto;width:24px;border-radius:0 9px 9px 0;}
   .form-choice-arrow::after{content:"";position:absolute;inset:50% auto auto 50%;transform:translate(-50%,-25%);border:3px solid transparent;border-top-color:var(--ink-soft);pointer-events:none;}
-  .form-choice-arrow select{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;}
+  #modalBg button.form-choice-arrow{padding:0;border:0;background:transparent;color:inherit;cursor:pointer;}
+  .form-choice-arrow[aria-expanded="true"]::after{transform:translate(-50%,-75%) rotate(180deg);}
+  .form-choice-control:has(.form-choice-menu){z-index:21;}
+  #modalBg .form-choice-menu{display:flex;right:auto;min-width:0;max-width:none;box-sizing:border-box;overflow-y:auto;overscroll-behavior:contain;}
+  #modalBg .form-choice-menu.opens-up{top:auto;bottom:calc(100% + 6px);}
+  #modalBg .form-choice-menu .cselect-opt{flex:none;min-height:34px;}
+  #modalBg .form-choice-menu .cselect-opt:focus-visible{outline:1px solid var(--accent-deep);outline-offset:-1px;}
   .form-choice-arrow:focus-within{outline:1px solid var(--accent-deep);outline-offset:-2px;}
   .row2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;}
   .row3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}   /* 格局/樓層/售價 各 1/3 */
@@ -3281,19 +3291,19 @@ html[data-mark-style=rail] #mark-outside .mark-action .mark-star-glyph{display:n
         <div class="form-row-four">
           <div class="form-choice-field">
             <label for="f_planUnit">重劃區</label>
-            <div class="form-choice-control"><input id="f_planUnit" autocomplete="off"><span class="form-choice-arrow"><select data-options-for="planUnit" aria-label="選擇重劃區"></select></span></div>
+            <div class="form-choice-control"><input id="f_planUnit" autocomplete="off"><button type="button" class="form-choice-arrow" data-options-for="planUnit" aria-label="選擇重劃區" aria-haspopup="listbox" aria-expanded="false" aria-controls="form-choice-options"></button></div>
           </div>
           <div class="form-choice-field">
             <label for="f_area">區域</label>
-            <div class="form-choice-control"><input id="f_area" autocomplete="off"><span class="form-choice-arrow"><select data-options-for="area" aria-label="選擇區域"></select></span></div>
+            <div class="form-choice-control"><input id="f_area" autocomplete="off"><button type="button" class="form-choice-arrow" data-options-for="area" aria-label="選擇區域" aria-haspopup="listbox" aria-expanded="false" aria-controls="form-choice-options"></button></div>
           </div>
           <div class="form-choice-field">
             <label for="f_layout">格局</label>
-            <div class="form-choice-control"><input id="f_layout" autocomplete="off"><span class="form-choice-arrow"><select data-options-for="layout" aria-label="選擇格局"></select></span></div>
+            <div class="form-choice-control"><input id="f_layout" autocomplete="off"><button type="button" class="form-choice-arrow" data-options-for="layout" aria-label="選擇格局" aria-haspopup="listbox" aria-expanded="false" aria-controls="form-choice-options"></button></div>
           </div>
           <div class="form-choice-field">
             <label for="f_status">狀態</label>
-            <div class="form-choice-control"><input id="f_status" autocomplete="off"><span class="form-choice-arrow"><select data-options-for="status" aria-label="選擇狀態"></select></span></div>
+            <div class="form-choice-control"><input id="f_status" autocomplete="off"><button type="button" class="form-choice-arrow" data-options-for="status" aria-label="選擇狀態" aria-haspopup="listbox" aria-expanded="false" aria-controls="form-choice-options"></button></div>
           </div>
         </div>
         <div class="row2 name-floor-row">
@@ -4690,7 +4700,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.27N";
+const APP_VERSION = "2026.11.27P";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -5690,7 +5700,7 @@ const listCounter=(()=>{
         counts.set(name,(counts.get(name)||0)+1);
       }
       entries=orderedDistrictTabs().filter(Boolean).map(name=>({name,count:counts.get(name)||0}));
-      if(counts.has(''))entries.push({name:'未填重劃區',count:counts.get('')});
+      if(counts.has(''))entries.push({name:'未填',count:counts.get('')});
     }
     const key=JSON.stringify(entries);
     if(key!==dataKey){widths=[];dataKey=key;}
@@ -8788,6 +8798,7 @@ document.addEventListener("keydown", e => {
   if (isOn("catBg","open")){ closeCatManager(); return; }                             // 管理類別
   if (isOn("detailBg","open")){ closeDetail(); return; }                             // 物件明細(唯讀)
   if (isOn("modalBg","open")){
+    if(activeChoice){closeFormChoice(true);return;}
     closeForm();
     return;
   }
@@ -8949,24 +8960,97 @@ function setupFormNeedFonts(d){
  );
 }
 
-const formChoiceSelects = [...modalBg.querySelectorAll("[data-options-for]")];
-function refreshFormChoices(select){
-  const field = select.dataset.optionsFor;
-  const value = F[field].value;
-  const names = new Set(CommunityFields.getOptions(field).map(option => option.name));
-  if(value) names.add(value);
-  select.replaceChildren(new Option("留白", ""), ...Array.from(names, name => new Option(name, name)));
-  select.value = value;
+const choiceButtons = [...modalBg.querySelectorAll("[data-options-for]")];
+const choiceMenu = document.createElement("div");
+choiceMenu.id = "form-choice-options";
+choiceMenu.className = "cselect-menu form-choice-menu";
+choiceMenu.setAttribute("role","listbox");
+let activeChoice = null;
+
+function closeFormChoice(returnFocus = false){
+  if(!activeChoice) return;
+  const button = activeChoice;
+  activeChoice = null;
+  button.setAttribute("aria-expanded","false");
+  choiceMenu.remove();
+  if(returnFocus) button.focus({preventScroll:true});
 }
-for(const select of formChoiceSelects){
-  const input = F[select.dataset.optionsFor];
-  select.addEventListener("focus", () => refreshFormChoices(select));
-  select.addEventListener("change", () => {
-    input.value = select.value;
-    input.dispatchEvent(new Event("input", {bubbles:true}));
-    input.dispatchEvent(new Event("change", {bubbles:true}));
+function positionFormChoice(){
+  if(!activeChoice) return;
+  const control = activeChoice.parentElement;
+  const bounds = control.closest(".modal-body").getBoundingClientRect();
+  const anchor = control.getBoundingClientRect();
+  const width = Math.min(Math.max(anchor.width,158),bounds.width-16);
+  choiceMenu.style.width = width+"px";
+  choiceMenu.style.left = Math.min(0,bounds.right-8-width-anchor.left)+"px";
+  const below = bounds.bottom-anchor.bottom-8;
+  const above = anchor.top-bounds.top-8;
+  const up = below < Math.min(250,choiceMenu.scrollHeight) && above > below;
+  choiceMenu.classList.toggle("opens-up",up);
+  choiceMenu.style.maxHeight = Math.max(36, Math.min(250,up?above:below))+"px";
+}
+function openFormChoice(button){
+  closeFormChoice();
+  activeChoice = button;
+  const field = button.dataset.optionsFor;
+  const value = F[field].value;
+  const names = new Set(["",...CommunityFields.getOptions(field).map(option=>option.name),value]);
+  const options = Array.from(names,name=>{
+    const row = document.createElement("button");
+    row.type="button";
+    row.className="cselect-opt";
+    row.setAttribute("role","option");
+    row.setAttribute("aria-selected",String(name===value));
+    row.classList.toggle("sel",name===value);
+    row.dataset.value=name;
+    row.tabIndex=-1;
+    const label=document.createElement("span");
+    label.className="nm";
+    label.textContent=name || "留白";
+    const check=document.createElement("span");
+    check.className="chk";
+    check.setAttribute("aria-hidden","true");
+    check.textContent="✓";
+    row.append(label,check);
+    return row;
+  });
+  choiceMenu.replaceChildren(...options);
+  choiceMenu.setAttribute("aria-label",button.getAttribute("aria-label"));
+  button.setAttribute("aria-expanded","true");
+  button.parentElement.append(choiceMenu);
+  positionFormChoice();
+  const selected = choiceMenu.querySelector(".sel");
+  selected.focus({preventScroll:true});
+  choiceMenu.scrollTop = selected.offsetTop - choiceMenu.clientHeight/2;
+}
+for(const button of choiceButtons){
+  button.addEventListener("click",()=>activeChoice===button?closeFormChoice():openFormChoice(button));
+  F[button.dataset.optionsFor].addEventListener("keydown",e=>{
+    if(e.key==="ArrowDown" && !e.isComposing){e.preventDefault();openFormChoice(button);}
   });
 }
+choiceMenu.addEventListener("click",e=>{
+  const row=e.target.closest("[role=option]");
+  if(!row || !activeChoice) return;
+  const input=F[activeChoice.dataset.optionsFor];
+  input.value=row.dataset.value;
+  input.dispatchEvent(new Event("input",{bubbles:true}));
+  input.dispatchEvent(new Event("change",{bubbles:true}));
+  closeFormChoice(true);
+});
+choiceMenu.addEventListener("keydown",e=>{
+  if(e.key==="Escape"){e.preventDefault();e.stopPropagation();closeFormChoice(true);return;}
+  if(e.key==="Tab"){closeFormChoice(true);return;}
+  const rows=Array.from(choiceMenu.children);
+  const i=rows.indexOf(document.activeElement);
+  const next={ArrowDown:Math.min(rows.length-1,i+1),ArrowUp:Math.max(0,i-1),Home:0,End:rows.length-1}[e.key];
+  if(next!==undefined){e.preventDefault();rows[next].focus();}
+});
+document.addEventListener("pointerdown",e=>{
+  if(activeChoice && !choiceMenu.contains(e.target) && !activeChoice.contains(e.target)) closeFormChoice();
+},true);
+window.addEventListener("resize",positionFormChoice);
+modalBg.querySelector(".modal-body").addEventListener("scroll",positionFormChoice,{passive:true});
 function openForm(id){
   window.applyPropertyRefresh?.(true);
   editingId = id || null;
@@ -8995,7 +9079,7 @@ function openForm(id){
     if(!editingId && Object.hasOwn(draft.values,"cat")) restored.cat=draft.values.cat;
     applyFormDraft(restored);toast("已還原上次修改的欄位，按儲存才會套用");
   }
-  formChoiceSelects.forEach(refreshFormChoices);
+  closeFormChoice();
   window.CommunityShared?.resetFormCommunityName();
   showLegacyDraftNotice();
   setTimeout(() => { if(modalBg.classList.contains("open"))F.planUnit.focus(); }, 50);
@@ -9010,6 +9094,7 @@ function applyPendingMergeIfAny(){
   }
 }
 function closeForm(){
+  closeFormChoice();
   closeNeedOrderUI();
   if(formConflict)saveFormDraft();else clearFormDraft();
   modalBg.classList.remove("open"); editingId=null;
