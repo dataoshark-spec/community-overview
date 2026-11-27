@@ -1427,6 +1427,9 @@ async function openCommunityTarget(value){
   .dtl-empty{color:var(--text-faint);font-weight:500;display:inline-flex;align-items:center;}
   .dtl-empty::before{content:"";width:.8em;height:2px;background:currentColor;border-radius:1px;}   /* 空值橫桿:畫線垂直置中,永不歪 */
   #detailTitle{display:flex;align-items:center;gap:9px;min-width:0;overflow:hidden;}
+  @media (width > 819px){
+    #detailBg .modal{border-radius:20px;}
+  }
   #detailBg .modal-head .x{position:relative;z-index:1;}
   .dtl-due-top{margin-left:auto;flex:none;font-family:-apple-system,"Noto Sans TC",sans-serif;font-size:.78rem;font-weight:400;color:var(--text-faint);white-space:nowrap;letter-spacing:.02em;}   /* 標題列到期:推到最右(X鈕左邊)、淺色細字弱化 */
   .dtl-cat{flex:none;font-family:"Noto Sans TC",-apple-system,sans-serif;font-size:.8rem;font-weight:800;line-height:1.25;color:var(--accent-deep);background:var(--accent-tint);border:1px solid var(--accent-tint-bd);border-radius:7px;padding:2px 8px;}
@@ -4671,7 +4674,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.27G";
+const APP_VERSION = "2026.11.27H";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
