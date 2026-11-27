@@ -868,6 +868,8 @@ async function openCommunityTarget(value){
     border:1px solid var(--line);border-radius:10px;padding:10px 12px;outline:none;
     transition:border-color .15s ease,box-shadow .15s ease;}
   .modal-body input:focus,.modal-body select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(78,98,109,.12);}
+  #modalBg .form-row-four{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(5px,1.5vw,10px);}
+  #modalBg .form-row-four input{min-width:0;width:100%;padding-inline:clamp(4px,1.5vw,10px);}
   .row2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;}
   .row3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}   /* 格局/樓層/售價 各 1/3 */
   /* ===== 表單連結群組:預設收合成一排三欄,可展開成三排 ===== */
@@ -893,7 +895,7 @@ async function openCommunityTarget(value){
   /* link-none:end */
   .link-f input{width:100%;box-sizing:border-box;transition:font-size .15s ease;}
   .link-group.collapsed .link-f input{text-overflow:ellipsis;font-size:.85em;}   /* 收合時窄框:文字縮小、過長網址尾端省略;展開恢復原大小 */
-  #modalBg .address-row{grid-template-columns:minmax(0,2fr) minmax(0,1fr);}
+  #modalBg .name-floor-row{grid-template-columns:minmax(0,2fr) minmax(0,1fr);}
   #modalBg .form-note-field{display:flex;flex-direction:column;gap:5px;}
   #formNoteLabel{font-size:.8rem;font-weight:600;color:var(--ink-soft);}
   .row2.tel-row{grid-template-columns:minmax(0,1fr) minmax(0,2fr);}            /* 承辦:電話 = 1:2 */
@@ -3278,29 +3280,25 @@ html[data-mark-style=rail] #mark-outside .mark-action .mark-star-glyph{display:n
         <button class="x" id="modalClose" aria-label="關閉">✕</button>
       </div>
       <div class="modal-body">
-        <div class="row2">
+        <div class="form-row-four">
           <label>重劃區<input id="f_planUnit"></label>
           <label>區域<input id="f_area"></label>
-        </div>
-        <div class="row2">
           <label>格局<input id="f_layout"></label>
           <label>狀態<input id="f_status"></label>
         </div>
-        <label>案名<input id="f_name"></label>
-        <div class="row2 address-row">
-          <label>門牌<input id="f_addr"></label>
+        <div class="row2 name-floor-row">
+          <label>案名<input id="f_name"></label>
           <label>樓層<input id="f_floor"></label>
         </div>
+        <label>門牌<input id="f_addr"></label>
         <div class="row3">
           <label>售價（萬）<input id="f_price" type="number" inputmode="decimal" min="0" step="any"></label>
           <label>底價（萬）<input id="f_floorPrice" inputmode="decimal"></label>
           <label>成本（萬）<input id="f_cost" inputmode="decimal"></label>
         </div>
-        <div class="row2">
+        <div class="form-row-four">
           <label>總坪（坪）<input id="f_totalArea" inputmode="decimal"></label>
           <label>主附（坪）<input id="f_mainPlus" inputmode="decimal"></label>
-        </div>
-        <div class="row2">
           <label>主建（坪）<input id="f_mainArea" inputmode="decimal"></label>
           <label>附屬（坪）<input id="f_ancillaryArea" inputmode="decimal"></label>
         </div>
@@ -4682,7 +4680,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.27I";
+const APP_VERSION = "2026.11.27J";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -9121,18 +9119,19 @@ function renderDetailBody(d){
   function section(icon, title, content){
     return content ? `<div class="dtl-sec"><div class="dtl-h">${icon}${title}</div>${content}</div>` : "";
   }
+  const locationRow = grid([["planUnit","area"]]);
   const basic = section(IC_INFO, "基本資料", grid([
     ["price","layout","floor"], ["addr"], ["floorPrice","cost"]
   ], "dtl-basic"));
-  const area = section(IC_INFO, "區域與坪數", grid([
-    ["planUnit","area"], ["totalArea","mainPlus"], ["mainArea","ancillaryArea"]
+  const measurements = section(IC_INFO, "坪數", grid([
+    ["totalArea","mainPlus"], ["mainArea","ancillaryArea"]
   ]));
   const agent = section(IC_USER, visible.has("agent") ? "承辦" : "聯絡資料", grid([["agent","tel"],["store"]]));
   // 備註三段(沿用展開內容框,唯讀)
   const seg=(sg,ic)=>'<div class="dtl-sec" data-need-font-seg="'+sg+'"><div class="dtl-need-head"><div class="dtl-h">'+ic+esc(needTitle(d,sg))+'</div><span class="nseg-btns">'+needFontButtons(sg)+'</span></div><div class="needexp-ed needexp-view">'+(needSeg(d,sg)?needToViewHTML(needSeg(d,sg)):'<span class="tneed-ph">—</span>')+'</div></div>';
   const icons={1:IC_DOC,2:IC_EYE,3:IC_CHECK};
   const segHTML = visible.has("note") ? `<div class="dtl-sec" data-community-field="note"><div class="dtl-h">${IC_DOC}${esc(communityFieldLabel("note"))}</div><div class="dtl-notes">${needOrder(d).map(sg => seg(sg, icons[sg])).join("")}</div></div>` : "";
-  body.innerHTML = basic + area + agent + segHTML;
+  body.innerHTML = locationRow + basic + measurements + agent + segHTML;
   if (segHTML){
     const id = d.id;
     initNeedFontControls(body,()=>items.find(x=>x.id===id),(sg,size)=>commitNeedFontSize(id,sg,size));
