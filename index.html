@@ -1408,7 +1408,11 @@ async function openCommunityTarget(value){
   }
   #detailBody .dtl-basic .dtl-cell{gap:8px;padding:10px 12px;align-items:baseline}
   .dtl-basic .dtl-k{min-width:3em;letter-spacing:.02em;color:var(--ink-soft)}
-  .dtl-basic [data-community-field="name"] .dtl-v{font-size:1.05rem;font-weight:700}
+  #detailBody .dtl-basic .dtl-third{flex-direction:row;flex-wrap:wrap;align-items:baseline;gap:2px 6px}
+  .dtl-basic .dtl-third .dtl-k{min-width:0}
+  #detailTitle .dtl-copy{margin:0;padding:0}
+  #detailTitle .dtl-name{overflow-wrap:anywhere}
+  #detailTitle .dtl-cat{padding:2px 8px;max-width:40%;overflow-wrap:anywhere}
   .dtl-basic [data-community-field="price"] .dtl-v{font-weight:700}
   .dtl-basic .dtl-address{
     flex:1;min-width:0;white-space:nowrap;overflow-x:auto;overflow-y:hidden;
@@ -4667,7 +4671,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.27E";
+const APP_VERSION = "2026.11.27F";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -4710,7 +4714,32 @@ const safeUrl = u => {
   if (/^[a-z][a-z0-9+.-]*:/i.test(s)) return "";
   return "https://" + s.replace(/^\/+/, "");
 };
-const openExtUrl = u => { const href = safeUrl(u); if (href) window.open(href, "_blank", "noopener"); };
+function androidBrowserIntent(href){
+  if(!/android/i.test(navigator.userAgent)||!matchMedia("(display-mode: standalone)").matches)return "";
+  let url;
+  try{url=new URL(href);}catch(_){return "";}
+  if(!["https:","http:"].includes(url.protocol)||url.origin===location.origin||url.href.startsWith(COMMUNITY_FILE_MARK))return "";
+  const ua=navigator.userAgent;
+  const browserPackage=/SamsungBrowser/i.test(ua)?"com.sec.android.app.sbrowser"
+    : /EdgA\//i.test(ua)?"com.microsoft.emmx"
+    : /Firefox\//i.test(ua)?"org.mozilla.firefox":"com.android.chrome";
+  return "intent:"+url.href.slice(url.protocol.length)+"#Intent;scheme="+url.protocol.slice(0,-1)
+    +";action=android.intent.action.VIEW;package="+browserPackage+";B.create_new_tab=true;S.browser_fallback_url="+encodeURIComponent(url.href)+";end";
+}
+function openExtUrl(value){
+  const href=safeUrl(value);
+  if(href)window.open(androidBrowserIntent(href)||href,"_blank","noopener");
+}
+function openAndroidPlatformAnchor(event){
+  if(event.defaultPrevented||event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
+  const anchor=event.target.closest("a.property-link[href],a.cp-site[href],a[data-cl-link-action][href]");
+  if(!anchor)return;
+  const intent=androidBrowserIntent(anchor.href);
+  if(!intent)return;
+  event.preventDefault();
+  window.open(intent,"_blank","noopener");
+}
+document.addEventListener("click",openAndroidPlatformAnchor);
 const normUrl = u => safeUrl(u);
 // 欄位識別碼不隨名稱或順序改變。舊欄位沿用原本儲存的網址名稱。
 const LINK_FIELDS=["url591","urlLeju","urlI","url4"];
@@ -9029,7 +9058,6 @@ function openDetail(id){
   const wasOpen = detailBg.classList.contains("open");
   openDetailId = id;
   closeNeedOrderUI();
-  document.getElementById("detailTitle").textContent = "物件明細";
   renderDetailBody(d);
   document.getElementById("detailBody").scrollTop = 0;
   if (!wasOpen){
@@ -9040,6 +9068,11 @@ function openDetail(id){
 function renderDetailBody(d){
   const body = document.getElementById("detailBody");
   const visible = new Set(tableFields().filter(field => field !== "links"));
+  const name = visible.has("name") ? communityFieldValue(d,"name") : "";
+  const status = visible.has("status") ? communityFieldValue(d,"status") : "";
+  const title = document.getElementById("detailTitle");
+  title.innerHTML = (name ? `<span class="dtl-name dtl-copy" data-community-field="name" data-copy="${esc(name)}">${esc(name)}</span>` : "<span>物件明細</span>") +
+    (status ? `<span class="dtl-cat dtl-copy" data-community-field="status" data-copy="${esc(status)}">${esc(status)}</span>` : "");
   if (!visible.size){
     body.innerHTML = '<p class="discreet-empty">明細欄位已全部隱藏</p>';
     return;
@@ -9078,16 +9111,17 @@ function renderDetailBody(d){
     return content ? `<div class="dtl-sec"><div class="dtl-h">${icon}${title}</div>${content}</div>` : "";
   }
   const basic = section(IC_INFO, "基本資料", grid([
-    ["name"], ["addr"],
-    ["planUnit","area"], ["layout","floor"], ["status","price"],
-    ["floorPrice","cost"], ["totalArea","mainPlus"], ["mainArea","ancillaryArea"]
+    ["price","layout","floor"], ["addr"], ["floorPrice","cost"]
   ], "dtl-basic"));
+  const area = section(IC_INFO, "區域與坪數", grid([
+    ["planUnit","area"], ["totalArea","mainPlus"], ["mainArea","ancillaryArea"]
+  ]));
   const agent = section(IC_USER, visible.has("agent") ? "承辦" : "聯絡資料", grid([["agent","tel"],["store"]]));
   // 備註三段(沿用展開內容框,唯讀)
   const seg=(sg,ic)=>'<div class="dtl-sec" data-need-font-seg="'+sg+'"><div class="dtl-need-head"><div class="dtl-h">'+ic+esc(needTitle(d,sg))+'</div><span class="nseg-btns">'+needFontButtons(sg)+'</span></div><div class="needexp-ed needexp-view">'+(needSeg(d,sg)?needToViewHTML(needSeg(d,sg)):'<span class="tneed-ph">—</span>')+'</div></div>';
   const icons={1:IC_DOC,2:IC_EYE,3:IC_CHECK};
   const segHTML = visible.has("note") ? `<div class="dtl-sec" data-community-field="note"><div class="dtl-h">${IC_DOC}${esc(communityFieldLabel("note"))}</div><div class="dtl-notes">${needOrder(d).map(sg => seg(sg, icons[sg])).join("")}</div></div>` : "";
-  body.innerHTML = basic + agent + segHTML;
+  body.innerHTML = basic + area + agent + segHTML;
   if (segHTML){
     const id = d.id;
     initNeedFontControls(body,()=>items.find(x=>x.id===id),(sg,size)=>commitNeedFontSize(id,sg,size));
@@ -9106,7 +9140,10 @@ function refreshDiscreetDetail(){
   closeNeedOrderUI();
   const d = items.find(x => x.id === openDetailId);
   if (d) renderDetailBody(d);
-  else body.textContent = "這筆物件已移除";
+  else {
+    document.getElementById("detailTitle").textContent = "物件明細";
+    body.textContent = "這筆物件已移除";
+  }
   if (priorField || focusInOrderMenu){
     const field = priorField && body.querySelector(`[data-community-field="${priorField.dataset.communityField}"]`);
     const target = field?.querySelectorAll(controls)[priorIndex] || document.getElementById("detailClose");
@@ -9148,7 +9185,7 @@ let _dtlDownOnBg = false;
 detailBg.addEventListener("pointerdown", e => { _dtlDownOnBg = (e.target === detailBg); });
 detailBg.addEventListener("click", e => { if (e.target === detailBg && _dtlDownOnBg) closeDetail(); _dtlDownOnBg = false; });
 // 明細頁內點欄位值 → 複製
-document.getElementById("detailBody").addEventListener("click", e => {
+detailBg.addEventListener("click", e => {
   const cp = e.target.closest(".dtl-copy"); if (cp) copyFieldText(cp);
 });
 
@@ -14996,6 +15033,7 @@ function paintPropertyState(state){
     if(action.tagName==='A'){
       const target=action.getAttribute('href');
       if(localLinkPath(target)){event.preventDefault();openCommunityTarget(target);}
+      else openAndroidPlatformAnchor(event);
       return;
     }
     event.preventDefault();if(!editMode||!manualTableEdit)return;
@@ -17717,6 +17755,8 @@ openLinksAction.onclick=async()=>{
   // Reserve web tabs during the click. Waiting for the file service consumes user activation.
   for(const target of targets){
    if(!target.href)continue;
+   const intent=androidBrowserIntent(target.href);
+   if(intent){window.open(intent,'_blank','noopener');opened++;continue;}
    target.tab=window.open('about:blank','_blank');
    if(target.tab)target.tab.opener=null;else blocked++;
   }
