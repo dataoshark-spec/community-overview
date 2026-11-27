@@ -857,8 +857,6 @@ async function openCommunityTarget(value){
   @keyframes sheet{from{transform:translateY(26px);opacity:.5;}to{transform:translateY(0);opacity:1;}}
   .modal-head{display:flex;align-items:center;gap:12px;padding:18px 20px;border-bottom:1px solid var(--line);}
   .modal-head h2{font-family:"Noto Serif TC",serif;font-size:1.25rem;font-weight:700;flex:1;}
-  #modalBg .form-community-label{display:flex;align-items:center;gap:5px;min-width:0;font-size:.78rem;color:var(--ink-soft);}
-  #formCommunity{width:auto;min-width:0;max-width:min(38vw,175px);border:1px solid var(--line);border-radius:7px;padding:5px 3px;background:var(--surface-2);color:var(--ink);font:inherit;}
   .modal-head .x{appearance:none;border:none;background:var(--surface-2);width:34px;height:34px;border-radius:9px;
     font-size:1rem;color:var(--ink-soft);cursor:pointer;flex:none;}
   .modal-head .x:hover{background:var(--surface-3);}
@@ -2433,27 +2431,6 @@ button.cl-district-bar{cursor:pointer;}
   }
 }
 </style>
-<style id="form-community-select-style">
-/* Form community picker: keep the original select as the data source. */
-#formCommunity[hidden]{display:none;}
-#modalBg .form-community-control{position:relative;min-width:0;}
-#formCommunityButton{display:flex;align-items:center;gap:8px;max-width:min(38vw,175px);min-height:32px;padding:5px 8px;border:1px solid var(--line);border-radius:9px;background:var(--surface-2);color:var(--ink);font:inherit;cursor:pointer;}
-#formCommunityButton .form-community-value{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
-#formCommunityButton svg{width:13px;height:13px;flex:none;color:var(--ink-soft);transition:transform .15s;}
-#formCommunityButton[aria-expanded="true"]{border-color:var(--accent-deep);}
-#formCommunityButton[aria-expanded="true"] svg{transform:rotate(180deg);}
-#formCommunityButton:focus-visible{outline:2px solid var(--accent-deep);outline-offset:2px;}
-#formCommunityMenu{position:absolute;right:0;top:calc(100% + 6px);z-index:5;box-sizing:border-box;width:max-content;min-width:100%;padding:4px;border:1px solid var(--line);border-radius:12px;background:var(--card);box-shadow:0 8px 24px #162b3924;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;}
-#formCommunityMenu[hidden]{display:none;}
-#formCommunityMenu .form-community-option{display:flex;align-items:center;gap:12px;box-sizing:border-box;width:100%;min-height:34px;padding:7px 9px;border:0;border-radius:8px;text-align:left;background:transparent;color:var(--ink);font:inherit;font-size:13px;line-height:20px;cursor:pointer;}
-#formCommunityMenu .form-community-option span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-#formCommunityMenu .form-community-option svg{width:14px;height:14px;flex:none;visibility:hidden;}
-#formCommunityMenu .form-community-option[aria-selected="true"]{background:var(--surface-2);color:var(--accent-deep);}
-#formCommunityMenu .form-community-option[aria-selected="true"] svg{visibility:visible;}
-#formCommunityMenu .form-community-option.active{background:var(--surface-3);color:var(--ink);}
-@media(hover:hover){#formCommunityMenu .form-community-option:hover{background:var(--surface-3);color:var(--ink);}}
-@media(pointer:coarse){#formCommunityMenu .form-community-option{min-height:44px;}}
-</style>
 <style id="community-history-style">
 .history-tools{display:flex;align-items:center;margin:0 auto 0 0;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--card);flex-shrink:0}
 .history-tools button{font:600 13px/1.25 system-ui;color:var(--accent-deep);background:transparent;border:0;cursor:pointer}
@@ -3277,7 +3254,6 @@ html[data-mark-style=rail] #mark-outside .mark-action .mark-star-glyph{display:n
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
       <div class="modal-head">
         <h2 id="modalTitle">新增物件</h2>
-        <div class="form-community-label"><span>社區</span><div class="form-community-control"><select id="formCommunity" aria-label="所屬社區" hidden aria-hidden="true" tabindex="-1"></select><button type="button" id="formCommunityButton" role="combobox" aria-label="所屬社區" aria-haspopup="listbox" aria-controls="formCommunityMenu" aria-expanded="false"><span class="form-community-value">未指定社區</span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 6 4 4 4-4"/></svg></button><div id="formCommunityMenu" role="listbox" aria-label="社區選項" hidden></div></div></div>
         <button class="x" id="modalClose" aria-label="關閉">✕</button>
       </div>
       <div class="modal-body">
@@ -3288,7 +3264,7 @@ html[data-mark-style=rail] #mark-outside .mark-action .mark-star-glyph{display:n
           <label>狀態<input id="f_status"></label>
         </div>
         <div class="row2 name-floor-row">
-          <label>案名<input id="f_name"></label>
+          <label>案名<input id="f_name" autocomplete="off"></label>
           <label>樓層<input id="f_floor"></label>
         </div>
         <label>門牌<input id="f_addr"></label>
@@ -4681,7 +4657,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.27K";
+const APP_VERSION = "2026.11.27L";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -8772,98 +8748,7 @@ document.addEventListener("keydown", e => {
 const modalBg = document.getElementById("modalBg");
 const FORM_INPUT_KEYS = T_FIELDS.filter(field => !["note","links","parkingType","parkingCount","parkingArea"].includes(field));
 const F = Object.fromEntries([...FORM_INPUT_KEYS,"note","note2","note3","t1","t2","t3"].map(k=>[k,document.getElementById("f_"+k)]));
-const formCommunity = document.getElementById("formCommunity");
-const formCommunityUI=(()=>{
-  const trigger=document.getElementById('formCommunityButton');
-  const menu=document.getElementById('formCommunityMenu');
-  const wrap=trigger.parentElement;
-  let options=[],active=-1,typeText='',typeAt=0;
-  function close(){
-    menu.hidden=true;trigger.setAttribute('aria-expanded','false');
-    trigger.removeAttribute('aria-activedescendant');active=-1;typeText='';
-  }
-  function sync(){
-    close();
-    const label=formCommunity.selectedOptions[0]?.textContent||'未指定社區';
-    trigger.querySelector('.form-community-value').textContent=label;
-    trigger.title=label;
-  }
-  function position(){
-    if(menu.hidden)return;
-    const edge=modalBg.querySelector('.modal').getBoundingClientRect();
-    const anchor=wrap.getBoundingClientRect();
-    menu.style.maxWidth=Math.max(anchor.width,Math.min(280,anchor.right-edge.left-10))+'px';
-    menu.style.maxHeight=Math.max(36,Math.min(260,edge.bottom-anchor.bottom-14))+'px';
-  }
-  function highlight(index,scroll=false){
-    if(!options.length)return;
-    active=Math.max(0,Math.min(options.length-1,index));
-    options.forEach((option,i)=>option.classList.toggle('active',i===active));
-    trigger.setAttribute('aria-activedescendant',options[active].id);
-    if(scroll)options[active].scrollIntoView({block:'nearest'});
-  }
-  function open(){
-    options=Array.from(formCommunity.options).filter(option=>!option.hidden&&!option.disabled).map((option,index)=>{
-      const row=document.createElement('button');row.type='button';row.className='form-community-option';
-      row.id='formCommunityChoice'+index;row.tabIndex=-1;row.setAttribute('role','option');
-      row.setAttribute('aria-selected',String(option.value===formCommunity.value));row.dataset.value=option.value;row.title=option.textContent;
-      const label=document.createElement('span');label.textContent=option.textContent;row.append(label);
-      row.insertAdjacentHTML('beforeend','<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 8 3 3 7-7"/></svg>');
-      return row;
-    });
-    menu.replaceChildren(...options);menu.hidden=false;trigger.setAttribute('aria-expanded','true');position();
-    highlight(Math.max(0,options.findIndex(option=>option.dataset.value===formCommunity.value)),true);
-  }
-  function choose(option){
-    if(!option)return;
-    const value=option.dataset.value,changed=formCommunity.value!==value;
-    formCommunity.value=value;sync();
-    if(changed)formCommunity.dispatchEvent(new Event('change',{bubbles:true}));
-    trigger.focus({preventScroll:true});
-  }
-  trigger.addEventListener('click',()=>{if(menu.hidden)open();else close();});
-  trigger.addEventListener('keydown',event=>{
-    if(event.isComposing||event.keyCode===229||event.ctrlKey||event.metaKey)return;
-    if(event.key==='Escape'&&!menu.hidden){event.preventDefault();event.stopPropagation();close();return;}
-    if(event.key==='Tab'){close();return;}
-    if(['ArrowDown','ArrowUp','Home','End','Enter',' '].includes(event.key)){
-      event.preventDefault();event.stopPropagation();
-      const wasClosed=menu.hidden;if(wasClosed)open();
-      if(event.key==='Home')highlight(0,true);
-      else if(event.key==='End')highlight(options.length-1,true);
-      else if(!wasClosed&&(event.key==='ArrowDown'||event.key==='ArrowUp'))highlight(active+(event.key==='ArrowDown'?1:-1),true);
-      else if(!wasClosed&&(event.key==='Enter'||event.key===' '))choose(options[active]);
-    }else if(event.key.length===1&&!event.altKey){
-      event.preventDefault();event.stopPropagation();if(menu.hidden)open();
-      const now=Date.now();typeText=(now-typeAt<650?typeText:'')+event.key.toLocaleLowerCase();typeAt=now;
-      const index=options.findIndex(option=>option.textContent.trim().toLocaleLowerCase().startsWith(typeText));
-      if(index>=0)highlight(index,true);
-    }
-  });
-  menu.addEventListener('pointerdown',event=>{if(event.pointerType==='mouse'&&event.target.closest('.form-community-option'))event.preventDefault();});
-  menu.addEventListener('click',event=>choose(event.target.closest('.form-community-option')));
-  document.addEventListener('pointerdown',event=>{if(!menu.hidden&&!wrap.contains(event.target))close();},true);
-  document.addEventListener('focusin',event=>{if(!menu.hidden&&!wrap.contains(event.target))close();});
-  window.addEventListener('resize',position,{passive:true});
-  window.visualViewport?.addEventListener('resize',position,{passive:true});
-  formCommunity.addEventListener('change',sync);
-  return {sync,close,focus:()=>trigger.focus()};
-})();
-
-function fillFormCommunity(key, list = cats){
-  const groups = communityGroups(list);
-  formCommunity.replaceChildren(new Option("未指定社區",""),
-    ...groups.map(c => new Option(communityLabel(c.key,list),c.key)));
-  if (key && !groups.some(c => c.key === key)){
-    // An old category remains in the record until its owner explicitly reassigns it.
-    const prior = new Option("未指定社區（原歸屬保留）",key);
-    prior.hidden = true;
-    formCommunity.add(prior);
-  }
-  formCommunity.value = key || "";
-  formCommunityUI.sync();
-}
-formCommunity.addEventListener("change",()=>saveFormDraft());
+let formCategoryKey = "";
 function fillFormInputs(record){
   for(const key of FORM_INPUT_KEYS) F[key].value = record?.[key] ?? "";
   for(const key of PropertyCore.areaTrio)F[key].setCustomValidity("");
@@ -9020,7 +8905,7 @@ function openForm(id){
   const scopeName=d?"":activeCommunity();
   if(scopeName)F.name.value=scopeName;
   if(!id&&activeDistrict)F.planUnit.value=activeDistrict;
-  fillFormCommunity(d ? d.cat : managedCommunityKey(scopeName));
+  formCategoryKey = d ? (d.cat || "") : managedCommunityKey(scopeName);
   F.note.innerHTML  = (d && d.note)  ? needToFormHTML(d.note)  : "<div><br></div>";
   F.note2.innerHTML = (d && d.note2) ? needToFormHTML(d.note2) : "<div><br></div>";
   F.note3.innerHTML = (d && d.note3) ? needToFormHTML(d.note3) : "<div><br></div>";
@@ -9037,7 +8922,7 @@ function openForm(id){
     if(!editingId && Object.hasOwn(draft.values,"cat")) restored.cat=draft.values.cat;
     applyFormDraft(restored);toast("已還原上次修改的欄位，按儲存才會套用");
   }
-  window.CommunityShared?.formSuggestions();
+  window.CommunityShared?.resetFormCommunityName();
   showLegacyDraftNotice();
   setTimeout(() => { if(modalBg.classList.contains("open"))F.planUnit.focus(); }, 50);
 }
@@ -9051,7 +8936,6 @@ function applyPendingMergeIfAny(){
   }
 }
 function closeForm(){
-  formCommunityUI.close();
   closeNeedOrderUI();
   if(formConflict)saveFormDraft();else clearFormDraft();
   modalBg.classList.remove("open"); editingId=null;
@@ -9202,7 +9086,7 @@ detailBg.addEventListener("click", e => {
 
 function buildFormRec(){
   return {
-    ...Object.fromEntries(FORM_INPUT_KEYS.map(key=>[key,formInputValue(key)])),cat:formCommunity.value,
+    ...Object.fromEntries(FORM_INPUT_KEYS.map(key=>[key,formInputValue(key)])),cat:formCategoryKey,
     note: normalizeNeedStorage(editToNeed(F.note)), note2: normalizeNeedStorage(editToNeed(F.note2)), note3: normalizeNeedStorage(editToNeed(F.note3)),
     t1: F.t1.value.trim(), t2: F.t2.value.trim(), t3: F.t3.value.trim(),
     ...formNeedFontSizes, noteOrder:formNeedOrder.slice(),
@@ -9228,7 +9112,7 @@ function draftKey(){
 }
 function legacyDraftKey(){return LEGACY_FORM_DRAFT_KEY+":"+(editingId||"new")}
 function readDraftRec(){
- const r={...formNeedFontSizes,noteOrder:formNeedOrder.slice(),cat:formCommunity.value};
+ const r={...formNeedFontSizes,noteOrder:formNeedOrder.slice(),cat:formCategoryKey};
  for(const k of [...FORM_INPUT_KEYS,"t1","t2","t3"])r[k]=F[k].value;
  r.note=editToNeed(F.note);r.note2=editToNeed(F.note2);r.note3=editToNeed(F.note3);
  return r;
@@ -9307,7 +9191,7 @@ function showLegacyDraftNotice(){
 function applyFormDraft(d){
   if (!d) return;
   fillFormInputs(d);
-  if(Object.hasOwn(d,"cat"))fillFormCommunity(d.cat);
+  if(Object.hasOwn(d,"cat"))formCategoryKey=d.cat||"";
   F.note.innerHTML = d.note ? needToFormHTML(d.note) : "<div><br></div>";
   F.note2.innerHTML = d.note2 ? needToFormHTML(d.note2) : "<div><br></div>";
   F.note3.innerHTML = d.note3 ? needToFormHTML(d.note3) : "<div><br></div>";
@@ -9334,8 +9218,8 @@ function saveForm(){
     const latest=PropertyCore.local().readLatest();
     if(latest.resetAt!==formBaseResetAt){showFormConflict("資料已從備份還原，這份草稿先保留，請核對新資料後再修改。");return;}
     if(rec.cat && (!editingId || rec.cat!==formBaseRec.cat) && !communityGroups(latest.cats).some(c=>c.key===rec.cat)){
-      saveFormDraft();fillFormCommunity(rec.cat,latest.cats);
-      toast("所選社區已不存在，請重新選擇社區");formCommunityUI.focus();return;
+      // A restored draft may refer to a category that has since been removed.
+      formCategoryKey = rec.cat = editingId ? (latest.items.find(item=>item.id===editingId)?.cat || "") : "";
     }
     if(editingId && !latest.items.some(x=>x.id===editingId)){showFormConflict("此物件已被刪除，這份草稿先保留，請核對資料。");return;}
   }catch(e){saveFormDraft();toast("尚未儲存："+e.message);return;}
@@ -12681,7 +12565,7 @@ function managerCommit(base,mutate,changes=[],nextCats=null,onSaved){
     }});
   if(!ok){managerError(CommunityData.lastError||'尚未儲存');return false;}
   managerError('');managerEditing='';managerBase=null;
-  onSaved?.();districtTabs=loadDistrictTabs();renderCover();applyFilter();renderCatList();window.CommunityShared?.formSuggestions();return true;
+  onSaved?.();districtTabs=loadDistrictTabs();renderCover();applyFilter();renderCatList();window.CommunityShared?.resetFormCommunityName();return true;
 }
 function managerCatalog(features){
   return features.catalogs??=Object.fromEntries(['name','planUnit','area','layout','status','parkingType','parkingCount'].map(key=>[key,[]]));
@@ -14539,7 +14423,7 @@ function paintPropertyState(state){
         for(const section of ['catalogs','locations','links','orders','districtBars','districtTabs'])if(Object.hasOwn(proposal.features,section))features[section]=proposal.features[section];
       },proposal.changes,{...saveOptions(),baseItems:base.items,baseFeatures:base.features,managerCats:managedKey?cats.filter(c=>c.key!==managedKey):null});
       if(!ok){error(CommunityData.lastError||'尚未刪除成功，請重試。');return;}
-      close();refreshCatalogs();applyFilter();CommunityShared.formSuggestions();toast('已刪除「'+from+'」選項');
+      close();refreshCatalogs();applyFilter();CommunityShared.resetFormCommunityName();toast('已刪除「'+from+'」選項');
     }catch(cause){error(cause.message||'尚未刪除成功，請重試。');place();}
   }
 
@@ -15365,13 +15249,7 @@ function paintPropertyState(state){
     return finishPlan(finalizePlan(plan,records,plan.values));
   }
   let formLastCommunity='';
-  function formSuggestions(){
-    let list=document.getElementById('communityNameSuggestions');
-    if(!list){list=document.createElement('datalist');list.id='communityNameSuggestions';document.body.append(list);F.name.setAttribute('list',list.id);}
-    ensureState();const choices=new Set([...Object.keys(state.registry),...items.map(item=>communityOf(item.name)),...(CommunityData.read('catalogs',{}).name||[]).map(entry=>entry.name)]);choices.delete('');
-    list.replaceChildren(...[...choices].map(name=>new Option(name,name)));
-    formLastCommunity=communityOf(F.name.value);
-  }
+  function resetFormCommunityName(){formLastCommunity=communityOf(F.name.value);}
   function autofillFormCommunity(){
     if(!modalBg.classList.contains('open'))return;
     const community=communityOf(F.name.value);if(community===formLastCommunity)return;
@@ -15475,11 +15353,11 @@ function paintPropertyState(state){
   const previousTabAllowed=tabModeToggleAllowed;tabModeToggleAllowed=function(){return !overlay&&previousTabAllowed();};
   const previousTabTarget=tabTrapTarget;tabTrapTarget=function(){return overlay?dialog:previousTabTarget();};
   CommunityData.subscribe(()=>{
-    state=null;formSuggestions();
+    state=null;resetFormCommunityName();
     if(overlay&&overlay.resetAt!==(window._resetAt||0)){close();toast('資料已還原，請重新開啟社區資料。');}
   });
-  window.CommunityShared={edit,decorateMenu,renameFeatures,openDefaults,saveFormRecord,formSuggestions,model:{createState,planEdit,planDefaults,finalizePlan,renameState}};
-  formSuggestions();
+  window.CommunityShared={edit,decorateMenu,renameFeatures,openDefaults,saveFormRecord,resetFormCommunityName,model:{createState,planEdit,planDefaults,finalizePlan,renameState}};
+  resetFormCommunityName();
 })();
 
 </script>
