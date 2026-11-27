@@ -1390,6 +1390,7 @@ async function openCommunityTarget(value){
      改用與 .dtl-body 相同的 15px 節奏;段內標題→自己的內容框仍是 8px,分群才清楚。 */
   .dtl-notes{display:flex;flex-direction:column;gap:15px;}
   .dtl-sec{display:flex;flex-direction:column;gap:8px;}
+  .dtl-section-number{display:inline-grid;place-items:center;flex:none;width:1.5em;height:1.5em;border-radius:50%;background:var(--surface-2);color:var(--ink-soft);font-size:.74rem;line-height:1;font-variant-numeric:tabular-nums;}
   .dtl-h{display:flex;align-items:center;gap:7px;font-size:.86rem;font-weight:800;color:var(--ink);letter-spacing:.02em;}
   .dtl-h svg{width:15px;height:15px;color:var(--accent);flex:none;}
   .dtl-card{border:1px solid var(--line);border-radius:12px;background:var(--card);display:grid;grid-template-columns:1fr 1fr;overflow:hidden;}
@@ -4680,7 +4681,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.27J";
+const APP_VERSION = "2026.11.27K";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -9087,7 +9088,7 @@ function renderDetailBody(d){
     return;
   }
   // 區段/格內小圖示
-  const IC_INFO  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16"/><circle cx="12" cy="8" r="0.6" fill="currentColor"/></svg>';
+  const numberBadge = n => `<span class="dtl-section-number">${n}</span> `;
   const IC_USER  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c1.6-3.4 4.3-5 7.5-5s5.9 1.6 7.5 5"/></svg>';
   const IC_DOC   = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="4" width="13" height="16" rx="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="15" y2="13"/></svg>';
   const IC_EYE   = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12s3.4-6.4 9.5-6.4 9.5 6.4 9.5 6.4-3.4 6.4-9.5 6.4S2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.6"/></svg>';
@@ -9119,11 +9120,11 @@ function renderDetailBody(d){
   function section(icon, title, content){
     return content ? `<div class="dtl-sec"><div class="dtl-h">${icon}${title}</div>${content}</div>` : "";
   }
-  const locationRow = grid([["planUnit","area"]]);
-  const basic = section(IC_INFO, "基本資料", grid([
+  const location = section(numberBadge(1), "區域", grid([["planUnit","area"]]));
+  const basic = section(numberBadge(2), "基本資料", grid([
     ["price","layout","floor"], ["addr"], ["floorPrice","cost"]
   ], "dtl-basic"));
-  const measurements = section(IC_INFO, "坪數", grid([
+  const measurements = section(numberBadge(3), "坪數", grid([
     ["totalArea","mainPlus"], ["mainArea","ancillaryArea"]
   ]));
   const agent = section(IC_USER, visible.has("agent") ? "承辦" : "聯絡資料", grid([["agent","tel"],["store"]]));
@@ -9131,7 +9132,7 @@ function renderDetailBody(d){
   const seg=(sg,ic)=>'<div class="dtl-sec" data-need-font-seg="'+sg+'"><div class="dtl-need-head"><div class="dtl-h">'+ic+esc(needTitle(d,sg))+'</div><span class="nseg-btns">'+needFontButtons(sg)+'</span></div><div class="needexp-ed needexp-view">'+(needSeg(d,sg)?needToViewHTML(needSeg(d,sg)):'<span class="tneed-ph">—</span>')+'</div></div>';
   const icons={1:IC_DOC,2:IC_EYE,3:IC_CHECK};
   const segHTML = visible.has("note") ? `<div class="dtl-sec" data-community-field="note"><div class="dtl-h">${IC_DOC}${esc(communityFieldLabel("note"))}</div><div class="dtl-notes">${needOrder(d).map(sg => seg(sg, icons[sg])).join("")}</div></div>` : "";
-  body.innerHTML = locationRow + basic + measurements + agent + segHTML;
+  body.innerHTML = location + basic + measurements + agent + segHTML;
   if (segHTML){
     const id = d.id;
     initNeedFontControls(body,()=>items.find(x=>x.id===id),(sg,size)=>commitNeedFontSize(id,sg,size));
