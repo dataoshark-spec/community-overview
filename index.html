@@ -1406,6 +1406,18 @@ async function openCommunityTarget(value){
   @media (max-width:440px){
     #detailBody .dtl-third{flex-direction:column;align-items:flex-start;gap:4px;}
   }
+  #detailBody .dtl-basic .dtl-cell{gap:8px;padding:10px 12px;align-items:baseline}
+  .dtl-basic .dtl-k{min-width:3em;letter-spacing:.02em;color:var(--ink-soft)}
+  .dtl-basic [data-community-field="name"] .dtl-v{font-size:1.05rem;font-weight:700}
+  .dtl-basic [data-community-field="price"] .dtl-v{font-weight:700}
+  .dtl-basic .dtl-address{
+    flex:1;min-width:0;white-space:nowrap;overflow-x:auto;overflow-y:hidden;
+    overscroll-behavior-x:contain;scrollbar-width:thin;margin:0;padding:0;
+  }
+  .dtl-basic .dtl-address:focus-visible{outline:1px solid var(--accent-deep);outline-offset:2px}
+  @media(max-width:380px){
+    #detailBody .dtl-basic .dtl-cell{padding:9px 8px;gap:5px}
+  }
   .dtl-k{color:var(--text-faint);font-size:.78rem;letter-spacing:.05em;flex:none;font-weight:400;}
   .dtl-v{color:var(--ink);font-weight:600;font-size:.93rem;min-width:0;word-break:break-word;font-variant-numeric:tabular-nums;}
   .dtl-empty{color:var(--text-faint);font-weight:500;display:inline-flex;align-items:center;}
@@ -4655,7 +4667,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.27D";
+const APP_VERSION = "2026.11.27E";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -9044,30 +9056,32 @@ function renderDetailBody(d){
     const unit = communityFieldUnit(field);
     const shown = raw !== "" && unit ? raw + " " + unit : raw;
     let valueHTML = '<span class="dtl-v dtl-empty" role="img" aria-label="未填"></span>';
-    if (shown !== ""){
+    if (field === "addr" && shown !== ""){
+      valueHTML = `<span class="dtl-v dtl-copy dtl-address" tabindex="0" title="${esc(shown)}" data-copy="${esc(shown)}">${esc(shown)}</span>`;
+    } else if (shown !== ""){
       valueHTML = field === "tel"
         ? `<a class="dtl-v dtl-tellink" href="tel:${esc(raw)}">${esc(shown)}</a>`
         : `<span class="dtl-v dtl-copy" data-copy="${esc(PropertyCore.areaRangeFields.includes(field)?PropertyCore.areaValue(d,field)+" "+unit:shown)}" ${PropertyCore.areaRangeFields.includes(field)?`title="${esc(PropertyCore.areaValue(d,field))}"`:""}>${esc(shown)}</span>`;
     }
     return `<div class="dtl-cell ${width}" data-community-field="${field}">${field === "tel" ? IC_TEL_S : ""}<span class="dtl-k">${esc(communityFieldLabel(field))}</span>${valueHTML}</div>`;
   }
-  function grid(rows){
+  function grid(rows, extraClass = ""){
     const shown = rows.map(row => row.filter(field => visible.has(field))).filter(row => row.length);
     if (!shown.length) return "";
     const content = shown.map((row, index) => row.map((field, column) => {
       const width = row.length === 1 ? "dtl-wide" : row.length === 3 ? "dtl-third" : "";
       return cell(field, width + (index ? " dtl-line-top" : "") + (column ? " dtl-line-left" : ""));
     }).join("")).join("");
-    return `<div class="dtl-card dtl-field-grid">${content}</div>`;
+    return `<div class="dtl-card dtl-field-grid ${extraClass}">${content}</div>`;
   }
   function section(icon, title, content){
     return content ? `<div class="dtl-sec"><div class="dtl-h">${icon}${title}</div>${content}</div>` : "";
   }
   const basic = section(IC_INFO, "基本資料", grid([
-    ["planUnit","area"], ["layout","status"], ["name"], ["addr","floor"],
-    ["price","floorPrice","cost"],
-    ["totalArea","mainPlus"], ["mainArea","ancillaryArea"]
-  ]));
+    ["name"], ["addr"],
+    ["planUnit","area"], ["layout","floor"], ["status","price"],
+    ["floorPrice","cost"], ["totalArea","mainPlus"], ["mainArea","ancillaryArea"]
+  ], "dtl-basic"));
   const agent = section(IC_USER, visible.has("agent") ? "承辦" : "聯絡資料", grid([["agent","tel"],["store"]]));
   // 備註三段(沿用展開內容框,唯讀)
   const seg=(sg,ic)=>'<div class="dtl-sec" data-need-font-seg="'+sg+'"><div class="dtl-need-head"><div class="dtl-h">'+ic+esc(needTitle(d,sg))+'</div><span class="nseg-btns">'+needFontButtons(sg)+'</span></div><div class="needexp-ed needexp-view">'+(needSeg(d,sg)?needToViewHTML(needSeg(d,sg)):'<span class="tneed-ph">—</span>')+'</div></div>';
@@ -9111,11 +9125,15 @@ function closeDetail(){
   if (window.refreshLed) window.refreshLed();   // 關詳情後刷新燈(避免殘留 pending 顯示)
 }
 document.getElementById("detailClose").addEventListener("click", closeDetail);
+function detailAddressCanScroll(target){
+  const address = target.closest(".dtl-address");
+  return !!address && address.scrollWidth > address.clientWidth;
+}
 // 詳情頁:水平滑動(左滑或右滑)返回。只在「水平位移明顯大於垂直」時觸發,避免和內容的垂直捲動衝突
 (function(){
   let sx = 0, sy = 0, st = 0, tracking = false;
   detailBg.addEventListener("touchstart", e => {
-    if(e.target.closest(".need-order-handle, .discreet-toggle")||needOrderBusy){tracking=false;return;}
+    if(e.target.closest(".need-order-handle, .discreet-toggle")||needOrderBusy||detailAddressCanScroll(e.target)){tracking=false;return;}
     if (e.touches && e.touches.length === 1){ sx = e.touches[0].clientX; sy = e.touches[0].clientY; st = Date.now(); tracking = true; }
     else tracking = false;
   }, { passive: true });
@@ -13090,7 +13108,7 @@ bindTablePanelSwipe(customOrderUI.bg,customOrderOpen,()=>closeCustomOrder());
     skip = !!(el.closest && el.closest("#tabs, #listCount, input, textarea, .cselect, .table-wrap, #linkpop, #tableMoreLinks, #catmenu, .palette-pop, select, #searchHelpBtn, #searchHelpPop"));
     /* search-help:end */
     if (modalBg.classList.contains("open")) skip = false;  // 編輯表單開啟時,允許滑動關閉
-    if (detailWasOpen) skip = false;  // 詳情頁開啟時,允許滑動關閉(只回列表,不跳封面)
+    if (detailWasOpen) skip = detailAddressCanScroll(el);
     const _cb = document.getElementById("calBg");
     if (_cb && _cb.classList.contains("open")) skip = true;   // 日曆開啟時不攔手勢(日曆有自己的取消/點外關閉)
     if (linkFilterBg.classList.contains("open")) skip = true;   // 篩選草稿由套用／關閉操作，不攔截手機橫滑
