@@ -2577,7 +2577,19 @@ body.column-moving,body.column-moving *{cursor:grabbing!important;user-select:no
 .rd-note .cc-note-text{margin:0;overflow-wrap:anywhere}
 .rd-title-line{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px;min-width:0}
 .rd-title-line .name{flex:0 1 auto}
-.rd-title-line .cp-site{margin:0;white-space:nowrap}
+.rd-title-line .cp-site{
+  --site-ink:#315c53;--site-line:#95b3a9;
+  display:inline-flex;align-items:center;gap:.26em;margin:0;min-height:24px;
+  font-family:"Noto Serif TC","PMingLiU",serif;font-size:clamp(10px,calc(2.9cqi + 1px),14px);
+  font-weight:600;line-height:1;letter-spacing:.035em;white-space:nowrap;
+  color:var(--site-ink);text-decoration:none;
+}
+.rd-title-line .cp-site span{padding-bottom:.15em;border-bottom:1px solid var(--site-line)}
+.rd-title-line .cp-site svg{
+  width:.86em;height:.86em;flex:none;transform:translateY(-.38em);
+  fill:none;stroke:currentColor;stroke-width:1.55;stroke-linecap:round;stroke-linejoin:round;
+}
+[data-theme="dark"] .rd-title-line .cp-site{--site-ink:#a9d5c9;--site-line:#73988d}
 .rd-footer{margin-top:11px}
 .rd-footer .agent-info{display:grid;justify-items:start;overflow-wrap:anywhere}
 .rd-footer .agent-info [data-community-field="agent"]{color:var(--ink);font-weight:700}
@@ -4643,7 +4655,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.27C";
+const APP_VERSION = "2026.11.27D";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -4896,7 +4908,7 @@ function cardHTML(d){
   }else{
     const location=["area","planUnit"].map(k=>value(k)).filter(Boolean).join('<span aria-hidden="true"> · </span>');
     const href=visible.has("links")&&!linkIsNone(d,COMMUNITY_PROPERTY_LINK_SLOT)?communityTargetHref(d[linkUrlField(COMMUNITY_PROPERTY_LINK_SLOT)]):"";
-    const site=href?'<a class="cp-site" href="'+esc(href)+'" target="_blank" rel="noopener">網站 ↗</a>':"";
+    const site=href?'<a class="cp-site" href="'+esc(href)+'" target="_blank" rel="noopener"><span>網站</span><svg aria-hidden="true" focusable="false" viewBox="0 0 16 16"><path d="M3.2 12.5 12.7 3M6.8 3h5.9v5.9"/></svg></a>':"";
     const identity=group("rd-identity",group("rd-title-line",name+site)+group("rd-location",group("rd-status",value("status"))+group("rd-zone",location)));
     const prices=group("rd-prices",fact("floorPrice","")+fact("cost",""));
     const parking=[has("parkingType")?esc(raw("parkingType")):"",has("parkingCount")?esc(raw("parkingCount"))+" 個":""].filter(Boolean).join(" ");
