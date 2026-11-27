@@ -2534,12 +2534,14 @@ body.column-moving,body.column-moving *{cursor:grabbing!important;user-select:no
 #cards .cp-card .body{padding:15px 17px;min-width:0;display:grid;gap:9px}
 #cards .cp-card.compact-card .body{padding:12px 16px;gap:8px}
 .cp-head,.cp-bottom,.cp-quote,.cp-contact{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0}
-#cards .cp-card h3.name{font-size:1.48rem;font-weight:700;line-height:1.25;margin:0;min-width:0;overflow-wrap:anywhere}
-.cp-status,.cp-price,.cp-site,.cp-contact .tel{flex:none}.cp-status{margin-left:auto;color:var(--text-faint);font-size:13px}
+#cards .cp-card h3.name{margin:0;min-width:0;overflow-wrap:anywhere}
+.cp-status,.cp-price,.cp-site,.cp-contact .tel{flex:none}.cp-status{margin-left:auto}
 .cp-card .cc-value{font:inherit}.cp-address,.cp-company,.cp-note{font-size:13px;color:var(--ink-soft);line-height:1.5}
-.cp-bottom .cp-address{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.cp-bottom .cp-address{font-size:.84rem;line-height:1.45;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .cp-card .cp-price .num{font-weight:700;font-size:24px;color:var(--ink)}
-.cp-card.compact-card .cp-price .num{font-size:19px}.cp-bottom .cp-price,.cp-site{margin-left:auto}
+.cp-card.compact-card .cp-price .num{font-size:1.2rem;font-weight:900}
+.cp-card.compact-card .cp-price .unit{font-size:.72rem;font-weight:700;margin-inline-start:2px}
+.cp-card.compact-card .price-value{gap:0}.cp-bottom .cp-price,.cp-site{margin-left:auto}
 .cp-card .unit,.cp-card small{font-size:11px;color:var(--ink-soft);margin-left:3px}
 .cp-site{font-size:13px;color:var(--accent-deep);text-decoration:underline;text-underline-offset:3px}
 .cp-meta,.cp-cost,.cp-sizes{display:flex;flex-wrap:wrap;align-items:baseline;gap:5px 8px}
@@ -4636,7 +4638,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.27A";
+const APP_VERSION = "2026.11.27B";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -4885,7 +4887,7 @@ function cardHTML(d){
   const price=group("cp-price",has("price")?'<span class="price-value" data-community-field="price" data-copy="'+esc(d.price)+'"><span class="num">'+esc(money(d.price))+'</span><span class="unit">萬</span></span>':"");
   let html;
   if(compact){
-    html=group("cp-head",name+group("cp-status",value("status")))+group("cp-bottom",address+price);
+    html=group("cp-head",name+group("cp-status badge",value("status")))+group("cp-bottom",address+price);
   }else{
     const location=["area","planUnit"].map(k=>value(k)).filter(Boolean).join('<span aria-hidden="true"> · </span>');
     const identity=group("rd-identity",name+group("rd-location",group("rd-status",value("status"))+group("rd-zone",location))+address);
