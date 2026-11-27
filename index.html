@@ -4671,7 +4671,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.27F";
+const APP_VERSION = "2026.11.27G";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -9096,7 +9096,7 @@ function renderDetailBody(d){
         ? `<a class="dtl-v dtl-tellink" href="tel:${esc(raw)}">${esc(shown)}</a>`
         : `<span class="dtl-v dtl-copy" data-copy="${esc(PropertyCore.areaRangeFields.includes(field)?PropertyCore.areaValue(d,field)+" "+unit:shown)}" ${PropertyCore.areaRangeFields.includes(field)?`title="${esc(PropertyCore.areaValue(d,field))}"`:""}>${esc(shown)}</span>`;
     }
-    return `<div class="dtl-cell ${width}" data-community-field="${field}">${field === "tel" ? IC_TEL_S : ""}<span class="dtl-k">${esc(communityFieldLabel(field))}</span>${valueHTML}</div>`;
+    return `<div class="dtl-cell ${width}" data-community-field="${field}">${field === "tel" ? IC_TEL_S : ""}<span class="dtl-k">${esc(field === "planUnit" ? "重劃" : communityFieldLabel(field))}</span>${valueHTML}</div>`;
   }
   function grid(rows, extraClass = ""){
     const shown = rows.map(row => row.filter(field => visible.has(field))).filter(row => row.length);
