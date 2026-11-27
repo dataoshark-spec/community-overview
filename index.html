@@ -887,6 +887,8 @@ async function openCommunityTarget(value){
     #modalBg .form-choice-control:focus-within>input,#modalBg .form-choice-control:has(.form-choice-menu)>input{border-color:var(--accent-deep);box-shadow:0 0 0 3px var(--accent-tint);}
   #modalBg button.form-choice-arrow:focus{outline:none;box-shadow:none;}
   #modalBg .form-choice-menu{padding:6px 6px 0;overflow:hidden;}
+  #modalBg .form-choice-menu.short-choice-space{overflow-y:auto;}
+  .short-choice-space .choice-list{flex:none;overflow:visible;}
   .choice-list{display:flex;flex-direction:column;gap:2px;min-height:0;overflow-y:auto;overscroll-behavior:contain;}
   .choice-option-row{display:flex;align-items:center;gap:3px;padding:1px 0;}
   #modalBg .choice-option-row .cselect-opt{flex:1;min-width:0;}
@@ -4726,7 +4728,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.27R";
+const APP_VERSION = "2026.11.27S";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -9010,11 +9012,22 @@ function positionFormChoice(){
   const width = Math.min(Math.max(anchor.width,249),control.closest(".modal-body").clientWidth-16);
   choiceMenu.style.width = width+"px";
   choiceMenu.style.left = Math.min(0,bounds.right-8-width-anchor.left)+"px";
-  const below = bounds.bottom-anchor.bottom-8;
-  const above = anchor.top-bounds.top-8;
-  const up = below < Math.min(280,choiceMenu.scrollHeight) && above > below;
+  const viewport=window.visualViewport;
+  const top=Math.max(bounds.top,viewport?.offsetTop ?? 0);
+  const bottom=Math.min(bounds.bottom,viewport ? viewport.offsetTop+viewport.height : innerHeight);
+  const below=Math.max(0,Math.floor(bottom-anchor.bottom-8));
+  const above=Math.max(0,Math.floor(anchor.top-top-8));
+  const list=choiceMenu.querySelector(".choice-list");
+  const footer=choiceMenu.querySelector(".choice-custom");
+  const style=getComputedStyle(choiceMenu);
+  const fixedHeight=footer.offsetHeight + parseFloat(style.rowGap) + parseFloat(style.paddingTop)
+    + parseFloat(style.paddingBottom) + parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
+  const up=below < list.scrollHeight+fixedHeight && above>below;
+  const space=up ? above : below;
   choiceMenu.classList.toggle("opens-up",up);
-  choiceMenu.style.maxHeight = Math.max(36, Math.min(280,up?above:below))+"px";
+  choiceMenu.style.maxHeight=space+"px";
+  // On very short screens the footer scrolls with the choices so both remain reachable.
+  choiceMenu.classList.toggle("short-choice-space",space < fixedHeight+44);
 }
 function applyChoiceValue(button,value){
   const input=F[button.dataset.optionsFor];
@@ -9160,6 +9173,8 @@ document.addEventListener("pointerdown",e=>{
   if(activeChoice && !choiceMenu.contains(e.target) && !activeChoice.contains(e.target)) closeFormChoice();
 },true);
 window.addEventListener("resize",positionFormChoice);
+window.visualViewport?.addEventListener("resize",positionFormChoice);
+window.visualViewport?.addEventListener("scroll",positionFormChoice);
 modalBg.querySelector(".modal-body").addEventListener("scroll",positionFormChoice,{passive:true});
 function openForm(id){
   window.applyPropertyRefresh?.(true);
