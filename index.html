@@ -884,7 +884,28 @@ async function openCommunityTarget(value){
   #modalBg .form-choice-menu.opens-up{top:auto;bottom:calc(100% + 6px);}
   #modalBg .form-choice-menu .cselect-opt{flex:none;min-height:34px;}
   #modalBg .form-choice-menu .cselect-opt:focus-visible{outline:1px solid var(--accent-deep);outline-offset:-1px;}
-  .form-choice-arrow:focus-within{outline:1px solid var(--accent-deep);outline-offset:-2px;}
+    #modalBg .form-choice-control:focus-within>input,#modalBg .form-choice-control:has(.form-choice-menu)>input{border-color:var(--accent-deep);box-shadow:0 0 0 3px var(--accent-tint);}
+  #modalBg button.form-choice-arrow:focus{outline:none;box-shadow:none;}
+  #modalBg .form-choice-menu{padding:6px 6px 0;overflow:hidden;}
+  .choice-list{display:flex;flex-direction:column;gap:2px;min-height:0;overflow-y:auto;overscroll-behavior:contain;}
+  .choice-option-row{display:flex;align-items:center;gap:3px;padding:1px 0;}
+  #modalBg .choice-option-row .cselect-opt{flex:1;min-width:0;}
+  #modalBg .form-choice-menu .nm{font-weight:400;}
+  #modalBg .form-choice-menu .sel .nm{font-weight:600;}
+  #modalBg .choice-empty{justify-content:center;color:var(--ink-soft);}
+  #modalBg .choice-empty{position:relative;} #modalBg .choice-empty .nm{flex:0 1 auto;} #modalBg .choice-empty .chk{position:absolute;right:10px;}
+  .choice-rename{flex:none;font-family:inherit;font-size:.73rem;font-weight:600;color:var(--accent-deep);border:1px solid var(--line);border-radius:7px;background:var(--card);padding:4px 6px;cursor:pointer;}
+  .choice-custom{flex:none;display:grid;gap:7px;margin:0 -6px;padding:9px 15px;border-top:1px solid var(--line);}
+  #modalBg .choice-custom input,#choiceRenameDialog input{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font:inherit;font-size:.9rem;padding:9px 11px;}
+  .choice-custom .btn-primary{width:100%;justify-content:center;}
+  .choice-feedback{font-size:.82rem;color:var(--danger);margin:0;}
+  .choice-feedback:empty{display:none;}
+  #choiceRenameDialog{position:fixed;inset:0;margin:auto;width:min(380px,calc(100vw - 28px));box-sizing:border-box;border:1px solid var(--line);border-radius:16px;padding:18px;background:var(--card);color:var(--ink);box-shadow:0 14px 34px #16222a2e;}
+  #choiceRenameDialog::backdrop{background:#16222a55;}
+  #choiceRenameDialog h2{margin:0;font-size:1.08rem;}
+  #choiceRenameDialog p{margin:8px 0;color:var(--ink-soft);font-size:.88rem;}
+  #choiceRenameDialog label{display:grid;gap:5px;font-size:.85rem;}
+  #choiceRenameDialog footer{display:flex;justify-content:flex-end;gap:8px;margin-top:14px;}
   .row2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;}
   .row3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}   /* 格局/樓層/售價 各 1/3 */
   /* ===== 表單連結群組:預設收合成一排三欄,可展開成三排 ===== */
@@ -1405,7 +1426,12 @@ async function openCommunityTarget(value){
      改用與 .dtl-body 相同的 15px 節奏;段內標題→自己的內容框仍是 8px,分群才清楚。 */
   .dtl-notes{display:flex;flex-direction:column;gap:15px;}
   .dtl-sec{display:flex;flex-direction:column;gap:8px;}
-  .dtl-section-number{display:inline-grid;place-items:center;flex:none;width:1.5em;height:1.5em;border-radius:50%;background:var(--surface-2);color:var(--ink-soft);font-size:.74rem;line-height:1;font-variant-numeric:tabular-nums;}
+  .dtl-area-toggle{width:100%;min-height:26px;padding:0;border:0;background:none;text-align:start;font-family:inherit;cursor:pointer;}
+  .dtl-area-toggle .dtl-chevron{box-sizing:border-box;margin-inline-start:auto;padding:7px;width:26px;height:26px;color:var(--text-faint);transition:transform .18s ease;}
+  .dtl-area-toggle[aria-expanded=true] .dtl-chevron{transform:rotate(180deg);}
+  .dtl-area-toggle:focus-visible{outline:1px solid var(--accent-deep);outline-offset:2px;border-radius:5px;}
+  @media(hover:hover){.dtl-area-toggle:hover .dtl-chevron{background:var(--surface-2);border-radius:7px;}}
+  @media(prefers-reduced-motion:reduce){.dtl-area-toggle .dtl-chevron{transition:none;}}
   .dtl-h{display:flex;align-items:center;gap:7px;font-size:.86rem;font-weight:800;color:var(--ink);letter-spacing:.02em;}
   .dtl-h svg{width:15px;height:15px;color:var(--accent);flex:none;}
   .dtl-card{border:1px solid var(--line);border-radius:12px;background:var(--card);display:grid;grid-template-columns:1fr 1fr;overflow:hidden;}
@@ -3291,19 +3317,19 @@ html[data-mark-style=rail] #mark-outside .mark-action .mark-star-glyph{display:n
         <div class="form-row-four">
           <div class="form-choice-field">
             <label for="f_planUnit">重劃區</label>
-            <div class="form-choice-control"><input id="f_planUnit" autocomplete="off"><button type="button" class="form-choice-arrow" data-options-for="planUnit" aria-label="選擇重劃區" aria-haspopup="listbox" aria-expanded="false" aria-controls="form-choice-options"></button></div>
+            <div class="form-choice-control"><input id="f_planUnit" autocomplete="off"><button type="button" class="form-choice-arrow" data-options-for="planUnit" aria-label="選擇重劃區" aria-haspopup="dialog" aria-expanded="false" aria-controls="form-choice-options"></button></div>
           </div>
           <div class="form-choice-field">
             <label for="f_area">區域</label>
-            <div class="form-choice-control"><input id="f_area" autocomplete="off"><button type="button" class="form-choice-arrow" data-options-for="area" aria-label="選擇區域" aria-haspopup="listbox" aria-expanded="false" aria-controls="form-choice-options"></button></div>
+            <div class="form-choice-control"><input id="f_area" autocomplete="off"><button type="button" class="form-choice-arrow" data-options-for="area" aria-label="選擇區域" aria-haspopup="dialog" aria-expanded="false" aria-controls="form-choice-options"></button></div>
           </div>
           <div class="form-choice-field">
             <label for="f_layout">格局</label>
-            <div class="form-choice-control"><input id="f_layout" autocomplete="off"><button type="button" class="form-choice-arrow" data-options-for="layout" aria-label="選擇格局" aria-haspopup="listbox" aria-expanded="false" aria-controls="form-choice-options"></button></div>
+            <div class="form-choice-control"><input id="f_layout" autocomplete="off"><button type="button" class="form-choice-arrow" data-options-for="layout" aria-label="選擇格局" aria-haspopup="dialog" aria-expanded="false" aria-controls="form-choice-options"></button></div>
           </div>
           <div class="form-choice-field">
             <label for="f_status">狀態</label>
-            <div class="form-choice-control"><input id="f_status" autocomplete="off"><button type="button" class="form-choice-arrow" data-options-for="status" aria-label="選擇狀態" aria-haspopup="listbox" aria-expanded="false" aria-controls="form-choice-options"></button></div>
+            <div class="form-choice-control"><input id="f_status" autocomplete="off"><button type="button" class="form-choice-arrow" data-options-for="status" aria-label="選擇狀態" aria-haspopup="dialog" aria-expanded="false" aria-controls="form-choice-options"></button></div>
           </div>
         </div>
         <div class="row2 name-floor-row">
@@ -4700,7 +4726,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.27P";
+const APP_VERSION = "2026.11.27R";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
@@ -8672,6 +8698,7 @@ function trapFocusKey(e, container){
   try { nodes[j].focus(); } catch(err){}
 }
 function tabTrapTarget(){
+  const rename=document.querySelector("#choiceRenameDialog[open]");if(rename)return rename;
   const colorDialog=document.querySelector("#miniColorDialog[open]");if(colorDialog)return colorDialog;
   const columnText=document.querySelector('#columnTypeDialog.open .cl-dialog');if(columnText)return columnText;
   if(tabDraft)return document.querySelector("#districtTabDialog .cl-dialog");
@@ -8964,7 +8991,7 @@ const choiceButtons = [...modalBg.querySelectorAll("[data-options-for]")];
 const choiceMenu = document.createElement("div");
 choiceMenu.id = "form-choice-options";
 choiceMenu.className = "cselect-menu form-choice-menu";
-choiceMenu.setAttribute("role","listbox");
+choiceMenu.setAttribute("role","dialog");
 let activeChoice = null;
 
 function closeFormChoice(returnFocus = false){
@@ -8980,21 +9007,94 @@ function positionFormChoice(){
   const control = activeChoice.parentElement;
   const bounds = control.closest(".modal-body").getBoundingClientRect();
   const anchor = control.getBoundingClientRect();
-  const width = Math.min(Math.max(anchor.width,158),bounds.width-16);
+  const width = Math.min(Math.max(anchor.width,249),control.closest(".modal-body").clientWidth-16);
   choiceMenu.style.width = width+"px";
   choiceMenu.style.left = Math.min(0,bounds.right-8-width-anchor.left)+"px";
   const below = bounds.bottom-anchor.bottom-8;
   const above = anchor.top-bounds.top-8;
-  const up = below < Math.min(250,choiceMenu.scrollHeight) && above > below;
+  const up = below < Math.min(280,choiceMenu.scrollHeight) && above > below;
   choiceMenu.classList.toggle("opens-up",up);
-  choiceMenu.style.maxHeight = Math.max(36, Math.min(250,up?above:below))+"px";
+  choiceMenu.style.maxHeight = Math.max(36, Math.min(280,up?above:below))+"px";
+}
+function applyChoiceValue(button,value){
+  const input=F[button.dataset.optionsFor];
+  input.value=value;
+  input.dispatchEvent(new Event("input",{bubbles:true}));
+  input.dispatchEvent(new Event("change",{bubbles:true}));
+}
+function choiceNameKey(name){return name.trim().normalize("NFKC").toLowerCase();}
+function manageChoice(button,oldName){
+  const field=button.dataset.optionsFor;
+  const base=managerSnapshot();
+  const known=CommunityFields.getOptions(field);
+  const affected=base.items.filter(item=>String(item[field]??"").trim()===oldName);
+  const dialog=document.createElement("dialog");
+  dialog.id="choiceRenameDialog";
+  dialog.setAttribute("aria-labelledby","choiceRenameHeading");
+  dialog.innerHTML='<h2 id="choiceRenameHeading"></h2><p data-old></p><label>新名稱<input maxlength="80" autocomplete="off"></label><p data-count></p><p class="choice-feedback" role="status"></p><footer><button type="button" class="btn-ghost">取消</button><button type="button" class="btn-primary">確認改名</button></footer>';
+  dialog.querySelector("h2").textContent="重新命名"+F[field].closest(".form-choice-field").querySelector("label").textContent;
+  dialog.querySelector("[data-old]").textContent="原名稱　"+oldName;
+  dialog.querySelector("[data-count]").textContent="會更新 "+affected.length+" 筆物件";
+  const input=dialog.querySelector("input"),confirm=dialog.querySelector(".btn-primary"),feedback=dialog.querySelector("[role=status]");
+  input.value=oldName;
+  function validate(){
+    const name=input.value.trim();
+    const duplicate=known.some(entry=>entry.name!==oldName && choiceNameKey(entry.name)===choiceNameKey(name));
+    feedback.textContent=duplicate?"這個名稱已存在。":"";
+    confirm.disabled=!name||name===oldName||duplicate;
+  }
+  confirm.onclick=()=>{
+    validate();if(confirm.disabled)return;
+    const name=input.value.trim();
+    const changes=affected.map(item=>({...item,[field]:name,updatedAt:Date.now()}));
+    const ok=CommunityData.transaction(features=>{
+      const catalog=managerCatalog(features)[field];
+      const entry=catalog.find(option=>option.name===oldName);
+      if(entry)entry.name=name;else catalog.push({name});
+      CommunityFields.renameGroupSettings(features,field,oldName,name);
+    },changes,{resetAt:base.resetAt,baseItems:base.items,baseFeatures:base.features,checkLatest(latest){
+      if(JSON.stringify(latest.items)!==JSON.stringify(base.items)||JSON.stringify(latest.settings.communityFeatures?.values||{})!==JSON.stringify(base.features))throw Error("選項或物件已更新，請重新開啟選單確認。");
+    }});
+    if(!ok){feedback.textContent=CommunityData.lastError;return;}
+    if(field==="planUnit"){
+      if(activeDistrict===oldName)activeDistrict=name;
+      districtTabs=loadDistrictTabs();saveNav("list",currentCat);
+    }
+    if(affected.some(item=>item.id===editingId)&&formBaseRec?.[field]?.trim()===oldName)formBaseRec[field]=name;
+    if(F[field].value.trim()===oldName)applyChoiceValue(button,name);
+    saveFormDraft();dialog.close();renderCover();applyFilter();
+    toast("已重新命名，更新 "+changes.length+" 筆物件");
+  };
+  input.addEventListener("input",validate);
+  dialog.addEventListener("keydown",e=>{
+    e.stopPropagation();
+    if(e.key==="Enter"&&e.target===input&&!e.isComposing){e.preventDefault();confirm.click();}
+  });
+  dialog.querySelector(".btn-ghost").onclick=()=>dialog.close();
+  dialog.addEventListener("close",()=>{dialog.remove();if(modalBg.classList.contains("open"))button.focus({preventScroll:true});},{once:true});
+  closeFormChoice();document.body.append(dialog);validate();dialog.showModal();input.focus();input.select();
+}
+function addFormChoice(){
+  if(!activeChoice)return;
+  const field=activeChoice.dataset.optionsFor,input=choiceMenu.querySelector("[data-custom]"),feedback=choiceMenu.querySelector("[role=status]");
+  const name=input.value.trim();if(!name){input.focus();return;}
+  const known=CommunityFields.getOptions(field);
+  const existing=known.find(entry=>choiceNameKey(entry.name)===choiceNameKey(name));
+  if(!existing){
+    const ok=CommunityData.transaction(features=>{managerCatalog(features)[field].push({name});},[],{resetAt:formBaseResetAt,checkLatest(latest){
+      if((latest.settings.communityFeatures?.values?.catalogs?.[field]||[]).some(entry=>choiceNameKey(entry.name)===choiceNameKey(name))||latest.items.some(item=>choiceNameKey(String(item[field]??""))===choiceNameKey(name)))throw Error("選項已更新，請重新開啟清單。");
+    }});
+    if(!ok){feedback.textContent=CommunityData.lastError;return;}
+  }
+  applyChoiceValue(activeChoice,existing?.name||name);closeFormChoice(true);
 }
 function openFormChoice(button){
   closeFormChoice();
   activeChoice = button;
   const field = button.dataset.optionsFor;
   const value = F[field].value;
-  const names = new Set(["",...CommunityFields.getOptions(field).map(option=>option.name),value]);
+  const known=CommunityFields.getOptions(field).map(option=>option.name);
+  const names = new Set(["",...known,value]);
   const options = Array.from(names,name=>{
     const row = document.createElement("button");
     row.type="button";
@@ -9006,22 +9106,29 @@ function openFormChoice(button){
     row.tabIndex=-1;
     const label=document.createElement("span");
     label.className="nm";
-    label.textContent=name || "留白";
+    label.textContent=name || "－";
+    if(!name){row.classList.add("choice-empty");row.setAttribute("aria-label","留白");}
     const check=document.createElement("span");
     check.className="chk";
     check.setAttribute("aria-hidden","true");
     check.textContent="✓";
     row.append(label,check);
-    return row;
+    if(!name || !known.includes(name))return row;
+    const wrapper=document.createElement("div"),rename=document.createElement("button");
+    wrapper.className="choice-option-row";rename.type="button";rename.className="choice-rename";rename.dataset.rename=name;
+    rename.textContent="重新命名";rename.setAttribute("aria-label","重新命名「"+name+"」");wrapper.append(row,rename);return wrapper;
   });
-  choiceMenu.replaceChildren(...options);
+  const list=document.createElement("div");list.className="choice-list";list.setAttribute("role","group");list.setAttribute("aria-label","選項");list.append(...options);
+  const footer=document.createElement("div");footer.className="choice-custom";
+  footer.innerHTML='<input data-custom maxlength="80" aria-label="自訂選項" placeholder="自訂…" autocomplete="off"><p class="choice-feedback" role="status"></p><button type="button" data-add-choice class="btn-primary">加入</button>';
+  choiceMenu.replaceChildren(list,footer);
   choiceMenu.setAttribute("aria-label",button.getAttribute("aria-label"));
   button.setAttribute("aria-expanded","true");
   button.parentElement.append(choiceMenu);
   positionFormChoice();
   const selected = choiceMenu.querySelector(".sel");
   selected.focus({preventScroll:true});
-  choiceMenu.scrollTop = selected.offsetTop - choiceMenu.clientHeight/2;
+  list.scrollTop=selected.offsetTop-list.offsetTop-list.clientHeight/2;
 }
 for(const button of choiceButtons){
   button.addEventListener("click",()=>activeChoice===button?closeFormChoice():openFormChoice(button));
@@ -9030,18 +9137,21 @@ for(const button of choiceButtons){
   });
 }
 choiceMenu.addEventListener("click",e=>{
+  if(!activeChoice)return;
+  const rename=e.target.closest("[data-rename]");
+  if(rename){manageChoice(activeChoice,rename.dataset.rename);return;}
+  if(e.target.closest("[data-add-choice]")){addFormChoice();return;}
   const row=e.target.closest("[role=option]");
   if(!row || !activeChoice) return;
-  const input=F[activeChoice.dataset.optionsFor];
-  input.value=row.dataset.value;
-  input.dispatchEvent(new Event("input",{bubbles:true}));
-  input.dispatchEvent(new Event("change",{bubbles:true}));
+  applyChoiceValue(activeChoice,row.dataset.value);
   closeFormChoice(true);
 });
 choiceMenu.addEventListener("keydown",e=>{
   if(e.key==="Escape"){e.preventDefault();e.stopPropagation();closeFormChoice(true);return;}
-  if(e.key==="Tab"){closeFormChoice(true);return;}
-  const rows=Array.from(choiceMenu.children);
+  if(e.target.matches("[data-custom]")){if(e.key==="Enter"&&!e.isComposing){e.preventDefault();addFormChoice();}return;}
+  if(!e.target.matches("[role=option]"))return;
+  if(e.key==="F2"){e.preventDefault();e.target.closest(".choice-option-row")?.querySelector(".choice-rename")?.click();return;}
+  const rows=Array.from(choiceMenu.querySelectorAll("[role=option]"));
   const i=rows.indexOf(document.activeElement);
   const next={ArrowDown:Math.min(rows.length-1,i+1),ArrowUp:Math.max(0,i-1),Home:0,End:rows.length-1}[e.key];
   if(next!==undefined){e.preventDefault();rows[next].focus();}
@@ -9118,7 +9228,7 @@ function openDetail(id){
     lockOverlay();
   }
 }
-function renderDetailBody(d){
+function renderDetailBody(d, areaExpanded=false){
   const body = document.getElementById("detailBody");
   const visible = new Set(tableFields().filter(field => field !== "links"));
   const name = visible.has("name") ? communityFieldValue(d,"name") : "";
@@ -9131,7 +9241,10 @@ function renderDetailBody(d){
     return;
   }
   // 區段/格內小圖示
-  const numberBadge = n => `<span class="dtl-section-number">${n}</span> `;
+  const headingIcon = paths => '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+paths+'</svg>';
+  const locationIcon=headingIcon('<path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0Z"/><circle cx="12" cy="10" r="2.4"/>');
+  const infoIcon=headingIcon('<circle cx="12" cy="12" r="9"/><path d="M12 11v5m0-9v.2"/>');
+  const rulerIcon=headingIcon('<path d="m3 15 12-12 6 6L9 21zM13 5l2.5 2.5M10 8l2 2M7 11l2.5 2.5"/>');
   const IC_USER  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c1.6-3.4 4.3-5 7.5-5s5.9 1.6 7.5 5"/></svg>';
   const IC_DOC   = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="4" width="13" height="16" rx="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="15" y2="13"/></svg>';
   const IC_EYE   = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12s3.4-6.4 9.5-6.4 9.5 6.4 9.5 6.4-3.4 6.4-9.5 6.4S2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.6"/></svg>';
@@ -9163,11 +9276,12 @@ function renderDetailBody(d){
   function section(icon, title, content){
     return content ? `<div class="dtl-sec"><div class="dtl-h">${icon}${title}</div>${content}</div>` : "";
   }
-  const location = section(numberBadge(1), "區域", grid([["planUnit","area"]]));
-  const basic = section(numberBadge(2), "基本資料", grid([
+  const locationGrid=grid([["planUnit","area"]]);
+  const location=locationGrid ? `<div class="dtl-sec"><button type="button" class="dtl-h dtl-area-toggle" aria-expanded="${areaExpanded}" aria-controls="dtlAreaFields">${locationIcon}區域<svg class="dtl-chevron" aria-hidden="true" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m4 6 4 4 4-4"/></svg></button><div id="dtlAreaFields" ${areaExpanded?"":"hidden"}>${locationGrid}</div></div>` : "";
+  const basic = section(infoIcon, "基本資料", grid([
     ["price","layout","floor"], ["addr"], ["floorPrice","cost"]
   ], "dtl-basic"));
-  const measurements = section(numberBadge(3), "坪數", grid([
+  const measurements = section(rulerIcon, "坪數", grid([
     ["totalArea","mainPlus"], ["mainArea","ancillaryArea"]
   ]));
   const agent = section(IC_USER, visible.has("agent") ? "承辦" : "聯絡資料", grid([["agent","tel"],["store"]]));
@@ -9193,7 +9307,11 @@ function refreshDiscreetDetail(){
   const focusInOrderMenu = !!focus?.closest(".need-order-menu");
   closeNeedOrderUI();
   const d = items.find(x => x.id === openDetailId);
-  if (d) renderDetailBody(d);
+  const areaToggle=body.querySelector(".dtl-area-toggle");
+  if (d){
+    renderDetailBody(d,areaToggle?.getAttribute("aria-expanded")==="true");
+    if(areaToggle && focus===areaToggle)(body.querySelector(".dtl-area-toggle") || document.getElementById("detailClose")).focus({preventScroll:true});
+  }
   else {
     document.getElementById("detailTitle").textContent = "物件明細";
     body.textContent = "這筆物件已移除";
@@ -9240,6 +9358,13 @@ detailBg.addEventListener("pointerdown", e => { _dtlDownOnBg = (e.target === det
 detailBg.addEventListener("click", e => { if (e.target === detailBg && _dtlDownOnBg) closeDetail(); _dtlDownOnBg = false; });
 // 明細頁內點欄位值 → 複製
 detailBg.addEventListener("click", e => {
+  const toggle=e.target.closest(".dtl-area-toggle");
+  if(toggle){
+    const panel=document.getElementById(toggle.getAttribute("aria-controls"));
+    panel.hidden=!panel.hidden;
+    toggle.setAttribute("aria-expanded",String(!panel.hidden));
+    return;
+  }
   const cp = e.target.closest(".dtl-copy"); if (cp) copyFieldText(cp);
 });
 
