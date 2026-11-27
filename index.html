@@ -1170,7 +1170,15 @@ async function openCommunityTarget(value){
   @media (max-width:819px){
     /* 手機:編輯/新增物件表單改「整頁滿版」,不留頂部空白(桌機維持底部面板) */
     .modal-bg{align-items:stretch;}
-    #detailBg.modal-bg.center{align-items:stretch;padding:0;}   /* 物件明細:手機全畫面(蓋掉 .center 的置中+留白,與編輯表單同樣滿版) */
+    #detailBg.modal-bg.center{
+      align-items:center;padding:max(14px,var(--safe-top)) 14px max(14px,var(--safe-bottom));
+    }
+    #detailBg>.modal{
+      max-width:480px;height:auto;
+      max-height:min(90dvh,calc(100dvh - max(14px,var(--safe-top)) - max(14px,var(--safe-bottom))));
+      border-radius:20px;padding-bottom:0;
+    }
+    #detailBg .modal-head{flex-shrink:0;}
     .modal{max-width:none;max-height:none;height:calc(100dvh - var(--safe-top));padding-bottom:var(--safe-bottom);border-radius:0;animation:modalUp .22s ease;}
     .modal-body{flex:1;min-height:0;}
     @keyframes modalUp{from{transform:translateY(14px);opacity:.6;}to{transform:translateY(0);opacity:1;}}
@@ -4674,7 +4682,7 @@ root.addEventListener("storage",e=>{
 })(typeof window==="undefined"?globalThis:window);
 </script>
 <script id="property-app-source" type="application/x-property-app">
-const APP_VERSION = "2026.11.27H";
+const APP_VERSION = "2026.11.27I";
 const { UNKNOWN_DUE, dueValue, setDueValue } = PropertyCore;
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
